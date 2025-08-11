@@ -3,8 +3,6 @@ import SwiftData
 import os
 
 enum AppContainer {
-    static let cloudKitContainerId = "iCloud.JAMSoft.Remember"
-
     static var container: ModelContainer = {
         let schema = Schema([
             Reminder.self,
@@ -16,34 +14,21 @@ enum AppContainer {
             TaggedContact.self
         ])
 
-        // Preferred: CloudKit-backed container
+        // Default to a local persistent store. Enable CloudKit later when entitlements are configured.
         do {
-            let cloudConfig = ModelConfiguration(
-                cloudKitContainerId,
-                schema: schema,
-                isStoredInMemoryOnly: false
-            )
-            let cloudContainer = try ModelContainer(for: schema, configurations: [cloudConfig])
-            print("✅ SwiftData CloudKit container initialized")
-            return cloudContainer
+            let localConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+            let localContainer = try ModelContainer(for: schema, configurations: [localConfig])
+            print("✅ SwiftData local persistent container initialized")
+            return localContainer
         } catch {
-            print("⚠️ CloudKit init failed: \(error). Falling back to local store.")
-            // Fallback: local persistent store
+            // Last resort: in-memory
             do {
-                let localConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, allowsSave: true)
-                let localContainer = try ModelContainer(for: schema, configurations: [localConfig])
-                print("✅ Local persistent container initialized")
-                return localContainer
+                let memoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+                let memoryContainer = try ModelContainer(for: schema, configurations: [memoryConfig])
+                print("⚠️ Using in-memory SwiftData container due to init error: \(error)")
+                return memoryContainer
             } catch {
-                // Last resort: in-memory
-                do {
-                    let memoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-                    let memoryContainer = try ModelContainer(for: schema, configurations: [memoryConfig])
-                    print("⚠️ Using in-memory container")
-                    return memoryContainer
-                } catch {
-                    fatalError("Unable to initialize SwiftData container: \(error)")
-                }
+                fatalError("Unable to initialize any SwiftData container: \(error)")
             }
         }
     }()

@@ -13,7 +13,9 @@ final class NotificationManager {
 
     func requestAuthorization() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { _, _ in
-            self.refreshStatus()
+            Task { @MainActor in
+                self.refreshStatus()
+            }
         }
     }
 
@@ -61,5 +63,3 @@ final class NotificationManager {
         }
     }
 }
-
-

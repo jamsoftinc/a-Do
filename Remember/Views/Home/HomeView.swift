@@ -228,7 +228,7 @@ private struct ReminderRow: View {
                 NotificationManager.shared.scheduleNotifications(
                     for: reminder.id,
                     dueDate: reminder.dueDate,
-                    leadTimes: reminder.notifications?.map { $0.leadTimeSeconds } ?? [],
+                    leadTimes: reminder.notifications.map { $0.leadTimeSeconds },
                     title: reminder.title
                 )
             } label: { Label("Reschedule Notifications", systemImage: "bell.badge") }

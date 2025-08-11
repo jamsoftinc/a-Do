@@ -5,7 +5,7 @@ import SwiftData
 final class Tag {
     var name: String = ""
     var colorHex: String = "#7C4DFF"
-    @Relationship(inverse: \Reminder.tags) var reminders: [Reminder]? = []
+    @Relationship(inverse: \Reminder.tags) var reminders: [Reminder] = []
 
     init(name: String, colorHex: String = "#7C4DFF") {
         self.name = name
@@ -83,10 +83,10 @@ final class Reminder {
     var isCompleted: Bool = false
     var priorityRaw: Int = 0
 
-    @Relationship var tags: [Tag]? = []
-    @Relationship(deleteRule: .cascade) var notifications: [ReminderNotification]? = []
+    @Relationship var tags: [Tag] = []
+    @Relationship(deleteRule: .cascade) var notifications: [ReminderNotification] = []
     @Relationship(deleteRule: .cascade) var locationTrigger: LocationTrigger?
-    @Relationship(deleteRule: .cascade) var taggedContacts: [TaggedContact]? = []
+    @Relationship(deleteRule: .cascade) var taggedContacts: [TaggedContact] = []
     @Relationship(inverse: \ReminderList.reminders) var list: ReminderList?
 
     init(
@@ -109,8 +109,8 @@ final class Reminder {
         self.createdAt = createdAt
         self.isCompleted = isCompleted
         self.priorityRaw = priority.rawValue
-        self.tags = tags.isEmpty ? nil : tags
-        self.notifications = notifications.isEmpty ? nil : notifications
+        self.tags = tags
+        self.notifications = notifications
         self.locationTrigger = locationTrigger
         self.list = list
     }
@@ -141,7 +141,7 @@ final class ReminderList {
     var encodedSmartRules: Data?
     var order: Int = 0
 
-    @Relationship(deleteRule: .cascade) var reminders: [Reminder]? = []
+    @Relationship(deleteRule: .cascade) var reminders: [Reminder] = []
     @Relationship var section: ListSection?
 
     init(name: String, isSmart: Bool = false, rules: [SmartListRule]? = nil, reminders: [Reminder] = []) {
@@ -176,7 +176,7 @@ final class ListSection {
     var order: Int = 0
     var colorHex: String = "#7C4DFF"
     
-    @Relationship(deleteRule: .nullify, inverse: \ReminderList.section) var lists: [ReminderList]? = []
+    @Relationship(deleteRule: .nullify, inverse: \ReminderList.section) var lists: [ReminderList] = []
     
     init(name: String, order: Int = 0, colorHex: String = "#7C4DFF") {
         self.id = UUID()

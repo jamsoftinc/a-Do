@@ -40,8 +40,8 @@ final class ReminderFormViewModel {
         target.details = details.isEmpty ? nil : details
         target.dueDate = dueDate
         target.priority = priority
-        target.tags = selectedTags.isEmpty ? nil : Array(selectedTags)
-        target.notifications = leadTimes.isEmpty ? nil : leadTimes.map { ReminderNotification(leadTimeSeconds: $0) }
+        target.tags = Array(selectedTags)
+        target.notifications = leadTimes.isEmpty ? [] : leadTimes.map { ReminderNotification(leadTimeSeconds: $0) }
         if !locationLabel.isEmpty {
             target.locationTrigger = LocationTrigger(label: locationLabel, latitude: locationLatitude, longitude: locationLongitude, radius: locationRadius, type: locationType)
         }
@@ -50,5 +50,4 @@ final class ReminderFormViewModel {
         return target
     }
 }
-
 

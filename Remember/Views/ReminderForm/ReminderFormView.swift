@@ -26,11 +26,11 @@ struct ReminderFormView: View {
                     ),
                     displayedComponents: [.date, .hourAndMinute]
                 )
-                    .datePickerStyle(.compact)
                 Picker("Priority", selection: $viewModel.priority) {
                     ForEach(Priority.allCases) { p in Text(p.title).tag(p) }
                 }
             }
+                
             Section("Tags") {
                 FlowLayout(alignment: .leading, spacing: 8) {
                     ForEach(allTags) { tag in
@@ -50,28 +50,37 @@ struct ReminderFormView: View {
                 }
                 NavigationLink("Manage Tags", destination: TagsView())
             }
+                
             Section("Notifications") {
                 LeadTimesPicker(leadTimes: $viewModel.leadTimes)
             }
+                
             Section("Tag People") {
                 NavigationLink("Add People") {
                     TagPeopleView(reminderTitle: viewModel.title)
                 }
             }
+            
             Section("Location Trigger") {
                 TextField("Label", text: $viewModel.locationLabel)
                 HStack {
                     TextField("Latitude", value: $viewModel.locationLatitude, format: .number)
                     TextField("Longitude", value: $viewModel.locationLongitude, format: .number)
                 }
-                Stepper(value: $viewModel.locationRadius, in: 50...1000, step: 25) { Text("Radius: \(Int(viewModel.locationRadius))m") }
+                Stepper(value: $viewModel.locationRadius, in: 50...1000, step: 25) { 
+                    Text("Radius: \(Int(viewModel.locationRadius))m") 
+                }
                 Picker("Trigger", selection: $viewModel.locationType) {
-                    ForEach(LocationTriggerType.allCases) { t in Text(t.rawValue.capitalized).tag(t) }
+                    ForEach(LocationTriggerType.allCases) { t in 
+                        Text(t.rawValue.capitalized).tag(t) 
+                    }
                 }
             }
         }
-        .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background(AppTheme.backgroundGradient)
         .navigationTitle(existingReminder == nil ? "New Reminder" : "Edit Reminder")
+        .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) { Button("Save") {
                 let saved = viewModel.save(context: context, existing: existingReminder)
@@ -79,7 +88,7 @@ struct ReminderFormView: View {
                 NotificationManager.shared.scheduleNotifications(
                     for: saved.id,
                     dueDate: saved.dueDate,
-                    leadTimes: saved.notifications?.map { $0.leadTimeSeconds } ?? [],
+                    leadTimes: saved.notifications.map { $0.leadTimeSeconds },
                     title: saved.title
                 )
                 if !viewModel.locationLabel.isEmpty {
@@ -103,8 +112,8 @@ struct ReminderFormView: View {
                 viewModel.details = existing.details ?? ""
                 viewModel.dueDate = existing.dueDate
                 viewModel.priority = existing.priority
-                viewModel.selectedTags = existing.tags ?? []
-                viewModel.leadTimes = existing.notifications?.map { $0.leadTimeSeconds } ?? []
+                viewModel.selectedTags = existing.tags
+                viewModel.leadTimes = existing.notifications.map { $0.leadTimeSeconds }
                 if let location = existing.locationTrigger {
                     viewModel.locationLabel = location.label
                     viewModel.locationLatitude = location.latitude

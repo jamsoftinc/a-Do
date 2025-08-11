@@ -175,7 +175,7 @@ struct ListDetailView: View {
             }
             .onDelete { indexSet in
                 if list.isSmart { return }
-                guard let reminders = list.reminders else { return }
+                let reminders = list.reminders
                 for index in indexSet { context.delete(reminders[index]) }
                 do { try context.save() } catch { Logger(subsystem: "Remember", category: "Lists").error("Delete reminder failed: \(String(describing: error))") }
             }
