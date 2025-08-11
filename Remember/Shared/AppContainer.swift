@@ -12,7 +12,8 @@ enum AppContainer {
             ReminderList.self,
             ReminderNotification.self,
             LocationTrigger.self,
-            ListSection.self
+            ListSection.self,
+            TaggedContact.self
         ])
 
         // Preferred: CloudKit-backed container

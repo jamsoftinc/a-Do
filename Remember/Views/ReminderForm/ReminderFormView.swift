@@ -53,6 +53,11 @@ struct ReminderFormView: View {
             Section("Notifications") {
                 LeadTimesPicker(leadTimes: $viewModel.leadTimes)
             }
+            Section("Tag People") {
+                NavigationLink("Add People") {
+                    TagPeopleView(reminderTitle: viewModel.title)
+                }
+            }
             Section("Location Trigger") {
                 TextField("Label", text: $viewModel.locationLabel)
                 HStack {

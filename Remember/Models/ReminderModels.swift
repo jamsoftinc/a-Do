@@ -86,6 +86,7 @@ final class Reminder {
     @Relationship var tags: [Tag]? = []
     @Relationship(deleteRule: .cascade) var notifications: [ReminderNotification]? = []
     @Relationship(deleteRule: .cascade) var locationTrigger: LocationTrigger?
+    @Relationship(deleteRule: .cascade) var taggedContacts: [TaggedContact]? = []
     @Relationship(inverse: \ReminderList.reminders) var list: ReminderList?
 
     init(
@@ -189,6 +190,23 @@ extension Tag {
     static let defaultColors: [String] = [
         "#FF6B6B", "#FFD93D", "#6BCB77", "#4D96FF", "#845EC2", "#FFC75F"
     ]
+}
+
+@Model
+final class TaggedContact {
+    var identifier: String = ""
+    var givenName: String = ""
+    var familyName: String = ""
+    var phoneNumber: String?
+
+    @Relationship(inverse: \Reminder.taggedContacts) var reminder: Reminder?
+
+    init(identifier: String, givenName: String, familyName: String, phoneNumber: String?) {
+        self.identifier = identifier
+        self.givenName = givenName
+        self.familyName = familyName
+        self.phoneNumber = phoneNumber
+    }
 }
 
 
