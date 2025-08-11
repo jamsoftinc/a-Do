@@ -12,12 +12,17 @@ final class RemindersManager {
     private init() {}
 
     func requestAccess() async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            store.requestAccess(to: .reminder) { _, error in
-                if let error { 
-                    continuation.resume(throwing: error) 
-                } else { 
-                    continuation.resume(returning: ()) 
+        if #available(iOS 17.0, *) {
+            try await store.requestFullAccessToReminders()
+        } else {
+            // Fallback for iOS 16 and earlier
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                store.requestAccess(to: .reminder) { _, error in
+                    if let error { 
+                        continuation.resume(throwing: error) 
+                    } else { 
+                        continuation.resume(returning: ()) 
+                    }
                 }
             }
         }
