@@ -54,6 +54,10 @@ struct ReminderFormView: View {
             Section("Notifications") {
                 LeadTimesPicker(leadTimes: $viewModel.leadTimes)
             }
+            Section("Auto Message") {
+                Toggle("Text tagged contacts when due", isOn: $viewModel.autoTextTaggedContacts)
+                Toggle("Text me (my number)", isOn: $viewModel.autoTextMe)
+            }
                 
             Section("Tag People") {
                 NavigationLink("Add People") {
@@ -85,12 +89,14 @@ struct ReminderFormView: View {
             ToolbarItem(placement: .confirmationAction) { Button("Save") {
                 let saved = viewModel.save(context: context, existing: existingReminder)
                 NotificationManager.shared.cancelNotifications(for: saved.id)
-                NotificationManager.shared.scheduleNotifications(
-                    for: saved.id,
-                    dueDate: saved.dueDate,
-                    leadTimes: saved.notifications.map { $0.leadTimeSeconds },
-                    title: saved.title
-                )
+                Task {
+                    await NotificationManager.shared.scheduleNotifications(
+                        for: saved.id,
+                        dueDate: saved.dueDate,
+                        leadTimes: saved.notifications.map { $0.leadTimeSeconds },
+                        title: saved.title
+                    )
+                }
                 if !viewModel.locationLabel.isEmpty {
                     let notifyOnEntry = viewModel.locationType == .onArrival
                     let notifyOnExit = viewModel.locationType == .onDeparture
@@ -114,6 +120,8 @@ struct ReminderFormView: View {
                 viewModel.priority = existing.priority
                 viewModel.selectedTags = existing.tags
                 viewModel.leadTimes = existing.notifications.map { $0.leadTimeSeconds }
+                viewModel.autoTextTaggedContacts = existing.autoTextTaggedContacts
+                viewModel.autoTextMe = existing.autoTextMe
                 if let location = existing.locationTrigger {
                     viewModel.locationLabel = location.label
                     viewModel.locationLatitude = location.latitude

@@ -32,6 +32,9 @@ final class ReminderFormViewModel {
     var locationLongitude: Double = 0
     var locationRadius: Double = 150
     var locationType: LocationTriggerType = .onArrival
+    // Messaging settings
+    var autoTextTaggedContacts: Bool = false
+    var autoTextMe: Bool = false
 
     @discardableResult
     func save(context: ModelContext, existing: Reminder? = nil) -> Reminder {
@@ -45,6 +48,8 @@ final class ReminderFormViewModel {
         if !locationLabel.isEmpty {
             target.locationTrigger = LocationTrigger(label: locationLabel, latitude: locationLatitude, longitude: locationLongitude, radius: locationRadius, type: locationType)
         }
+        target.autoTextTaggedContacts = autoTextTaggedContacts
+        target.autoTextMe = autoTextMe
         if existing == nil { context.insert(target) }
         do { try context.save() } catch { Logger(subsystem: "Remember", category: "Reminders").error("Save failed: \(String(describing: error))") }
         return target

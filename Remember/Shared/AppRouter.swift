@@ -8,6 +8,7 @@ enum DeepLinkDestination: Identifiable, Equatable {
     case smartHighPriority
     case tag(String)
     case priority(Priority)
+    case sendText(reminderId: UUID)
 
     var id: String {
         switch self {
@@ -15,6 +16,7 @@ enum DeepLinkDestination: Identifiable, Equatable {
         case .smartHighPriority: return "smart_high"
         case .tag(let name): return "tag_\(name)"
         case .priority(let p): return "priority_\(p.rawValue)"
+        case .sendText(let id): return "send_text_\(id.uuidString)"
         }
     }
 }
@@ -30,6 +32,9 @@ final class AppRouter {
             destination = .smartToday
         } else if path.hasPrefix("/smart/high") {
             destination = .smartHighPriority
+        } else if path.hasPrefix("/sendtext/") {
+            let idStr = String(path.dropFirst("/sendtext/".count))
+            if let id = UUID(uuidString: idStr) { destination = .sendText(reminderId: id) }
         } else if path.hasPrefix("/tag/") {
             let tagName = String(path.dropFirst("/tag/".count))
             destination = .tag(tagName)
@@ -46,6 +51,12 @@ final class AppRouter {
         if defaults?.bool(forKey: "deeplink_open_today") == true {
             defaults?.set(false, forKey: "deeplink_open_today")
             destination = .smartToday
+        }
+        // Check for send text reminder deep link
+        if let reminderIdString = defaults?.string(forKey: "deeplink_send_text_reminder_id"),
+           let reminderId = UUID(uuidString: reminderIdString) {
+            defaults?.removeObject(forKey: "deeplink_send_text_reminder_id")
+            destination = .sendText(reminderId: reminderId)
         }
     }
 }

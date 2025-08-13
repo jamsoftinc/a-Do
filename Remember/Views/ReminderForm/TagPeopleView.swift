@@ -13,6 +13,7 @@ struct TagPeopleView: View {
     @State private var results: [CNContact] = []
     @State private var selectedContacts: [TaggedContact] = []
     @State private var myName: String = ""
+    @State private var myPhone: String = ""
 
     let reminderTitle: String
 
@@ -59,10 +60,18 @@ struct TagPeopleView: View {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") { dismiss() }
             }
+            ToolbarItem(placement: .bottomBar) {
+                HStack {
+                    TextField("Your phone number", text: $myPhone)
+                        .keyboardType(.phonePad)
+                    Button("Save My #") { ContactsManager.shared.setMyPhoneNumber(myPhone) }
+                }
+            }
         }
         .task { 
             _ = await ContactsManager.shared.requestAccess()
             myName = await ContactsManager.shared.myDisplayName()
+            myPhone = await ContactsManager.shared.myPhoneNumber() ?? ""
         }
     }
 

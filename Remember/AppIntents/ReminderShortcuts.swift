@@ -10,13 +10,21 @@ struct AddQuickReminder: AppIntent {
     @Parameter(title: "Due In Minutes", default: 0) var dueInMinutes: Int
 
     func perform() async throws -> some ProvidesDialog {
-        let container = AppContainer.container
+        let container = await MainActor.run { AppContainer.container }
         let context = ModelContext(container)
         let due: Date? = dueInMinutes > 0 ? Date().addingTimeInterval(Double(dueInMinutes) * 60) : nil
         let reminder = Reminder(title: reminderTitle, dueDate: due)
         context.insert(reminder)
         try? context.save()
-        NotificationManager.shared.scheduleNotifications(for: reminder.id, dueDate: due, leadTimes: [], title: reminderTitle)
+        // Schedule notifications on MainActor to ensure thread safety
+        let reminderId = reminder.id
+        let reminderTitleCopy = reminderTitle
+        let dueCopy = due
+        _ = await MainActor.run {
+            Task { [reminderId, dueCopy, reminderTitleCopy] in
+                await NotificationManager.shared.scheduleNotifications(for: reminderId, dueDate: dueCopy, leadTimes: [], title: reminderTitleCopy)
+            }
+        }
         return .result(dialog: "Added reminder: \(reminderTitle)")
     }
 }
@@ -30,4 +38,23 @@ struct OpenTodayList: AppIntent {
     }
 }
 
+struct SendTextForReminder: AppIntent {
+    static var title: LocalizedStringResource = "Send Text For Reminder"
+    static var description = IntentDescription("Open the app to send a text for the specified reminder")
 
+    @Parameter(title: "Reminder ID") var reminderId: String
+
+    func perform() async throws -> some IntentResult {
+        guard let uuid = UUID(uuidString: reminderId) else { return .result(dialog: "Invalid UUID.") }
+        // Set a flag for the app to check when it opens
+        let defaults = UserDefaults(suiteName: "group.JAMSoft.Remember")
+        defaults?.set(uuid.uuidString, forKey: "deeplink_send_text_reminder_id")
+        // Bring the app to foreground if supported (iOS 26+)
+        if #available(iOS 26.0, *) {
+            try await continueInForeground(alwaysConfirm: false)
+        } else {
+            return .result(dialog: "Bringing the app to foreground requires iOS 26.0 or newer.")
+        }
+        return .result(dialog: "Action completed.")
+    }
+}

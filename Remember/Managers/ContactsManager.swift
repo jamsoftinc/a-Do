@@ -36,6 +36,20 @@ final class ContactsManager {
         // Fallback to device name; using CNContactStore unifiedMeContact isn't available across all environments
         return UIDevice.current.name
     }
+
+    func myPhoneNumber() async -> String? {
+        let defaults = UserDefaults(suiteName: "group.JAMSoft.Remember") ?? .standard
+        return defaults.string(forKey: "my_phone_number")
+    }
+
+    func setMyPhoneNumber(_ number: String?) {
+        let defaults = UserDefaults(suiteName: "group.JAMSoft.Remember") ?? .standard
+        if let number, !number.isEmpty {
+            defaults.set(number, forKey: "my_phone_number")
+        } else {
+            defaults.removeObject(forKey: "my_phone_number")
+        }
+    }
 }
 
 

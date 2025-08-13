@@ -82,6 +82,9 @@ final class Reminder {
     var createdAt: Date = Date()
     var isCompleted: Bool = false
     var priorityRaw: Int = 0
+    // Messaging preferences
+    var autoTextTaggedContacts: Bool = false
+    var autoTextMe: Bool = false
 
     @Relationship var tags: [Tag] = []
     @Relationship(deleteRule: .cascade) var notifications: [ReminderNotification] = []
@@ -100,7 +103,9 @@ final class Reminder {
         tags: [Tag] = [],
         notifications: [ReminderNotification] = [],
         locationTrigger: LocationTrigger? = nil,
-        list: ReminderList? = nil
+        list: ReminderList? = nil,
+        autoTextTaggedContacts: Bool = false,
+        autoTextMe: Bool = false
     ) {
         self.id = id
         self.title = title
@@ -113,6 +118,8 @@ final class Reminder {
         self.notifications = notifications
         self.locationTrigger = locationTrigger
         self.list = list
+        self.autoTextTaggedContacts = autoTextTaggedContacts
+        self.autoTextMe = autoTextMe
     }
 
     var priority: Priority {

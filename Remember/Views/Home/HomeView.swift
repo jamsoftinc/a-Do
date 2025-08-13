@@ -65,6 +65,10 @@ struct HomeView: View {
                 // Minimal: present ListsView; detailed routing could push to specific list if we store IDs
                 // Here we just push ListsView; user sees Today at top
                 break
+            case .sendText(let rid):
+                if let reminder = reminders.first(where: { $0.id == rid }) {
+                    Task { await composeAndSend(reminder: reminder) }
+                }
             case .smartHighPriority, .tag, .priority:
                 break
             }
@@ -196,6 +200,14 @@ private struct ReminderRow: View {
                     Text(due, style: .date).font(.caption).foregroundStyle(.secondary)
                 }
                 if let details = reminder.details { Text(details).font(.caption).foregroundStyle(.secondary).lineLimit(2) }
+                if reminder.autoTextTaggedContacts || reminder.autoTextMe {
+                    HStack(spacing: 6) {
+                        Image(systemName: "message.fill").foregroundStyle(.green)
+                        Text("Auto message: \(reminder.autoTextMe ? "Me" : "")\(reminder.autoTextMe && reminder.autoTextTaggedContacts ? ", " : "")\(reminder.autoTextTaggedContacts ? "Tagged" : "")")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             Spacer()
             Button {
@@ -225,12 +237,14 @@ private struct ReminderRow: View {
                 NotificationManager.shared.cancelNotifications(for: reminder.id)
             } label: { Label("Cancel Notifications", systemImage: "bell.slash") }
             Button {
-                NotificationManager.shared.scheduleNotifications(
-                    for: reminder.id,
-                    dueDate: reminder.dueDate,
-                    leadTimes: reminder.notifications.map { $0.leadTimeSeconds },
-                    title: reminder.title
-                )
+                Task {
+                    await NotificationManager.shared.scheduleNotifications(
+                        for: reminder.id,
+                        dueDate: reminder.dueDate,
+                        leadTimes: reminder.notifications.map { $0.leadTimeSeconds },
+                        title: reminder.title
+                    )
+                }
             } label: { Label("Reschedule Notifications", systemImage: "bell.badge") }
             Button {
                 try? RemindersManager.shared.export(reminder: reminder)
@@ -239,6 +253,21 @@ private struct ReminderRow: View {
                 Task { try? await CalendarManager.shared.createEvent(from: reminder.title, dueDate: reminder.dueDate) }
             } label: { Label("Create Calendar Event", systemImage: "calendar.badge.plus") }
         }
+    }
+}
+
+extension HomeView {
+    @MainActor
+    func composeAndSend(reminder: Reminder) async {
+        var recipients: [String] = []
+        if reminder.autoTextTaggedContacts {
+            recipients.append(contentsOf: reminder.taggedContacts.compactMap { $0.phoneNumber })
+        }
+        if reminder.autoTextMe, let my = await ContactsManager.shared.myPhoneNumber() { recipients.append(my) }
+        recipients = Array(Set(recipients)).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        guard !recipients.isEmpty else { return }
+        let body = reminder.details?.isEmpty == false ? "\(reminder.title) — \(reminder.details!)" : reminder.title
+        NotificationManager.shared.composeSMS(to: recipients, body: body)
     }
 }
 
