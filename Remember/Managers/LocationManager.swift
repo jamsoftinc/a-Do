@@ -16,6 +16,11 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
     }
+    
+    // Helper method to validate coordinates
+    static func isValidCoordinate(latitude: Double, longitude: Double) -> Bool {
+        return latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180
+    }
 
     func requestAuthorization(always: Bool = false) {
         if always {
@@ -26,6 +31,12 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     }
 
     func startMonitoring(label: String, latitude: Double, longitude: Double, radius: Double, notifyOnEntry: Bool, notifyOnExit: Bool) {
+        // Validate coordinates before creating region
+        guard Self.isValidCoordinate(latitude: latitude, longitude: longitude) else {
+            Logger(subsystem: "Remember", category: "Location").error("Invalid coordinates for monitoring: lat=\(latitude), lon=\(longitude)")
+            return
+        }
+        
         let clampedRadius = max(50, min(radius, 1000))
         let region = CLCircularRegion(center: CLLocationCoordinate2D(latitude: latitude, longitude: longitude), radius: clampedRadius, identifier: label)
         region.notifyOnEntry = notifyOnEntry

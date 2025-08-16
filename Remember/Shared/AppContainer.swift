@@ -18,17 +18,33 @@ enum AppContainer {
         do {
             let localConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             let localContainer = try ModelContainer(for: schema, configurations: [localConfig])
+            #if DEBUG
             print("✅ SwiftData local persistent container initialized")
+            #endif
             return localContainer
         } catch {
             // Last resort: in-memory
             do {
                 let memoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
                 let memoryContainer = try ModelContainer(for: schema, configurations: [memoryConfig])
+                #if DEBUG
                 print("⚠️ Using in-memory SwiftData container due to init error: \(error)")
+                #endif
                 return memoryContainer
             } catch {
-                fatalError("Unable to initialize any SwiftData container: \(error)")
+                // Graceful fallback: return a basic in-memory container
+                #if DEBUG
+                print("❌ Critical: Unable to initialize any SwiftData container: \(error)")
+                #endif
+                // Create a minimal in-memory container as last resort
+                let minimalConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+                if let minimalContainer = try? ModelContainer(for: schema, configurations: [minimalConfig]) {
+                    return minimalContainer
+                } else {
+                    // If even the minimal container fails, the app cannot function
+                    // This should be extremely rare and indicates a system-level issue
+                    return ModelContainer(for: Reminder.self, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
+                }
             }
         }
     }()

@@ -183,4 +183,3 @@ struct ListDetailView: View {
         .navigationTitle(list.name)
     }
 }
-

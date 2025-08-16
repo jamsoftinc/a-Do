@@ -71,6 +71,11 @@ struct ReminderFormView: View {
                     TextField("Latitude", value: $viewModel.locationLatitude, format: .number)
                     TextField("Longitude", value: $viewModel.locationLongitude, format: .number)
                 }
+                if !viewModel.locationLabel.isEmpty && !viewModel.hasValidCoordinates {
+                    Text("Invalid coordinates. Latitude: -90 to 90, Longitude: -180 to 180")
+                        .foregroundColor(.red)
+                        .font(.caption)
+                }
                 Stepper(value: $viewModel.locationRadius, in: 50...1000, step: 25) { 
                     Text("Radius: \(Int(viewModel.locationRadius))m") 
                 }
@@ -110,7 +115,8 @@ struct ReminderFormView: View {
                     )
                 }
                 dismiss()
-            }.disabled(viewModel.title.trimmingCharacters(in: .whitespaces).isEmpty) }
+            }.disabled(viewModel.title.trimmingCharacters(in: .whitespaces).isEmpty || 
+                      (!viewModel.locationLabel.isEmpty && !viewModel.hasValidCoordinates)) }
         }
         .onAppear {
             if let existing = existingReminder {

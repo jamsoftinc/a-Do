@@ -48,8 +48,9 @@ final class LocationTrigger {
 
     init(label: String, latitude: Double, longitude: Double, radius: Double = 150.0, type: LocationTriggerType) {
         self.label = label
-        self.latitude = latitude
-        self.longitude = longitude
+        // Validate and clamp coordinates to valid ranges
+        self.latitude = max(-90, min(90, latitude))
+        self.longitude = max(-180, min(180, longitude))
         self.radius = radius
         self.typeRaw = type.rawValue
     }
@@ -57,6 +58,10 @@ final class LocationTrigger {
     var type: LocationTriggerType {
         get { LocationTriggerType(rawValue: typeRaw) ?? .onArrival }
         set { typeRaw = newValue.rawValue }
+    }
+    
+    var hasValidCoordinates: Bool {
+        return latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180
     }
 }
 

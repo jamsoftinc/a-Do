@@ -28,13 +28,33 @@ final class ReminderFormViewModel {
     var selectedTags: [Tag] = []
     var leadTimes: [TimeInterval] = []
     var locationLabel: String = ""
-    var locationLatitude: Double = 0
-    var locationLongitude: Double = 0
+    var locationLatitude: Double = 0 {
+        didSet {
+            // Validate latitude bounds (-90 to 90)
+            if locationLatitude < -90 || locationLatitude > 90 {
+                locationLatitude = oldValue
+            }
+        }
+    }
+    var locationLongitude: Double = 0 {
+        didSet {
+            // Validate longitude bounds (-180 to 180)
+            if locationLongitude < -180 || locationLongitude > 180 {
+                locationLongitude = oldValue
+            }
+        }
+    }
     var locationRadius: Double = 150
     var locationType: LocationTriggerType = .onArrival
     // Messaging settings
     var autoTextTaggedContacts: Bool = false
     var autoTextMe: Bool = false
+    
+    // Computed property to check if coordinates are valid
+    var hasValidCoordinates: Bool {
+        return locationLatitude >= -90 && locationLatitude <= 90 &&
+               locationLongitude >= -180 && locationLongitude <= 180
+    }
 
     @discardableResult
     func save(context: ModelContext, existing: Reminder? = nil) -> Reminder {
@@ -45,8 +65,11 @@ final class ReminderFormViewModel {
         target.priority = priority
         target.tags = Array(selectedTags)
         target.notifications = leadTimes.isEmpty ? [] : leadTimes.map { ReminderNotification(leadTimeSeconds: $0) }
-        if !locationLabel.isEmpty {
+        if !locationLabel.isEmpty && hasValidCoordinates {
             target.locationTrigger = LocationTrigger(label: locationLabel, latitude: locationLatitude, longitude: locationLongitude, radius: locationRadius, type: locationType)
+        } else if !locationLabel.isEmpty && !hasValidCoordinates {
+            // Log invalid coordinates but don't create location trigger
+            Logger(subsystem: "Remember", category: "Location").error("Invalid coordinates provided: lat=\(locationLatitude), lon=\(locationLongitude)")
         }
         target.autoTextTaggedContacts = autoTextTaggedContacts
         target.autoTextMe = autoTextMe
