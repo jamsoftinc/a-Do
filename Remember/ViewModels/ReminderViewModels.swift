@@ -2,6 +2,7 @@ import Foundation
 import SwiftData
 import os
 import Observation
+import CoreLocation
 
 @MainActor
 @Observable

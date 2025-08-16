@@ -2,7 +2,7 @@ import SwiftUI
 import CoreLocation
 
 struct LocationStatusView: View {
-    @ObservedObject var locationManager = LocationManager.shared
+    let locationManager = LocationManager.shared
     
     var body: some View {
         HStack(spacing: 12) {
