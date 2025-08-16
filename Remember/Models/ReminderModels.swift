@@ -95,6 +95,7 @@ final class Reminder {
     @Relationship(deleteRule: .cascade) var notifications: [ReminderNotification] = []
     @Relationship(deleteRule: .cascade) var locationTrigger: LocationTrigger?
     @Relationship(deleteRule: .cascade) var taggedContacts: [TaggedContact] = []
+    @Relationship(deleteRule: .cascade) var appleNote: AppleNoteAttachment?
     @Relationship(inverse: \ReminderList.reminders) var list: ReminderList?
 
     init(
@@ -110,7 +111,8 @@ final class Reminder {
         locationTrigger: LocationTrigger? = nil,
         list: ReminderList? = nil,
         autoTextTaggedContacts: Bool = false,
-        autoTextMe: Bool = false
+        autoTextMe: Bool = false,
+        appleNote: AppleNoteAttachment? = nil
     ) {
         self.id = id
         self.title = title
@@ -125,6 +127,7 @@ final class Reminder {
         self.list = list
         self.autoTextTaggedContacts = autoTextTaggedContacts
         self.autoTextMe = autoTextMe
+        self.appleNote = appleNote
     }
 
     var priority: Priority {
@@ -218,6 +221,23 @@ final class TaggedContact {
         self.givenName = givenName
         self.familyName = familyName
         self.phoneNumber = phoneNumber
+    }
+}
+
+@Model
+final class AppleNoteAttachment {
+    var noteIdentifier: String = ""
+    var noteTitle: String = ""
+    var noteContent: String = ""
+    var lastModified: Date = Date()
+    
+    @Relationship(inverse: \Reminder.appleNote) var reminder: Reminder?
+    
+    init(noteIdentifier: String, noteTitle: String, noteContent: String, lastModified: Date = Date()) {
+        self.noteIdentifier = noteIdentifier
+        self.noteTitle = noteTitle
+        self.noteContent = noteContent
+        self.lastModified = lastModified
     }
 }
 

@@ -16,5 +16,7 @@
 	<array>
 		<string>group.JAMSoft.Remember</string>
 	</array>
+	<key>com.apple.developer.notes</key>
+	<true/>
 </dict>
 </plist>

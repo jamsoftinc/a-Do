@@ -50,10 +50,14 @@ final class ReminderFormViewModel {
     var autoTextTaggedContacts: Bool = false
     var autoTextMe: Bool = false
     
+    // Apple Note attachment
+    var attachedNote: AppleNoteAttachment?
+    var showNotePicker: Bool = false
+    
     // Computed property to check if coordinates are valid
     var hasValidCoordinates: Bool {
-        return locationLatitude >= -90 && locationLatitude <= 90 &&
-               locationLongitude >= -180 && locationLongitude <= 180
+        return self.locationLatitude >= -90 && self.locationLatitude <= 90 &&
+               self.locationLongitude >= -180 && self.locationLongitude <= 180
     }
 
     @discardableResult
@@ -66,13 +70,14 @@ final class ReminderFormViewModel {
         target.tags = Array(selectedTags)
         target.notifications = leadTimes.isEmpty ? [] : leadTimes.map { ReminderNotification(leadTimeSeconds: $0) }
         if !locationLabel.isEmpty && hasValidCoordinates {
-            target.locationTrigger = LocationTrigger(label: locationLabel, latitude: locationLatitude, longitude: locationLongitude, radius: locationRadius, type: locationType)
+            target.locationTrigger = LocationTrigger(label: locationLabel, latitude: self.locationLatitude, longitude: self.locationLongitude, radius: locationRadius, type: locationType)
         } else if !locationLabel.isEmpty && !hasValidCoordinates {
             // Log invalid coordinates but don't create location trigger
-            Logger(subsystem: "Remember", category: "Location").error("Invalid coordinates provided: lat=\(locationLatitude), lon=\(locationLongitude)")
+            Logger(subsystem: "Remember", category: "Location").error("Invalid coordinates provided: lat=\(self.locationLatitude), lon=\(self.locationLongitude)")
         }
         target.autoTextTaggedContacts = autoTextTaggedContacts
         target.autoTextMe = autoTextMe
+        target.appleNote = attachedNote
         if existing == nil { context.insert(target) }
         do { try context.save() } catch { Logger(subsystem: "Remember", category: "Reminders").error("Save failed: \(String(describing: error))") }
         return target

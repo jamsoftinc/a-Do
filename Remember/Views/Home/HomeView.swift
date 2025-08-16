@@ -208,6 +208,14 @@ private struct ReminderRow: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                if reminder.appleNote != nil {
+                    HStack(spacing: 6) {
+                        Image(systemName: "note.text").foregroundStyle(.blue)
+                        Text("Apple Note attached")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             Spacer()
             Button {
@@ -252,6 +260,11 @@ private struct ReminderRow: View {
             Button {
                 Task { try? await CalendarManager.shared.createEvent(from: reminder.title, dueDate: reminder.dueDate) }
             } label: { Label("Create Calendar Event", systemImage: "calendar.badge.plus") }
+            if reminder.appleNote != nil {
+                Button {
+                    NotesManager.shared.openNoteInNotesApp(noteIdentifier: reminder.appleNote!.noteIdentifier)
+                } label: { Label("Open Apple Note", systemImage: "note.text") }
+            }
         }
     }
 }

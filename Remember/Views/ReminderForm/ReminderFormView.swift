@@ -65,6 +65,26 @@ struct ReminderFormView: View {
                 }
             }
             
+            Section("Apple Note") {
+                if let attachedNote = viewModel.attachedNote {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            AppleNoteAttachmentView(noteAttachment: attachedNote)
+                            Spacer()
+                            Button("Remove") {
+                                viewModel.attachedNote = nil
+                            }
+                            .foregroundColor(.red)
+                        }
+                    }
+                } else {
+                    Button("Attach Apple Note") {
+                        viewModel.showNotePicker = true
+                    }
+                    .foregroundColor(.blue)
+                }
+            }
+            
             Section("Location Trigger") {
                 TextField("Label", text: $viewModel.locationLabel)
                 HStack {
@@ -128,6 +148,7 @@ struct ReminderFormView: View {
                 viewModel.leadTimes = existing.notifications.map { $0.leadTimeSeconds }
                 viewModel.autoTextTaggedContacts = existing.autoTextTaggedContacts
                 viewModel.autoTextMe = existing.autoTextMe
+                viewModel.attachedNote = existing.appleNote
                 if let location = existing.locationTrigger {
                     viewModel.locationLabel = location.label
                     viewModel.locationLatitude = location.latitude
@@ -136,6 +157,9 @@ struct ReminderFormView: View {
                     viewModel.locationType = location.type
                 }
             }
+        }
+        .sheet(isPresented: $viewModel.showNotePicker) {
+            AppleNotePickerView(selectedNote: $viewModel.attachedNote)
         }
     }
 }
