@@ -2,6 +2,7 @@ import Foundation
 import CoreLocation
 import os
 import Observation
+import Contacts
 
 @MainActor
 @Observable
@@ -9,12 +10,17 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     static let shared = LocationManager()
 
     private let manager = CLLocationManager()
+    private let geocoder = CLGeocoder()
     var authorizationStatus: CLAuthorizationStatus = .notDetermined
+    var currentLocation: CLLocation?
+    var isUpdatingLocation: Bool = false
+    var currentAddress: String?
 
     private override init() {
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        manager.distanceFilter = 10 // Update location when user moves 10 meters
     }
     
     // Helper method to validate coordinates
@@ -27,6 +33,66 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
             manager.requestAlwaysAuthorization()
         } else {
             manager.requestWhenInUseAuthorization()
+        }
+    }
+    
+    func startLocationUpdates() {
+        guard authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways else {
+            Logger(subsystem: "Remember", category: "Location").error("Cannot start location updates: authorization not granted")
+            return
+        }
+        
+        isUpdatingLocation = true
+        manager.startUpdatingLocation()
+        Logger(subsystem: "Remember", category: "Location").info("Started location updates")
+    }
+    
+    func stopLocationUpdates() {
+        isUpdatingLocation = false
+        manager.stopUpdatingLocation()
+        Logger(subsystem: "Remember", category: "Location").info("Stopped location updates")
+    }
+    
+    func getCurrentLocation() async -> CLLocation? {
+        // If we already have a recent location, return it
+        if let location = currentLocation, 
+           Date().timeIntervalSince(location.timestamp) < 300 { // 5 minutes
+            return location
+        }
+        
+        // Otherwise, start updates and wait for a location
+        startLocationUpdates()
+        
+        // Wait for up to 10 seconds for a location update
+        for _ in 0..<100 {
+            if let location = currentLocation {
+                return location
+            }
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        }
+        
+        stopLocationUpdates()
+        return nil
+    }
+    
+    private func reverseGeocode(location: CLLocation) async {
+        do {
+            let placemarks = try await geocoder.reverseGeocodeLocation(location)
+            if let placemark = placemarks.first {
+                let address = [
+                    placemark.thoroughfare,
+                    placemark.subThoroughfare,
+                    placemark.locality,
+                    placemark.administrativeArea
+                ].compactMap { $0 }.joined(separator: ", ")
+                
+                if !address.isEmpty {
+                    currentAddress = address
+                    Logger(subsystem: "Remember", category: "Location").info("Address resolved: \(address)")
+                }
+            }
+        } catch {
+            Logger(subsystem: "Remember", category: "Location").error("Reverse geocoding failed: \(String(describing: error))")
         }
     }
 
@@ -67,6 +133,25 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         Logger(subsystem: "Remember", category: "Location").info("didExitRegion: \(region.identifier)")
         Task { @MainActor in
             NotificationManager.shared.fireNow(title: "Left: \(region.identifier)")
+        }
+    }
+    
+    nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let location = locations.last else { return }
+        
+        Task { @MainActor in
+            self.currentLocation = location
+            Logger(subsystem: "Remember", category: "Location").info("Location updated: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+            
+            // Reverse geocode to get address
+            await self.reverseGeocode(location: location)
+        }
+    }
+    
+    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        Task { @MainActor in
+            Logger(subsystem: "Remember", category: "Location").error("Location update failed: \(String(describing: error))")
+            self.isUpdatingLocation = false
         }
     }
 }

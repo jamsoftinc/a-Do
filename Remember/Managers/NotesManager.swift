@@ -1,5 +1,4 @@
 import Foundation
-import Notes
 import os
 import Observation
 import UIKit
@@ -180,3 +179,4 @@ class NotesStore {
         // For now, we'll do nothing
     }
 }
+

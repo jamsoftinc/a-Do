@@ -7,7 +7,6 @@
 
 import SwiftUI
 import SwiftData
-import Notes
 
 @main
 struct RememberApp: App {
@@ -24,3 +23,4 @@ struct RememberApp: App {
         }
     }
 }
+

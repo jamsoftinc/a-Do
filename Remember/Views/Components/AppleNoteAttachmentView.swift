@@ -31,7 +31,7 @@ struct AppleNoteAttachmentView: View {
                 
                 Text("Last modified: \(noteAttachment.lastModified, style: .relative)")
                     .font(.caption2)
-                    .foregroundColor(.tertiary)
+                    .foregroundColor(.secondary)
             }
             .padding(12)
             .background(Color(.systemGray6))

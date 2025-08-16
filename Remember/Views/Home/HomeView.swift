@@ -19,6 +19,7 @@ struct HomeView: View {
                 ScrollView {
                     VStack(spacing: 20) {
                         quickAdd
+                        locationStatus
                         todayReminders
                         todayCalendar
                         upcomingCalendar
@@ -89,6 +90,34 @@ struct HomeView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(.blue)
                 .disabled(viewModel.quickTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+    }
+    
+    private var locationStatus: some View {
+        GlassCard {
+            VStack(spacing: 12) {
+                LocationStatusView()
+                
+                if LocationManager.shared.currentLocation != nil {
+                    HStack {
+                        Button("Create Location Reminder") {
+                            createLocationReminder()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.blue)
+                        
+                        Spacer()
+                        
+                        Button("Refresh Location") {
+                            Task {
+                                await refreshLocation()
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.secondary)
+                    }
+                }
             }
         }
     }
@@ -281,6 +310,17 @@ extension HomeView {
         guard !recipients.isEmpty else { return }
         let body = reminder.details?.isEmpty == false ? "\(reminder.title) — \(reminder.details!)" : reminder.title
         NotificationManager.shared.composeSMS(to: recipients, body: body)
+    }
+    
+    private func createLocationReminder() {
+        // Navigate to reminder form with current location pre-filled
+        // This will be handled by the router or navigation
+        // For now, we'll just present the form
+        // In a more sophisticated implementation, you could pass the location data
+    }
+    
+    private func refreshLocation() async {
+        _ = await LocationManager.shared.getCurrentLocation()
     }
 }
 

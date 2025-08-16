@@ -63,7 +63,7 @@ struct AppleNotePickerView: View {
                                         
                                         Text("Modified: \(note.modificationDate, style: .relative)")
                                             .font(.caption2)
-                                            .foregroundColor(.tertiary)
+                                            .foregroundColor(.secondary)
                                     }
                                 }
                             }
@@ -162,3 +162,4 @@ struct CreateNoteView: View {
 #Preview {
     AppleNotePickerView(selectedNote: .constant(nil))
 }
+

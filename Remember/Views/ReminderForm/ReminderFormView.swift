@@ -87,15 +87,47 @@ struct ReminderFormView: View {
             
             Section("Location Trigger") {
                 TextField("Label", text: $viewModel.locationLabel)
+                
                 HStack {
                     TextField("Latitude", value: $viewModel.locationLatitude, format: .number)
                     TextField("Longitude", value: $viewModel.locationLongitude, format: .number)
                 }
+                
+                Button {
+                    Task {
+                        await viewModel.detectCurrentLocation()
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: "location.fill")
+                        Text(viewModel.isDetectingLocation ? "Detecting..." : "Use Current Location")
+                    }
+                }
+                .disabled(viewModel.isDetectingLocation)
+                .foregroundColor(.blue)
+                
+                if let error = viewModel.locationDetectionError {
+                    Text(error)
+                        .foregroundColor(.red)
+                        .font(.caption)
+                }
+                
                 if !viewModel.locationLabel.isEmpty && !viewModel.hasValidCoordinates {
                     Text("Invalid coordinates. Latitude: -90 to 90, Longitude: -180 to 180")
                         .foregroundColor(.red)
                         .font(.caption)
                 }
+                
+                if viewModel.hasValidCoordinates {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                        Text("Valid coordinates detected")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    }
+                }
+                
                 Stepper(value: $viewModel.locationRadius, in: 50...1000, step: 25) { 
                     Text("Radius: \(Int(viewModel.locationRadius))m") 
                 }
@@ -155,6 +187,11 @@ struct ReminderFormView: View {
                     viewModel.locationLongitude = location.longitude
                     viewModel.locationRadius = location.radius
                     viewModel.locationType = location.type
+                }
+            } else {
+                // For new reminders, try to pre-fill with current location
+                Task {
+                    await viewModel.prefillWithCurrentLocation()
                 }
             }
         }

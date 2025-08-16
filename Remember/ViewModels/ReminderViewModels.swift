@@ -54,6 +54,10 @@ final class ReminderFormViewModel {
     var attachedNote: AppleNoteAttachment?
     var showNotePicker: Bool = false
     
+    // Location detection
+    var isDetectingLocation: Bool = false
+    var locationDetectionError: String?
+    
     // Computed property to check if coordinates are valid
     var hasValidCoordinates: Bool {
         return self.locationLatitude >= -90 && self.locationLatitude <= 90 &&
@@ -81,6 +85,58 @@ final class ReminderFormViewModel {
         if existing == nil { context.insert(target) }
         do { try context.save() } catch { Logger(subsystem: "Remember", category: "Reminders").error("Save failed: \(String(describing: error))") }
         return target
+    }
+    
+    func detectCurrentLocation() async {
+        isDetectingLocation = true
+        locationDetectionError = nil
+        
+        // Request authorization if needed
+        if LocationManager.shared.authorizationStatus == .notDetermined {
+            LocationManager.shared.requestAuthorization()
+        }
+        
+        // Wait a moment for authorization to be processed
+        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        
+        if LocationManager.shared.authorizationStatus == .denied || LocationManager.shared.authorizationStatus == .restricted {
+            locationDetectionError = "Location access denied. Please enable location access in Settings."
+            isDetectingLocation = false
+            return
+        }
+        
+        // Get current location
+        if let location = await LocationManager.shared.getCurrentLocation() {
+            locationLatitude = location.coordinate.latitude
+            locationLongitude = location.coordinate.longitude
+            
+            // Generate a default label based on location
+            if locationLabel.isEmpty {
+                if let address = LocationManager.shared.currentAddress {
+                    locationLabel = address
+                } else {
+                    locationLabel = "Current Location"
+                }
+            }
+        } else {
+            locationDetectionError = "Unable to detect current location. Please check your location settings."
+        }
+        
+        isDetectingLocation = false
+    }
+    
+    func prefillWithCurrentLocation() async {
+        if let location = await LocationManager.shared.getCurrentLocation() {
+            locationLatitude = location.coordinate.latitude
+            locationLongitude = location.coordinate.longitude
+            if locationLabel.isEmpty {
+                if let address = LocationManager.shared.currentAddress {
+                    locationLabel = address
+                } else {
+                    locationLabel = "Current Location"
+                }
+            }
+        }
     }
 }
 
