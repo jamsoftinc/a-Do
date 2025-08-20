@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		7CC0E53E2E496AEC00116982 /* a-do.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = "a-do.app"; path = Remember.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7CC0E53E2E496AEC00116982 /* a-do.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "a-do.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		7CC0E5402E496AEC00116982 /* Remember */ = {
+		7CC0E5402E496AEC00116982 /* a-do */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Remember;
+			path = "a-do";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -32,7 +32,7 @@
 		7CC0E5352E496AEC00116982 = {
 			isa = PBXGroup;
 			children = (
-				7CC0E5402E496AEC00116982 /* Remember */,
+				7CC0E5402E496AEC00116982 /* a-do */,
 				7CC0E53F2E496AEC00116982 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -48,9 +48,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		7CC0E53D2E496AEC00116982 /* Remember */ = {
+		7CC0E53D2E496AEC00116982 /* a-do */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 7CC0E5492E496AED00116982 /* Build configuration list for PBXNativeTarget "Remember" */;
+			buildConfigurationList = 7CC0E5492E496AED00116982 /* Build configuration list for PBXNativeTarget "a-do" */;
 			buildPhases = (
 				7CC0E53A2E496AEC00116982 /* Sources */,
 				7CC0E53B2E496AEC00116982 /* Frameworks */,
@@ -61,9 +61,9 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				7CC0E5402E496AEC00116982 /* Remember */,
+				7CC0E5402E496AEC00116982 /* a-do */,
 			);
-			name = Remember;
+			name = "a-do";
 			packageProductDependencies = (
 			);
 			productName = Remember;
@@ -99,7 +99,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				7CC0E53D2E496AEC00116982 /* Remember */,
+				7CC0E53D2E496AEC00116982 /* a-do */,
 			);
 		};
 /* End PBXProject section */
@@ -255,7 +255,7 @@
 				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Remember;
+				INFOPLIST_KEY_CFBundleDisplayName = "a-do";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "This app accesses your calendar to show today's and upcoming events and to create events from reminders.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Location is used to trigger location-based reminders when arriving or leaving places.";
@@ -296,7 +296,7 @@
 				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Remember;
+				INFOPLIST_KEY_CFBundleDisplayName = "a-do";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "This app accesses your calendar to show today's and upcoming events and to create events from reminders.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Location is used to trigger location-based reminders when arriving or leaving places.";
@@ -338,7 +338,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		7CC0E5492E496AED00116982 /* Build configuration list for PBXNativeTarget "Remember" */ = {
+		7CC0E5492E496AED00116982 /* Build configuration list for PBXNativeTarget "a-do" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				7CC0E54A2E496AED00116982 /* Debug */,
