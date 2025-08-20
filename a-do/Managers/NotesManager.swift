@@ -2,6 +2,7 @@ import Foundation
 import os
 import Observation
 import UIKit
+import EventKit
 
 @MainActor
 @Observable
@@ -19,7 +20,7 @@ final class NotesManager {
             self.authorizationStatus = granted ? .authorized : .denied
             return granted
         } catch {
-            Logger(subsystem: "Remember", category: "Notes").error("Notes authorization failed: \(String(describing: error))")
+            Logger(subsystem: "a-do", category: "Notes").error("Notes authorization failed: \(String(describing: error))")
             self.authorizationStatus = .denied
             return false
         }
@@ -32,7 +33,7 @@ final class NotesManager {
             let notes = try await notesStore.fetchNotes()
             return notes
         } catch {
-            Logger(subsystem: "Remember", category: "Notes").error("Failed to fetch notes: \(String(describing: error))")
+            Logger(subsystem: "a-do", category: "Notes").error("Failed to fetch notes: \(String(describing: error))")
             return []
         }
     }
@@ -44,7 +45,7 @@ final class NotesManager {
             let note = try await notesStore.createNote(title: title, content: content)
             return note
         } catch {
-            Logger(subsystem: "Remember", category: "Notes").error("Failed to create note: \(String(describing: error))")
+            Logger(subsystem: "a-do", category: "Notes").error("Failed to create note: \(String(describing: error))")
             return nil
         }
     }
@@ -56,7 +57,7 @@ final class NotesManager {
             try await notesStore.updateNote(note, title: title, content: content)
             return true
         } catch {
-            Logger(subsystem: "Remember", category: "Notes").error("Failed to update note: \(String(describing: error))")
+            Logger(subsystem: "a-do", category: "Notes").error("Failed to update note: \(String(describing: error))")
             return false
         }
     }
@@ -68,7 +69,7 @@ final class NotesManager {
             try await notesStore.deleteNote(note)
             return true
         } catch {
-            Logger(subsystem: "Remember", category: "Notes").error("Failed to delete note: \(String(describing: error))")
+            Logger(subsystem: "a-do", category: "Notes").error("Failed to delete note: \(String(describing: error))")
             return false
         }
     }
@@ -118,65 +119,45 @@ enum NotesAuthorizationStatus {
     case authorized
 }
 
+enum NotesError: Error {
+    case creationFailed
+    case updateFailed
+    case deletionFailed
+    case authorizationDenied
+}
+
 class NotesStore {
     func requestAuthorization() async throws -> Bool {
-        // In a real implementation, this would use the actual Notes framework
-        // For now, we'll simulate authorization
-        return true
+        // Use the real Notes manager for authorization
+        return await RealNotesManager.shared.requestAuthorization()
     }
     
     func fetchNotes() async throws -> [Note] {
-        // In a real implementation, this would fetch actual notes
-        // For now, we'll return sample data for testing
-        #if DEBUG
-        return [
-            Note(
-                identifier: "sample-1",
-                title: "Meeting Notes",
-                content: "Discuss project timeline and deliverables for Q1",
-                creationDate: Date().addingTimeInterval(-86400),
-                modificationDate: Date()
-            ),
-            Note(
-                identifier: "sample-2",
-                title: "Shopping List",
-                content: "Milk, Bread, Eggs, Bananas, Coffee",
-                creationDate: Date().addingTimeInterval(-172800),
-                modificationDate: Date().addingTimeInterval(-3600)
-            ),
-            Note(
-                identifier: "sample-3",
-                title: "Ideas",
-                content: "New feature ideas for the app: dark mode, widgets, sharing",
-                creationDate: Date().addingTimeInterval(-259200),
-                modificationDate: Date().addingTimeInterval(-7200)
-            )
-        ]
-        #else
-        return []
-        #endif
+        // Use the real Notes manager to fetch notes
+        return await RealNotesManager.shared.fetchNotes()
     }
     
     func createNote(title: String, content: String) async throws -> Note {
-        // In a real implementation, this would create an actual note
-        // For now, we'll create a mock note
-        return Note(
-            identifier: UUID().uuidString,
-            title: title,
-            content: content,
-            creationDate: Date(),
-            modificationDate: Date()
-        )
+        // Use the real Notes manager to create notes
+        if let note = await RealNotesManager.shared.createNote(title: title, content: content) {
+            return note
+        } else {
+            throw NotesError.creationFailed
+        }
     }
     
     func updateNote(_ note: Note, title: String, content: String) async throws {
-        // In a real implementation, this would update the actual note
-        // For now, we'll do nothing
+        let success = await RealNotesManager.shared.updateNote(note, title: title, content: content)
+        if !success {
+            throw NotesError.updateFailed
+        }
     }
     
     func deleteNote(_ note: Note) async throws {
-        // In a real implementation, this would delete the actual note
-        // For now, we'll do nothing
+        let success = await RealNotesManager.shared.deleteNote(note)
+        if !success {
+            throw NotesError.deletionFailed
+        }
     }
 }
 

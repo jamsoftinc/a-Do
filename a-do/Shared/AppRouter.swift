@@ -26,7 +26,14 @@ final class AppRouter {
     var destination: DeepLinkDestination?
 
     func handle(url: URL) {
-        guard url.scheme == "a-do" else { return }
+        guard url.scheme == "a-do" else { 
+            // Handle Notes app callbacks
+            if url.scheme == "mobilenotes" {
+                _ = RealNotesManager.shared.handleNotesURL(url)
+            }
+            return 
+        }
+        
         let path = url.path.lowercased()
         if path.hasPrefix("/smart/today") {
             destination = .smartToday
@@ -43,6 +50,9 @@ final class AppRouter {
             if value == "high" { destination = .priority(.high) }
             else if value == "medium" { destination = .priority(.medium) }
             else if value == "low" { destination = .priority(.low) }
+        } else if path.hasPrefix("/notes/") {
+            // Handle Notes-related deep links
+            _ = RealNotesManager.shared.handleNotesURL(url)
         }
     }
 
