@@ -38,7 +38,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     
     func startLocationUpdates() {
         guard authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways else {
-            Logger(subsystem: "Remember", category: "Location").error("Cannot start location updates: authorization not granted")
+            Logger(subsystem: "a-do", category: "Location").error("Cannot start location updates: authorization not granted")
             return
         }
         
@@ -50,7 +50,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     func stopLocationUpdates() {
         isUpdatingLocation = false
         manager.stopUpdatingLocation()
-        Logger(subsystem: "Remember", category: "Location").info("Stopped location updates")
+        Logger(subsystem: "a-do", category: "Location").info("Stopped location updates")
     }
     
     func getCurrentLocation() async -> CLLocation? {
@@ -88,7 +88,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
                 
                 if !address.isEmpty {
                     currentAddress = address
-                    Logger(subsystem: "Remember", category: "Location").info("Address resolved: \(address)")
+                    Logger(subsystem: "a-do", category: "Location").info("Address resolved: \(address)")
                 }
             }
         } catch {
@@ -99,7 +99,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     func startMonitoring(label: String, latitude: Double, longitude: Double, radius: Double, notifyOnEntry: Bool, notifyOnExit: Bool) {
         // Validate coordinates before creating region
         guard Self.isValidCoordinate(latitude: latitude, longitude: longitude) else {
-            Logger(subsystem: "Remember", category: "Location").error("Invalid coordinates for monitoring: lat=\(latitude), lon=\(longitude)")
+            Logger(subsystem: "a-do", category: "Location").error("Invalid coordinates for monitoring: lat=\(latitude), lon=\(longitude)")
             return
         }
         
@@ -123,7 +123,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
-        Logger(subsystem: "Remember", category: "Location").info("didEnterRegion: \(region.identifier)")
+        Logger(subsystem: "a-do", category: "Location").info("didEnterRegion: \(region.identifier)")
         Task { @MainActor in
             NotificationManager.shared.fireNow(title: "Arrived: \(region.identifier)")
         }
@@ -141,7 +141,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         
         Task { @MainActor in
             self.currentLocation = location
-            Logger(subsystem: "Remember", category: "Location").info("Location updated: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+            Logger(subsystem: "a-do", category: "Location").info("Location updated: \(location.coordinate.latitude), \(location.coordinate.longitude)")
             
             // Reverse geocode to get address
             await self.reverseGeocode(location: location)
@@ -150,7 +150,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         Task { @MainActor in
-            Logger(subsystem: "Remember", category: "Location").error("Location update failed: \(String(describing: error))")
+            Logger(subsystem: "a-do", category: "Location").error("Location update failed: \(String(describing: error))")
             self.isUpdatingLocation = false
         }
     }

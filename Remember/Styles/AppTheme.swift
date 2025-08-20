@@ -26,6 +26,54 @@ enum AppTheme {
 
     static let cardBackground = Color(.secondarySystemBackground)
     static let cardStroke = Color(.systemFill)
+    
+    // MARK: - Device Adaptive Design Tokens
+    
+    /// Adaptive spacing values
+    enum Spacing {
+        static let small = DeviceAdaptive.spacing(compact: 8, regular: 12, sizeClass: nil)
+        static let medium = DeviceAdaptive.spacing(compact: 16, regular: 24, sizeClass: nil)
+        static let large = DeviceAdaptive.spacing(compact: 20, regular: 32, sizeClass: nil)
+        static let extraLarge = DeviceAdaptive.spacing(compact: 24, regular: 40, sizeClass: nil)
+    }
+    
+    /// Adaptive padding values
+    enum Padding {
+        static let small = DeviceAdaptive.padding(compact: 12, regular: 16, sizeClass: nil)
+        static let medium = DeviceAdaptive.padding(compact: 16, regular: 24, sizeClass: nil)
+        static let large = DeviceAdaptive.padding(compact: 20, regular: 32, sizeClass: nil)
+    }
+    
+    /// Adaptive corner radius values
+    enum CornerRadius {
+        static let small = DeviceAdaptive.cornerRadius(compact: 8, regular: 12, sizeClass: nil)
+        static let medium = DeviceAdaptive.cornerRadius(compact: 12, regular: 16, sizeClass: nil)
+        static let large = DeviceAdaptive.cornerRadius(compact: 16, regular: 20, sizeClass: nil)
+    }
+    
+    /// Returns adaptive spacing for given size class
+    static func adaptiveSpacing(_ size: SpacingSize, sizeClass: UserInterfaceSizeClass?) -> CGFloat {
+        switch size {
+        case .small: return DeviceAdaptive.spacing(compact: 8, regular: 12, sizeClass: sizeClass)
+        case .medium: return DeviceAdaptive.spacing(compact: 16, regular: 24, sizeClass: sizeClass)
+        case .large: return DeviceAdaptive.spacing(compact: 20, regular: 32, sizeClass: sizeClass)
+        case .extraLarge: return DeviceAdaptive.spacing(compact: 24, regular: 40, sizeClass: sizeClass)
+        }
+    }
+    
+    /// Returns adaptive padding for given size class
+    static func adaptivePadding(_ size: SpacingSize, sizeClass: UserInterfaceSizeClass?) -> CGFloat {
+        switch size {
+        case .small: return DeviceAdaptive.padding(compact: 12, regular: 16, sizeClass: sizeClass)
+        case .medium: return DeviceAdaptive.padding(compact: 16, regular: 24, sizeClass: sizeClass)
+        case .large: return DeviceAdaptive.padding(compact: 20, regular: 32, sizeClass: sizeClass)
+        case .extraLarge: return DeviceAdaptive.padding(compact: 24, regular: 40, sizeClass: sizeClass)
+        }
+    }
+}
+
+enum SpacingSize {
+    case small, medium, large, extraLarge
 }
 
 

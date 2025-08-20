@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		7CC0E53E2E496AEC00116982 /* Remember.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Remember.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7CC0E53E2E496AEC00116982 /* a-do.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = "a-do.app"; path = Remember.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -40,7 +40,7 @@
 		7CC0E53F2E496AEC00116982 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				7CC0E53E2E496AEC00116982 /* Remember.app */,
+				7CC0E53E2E496AEC00116982 /* a-do.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -67,7 +67,7 @@
 			packageProductDependencies = (
 			);
 			productName = Remember;
-			productReference = 7CC0E53E2E496AEC00116982 /* Remember.app */;
+			productReference = 7CC0E53E2E496AEC00116982 /* a-do.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -85,7 +85,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 7CC0E5392E496AEC00116982 /* Build configuration list for PBXProject "Remember" */;
+			buildConfigurationList = 7CC0E5392E496AEC00116982 /* Build configuration list for PBXProject "a-do" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -252,9 +252,11 @@
 				CODE_SIGN_ENTITLEMENTS = Remember/Remember.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Remember;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "This app accesses your calendar to show today's and upcoming events and to create events from reminders.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Location is used to trigger location-based reminders when arriving or leaving places.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location is used to trigger location-based reminders when arriving or leaving places.";
@@ -270,7 +272,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = JAMSoft.Remember;
+				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-do";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
@@ -291,9 +293,11 @@
 				CODE_SIGN_ENTITLEMENTS = Remember/Remember.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Remember;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "This app accesses your calendar to show today's and upcoming events and to create events from reminders.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Location is used to trigger location-based reminders when arriving or leaving places.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location is used to trigger location-based reminders when arriving or leaving places.";
@@ -309,7 +313,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = JAMSoft.Remember;
+				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-do";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
@@ -325,7 +329,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		7CC0E5392E496AEC00116982 /* Build configuration list for PBXProject "Remember" */ = {
+		7CC0E5392E496AEC00116982 /* Build configuration list for PBXProject "a-do" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				7CC0E5472E496AED00116982 /* Debug */,

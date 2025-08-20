@@ -4,6 +4,7 @@ import os
 
 struct ListsView: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query(sort: \ListSection.order) private var sections: [ListSection]
     @Query private var lists: [ReminderList]
     @Query private var allReminders: [Reminder]
@@ -11,13 +12,39 @@ struct ListsView: View {
     @State private var selectedSection: ListSection?
     @State private var showingSectionSheet = false
     @State private var newSectionName = ""
+    @State private var selectedList: ReminderList?
 
     var body: some View {
-        List {
+        if horizontalSizeClass == .regular {
+            // iPad layout - use NavigationSplitView for better experience
+            NavigationSplitView {
+                masterView
+            } detail: {
+                if let selectedList = selectedList {
+                    ListDetailView(list: selectedList, allReminders: allReminders)
+                } else {
+                    Text("Select a list to view its contents")
+                        .foregroundStyle(.secondary)
+                        .font(.title2)
+                }
+            }
+        } else {
+            // iPhone layout - standard navigation
+            masterView
+        }
+    }
+    
+    private var masterView: some View {
+        List(selection: horizontalSizeClass == .regular ? $selectedList : .constant(nil)) {
             // Smart Lists Section
             Section("Smart Lists") {
                 ForEach(lists.filter { $0.isSmart }.sorted { $0.order < $1.order }) { list in
-                    NavigationLink(list.name) { ListDetailView(list: list, allReminders: allReminders) }
+                    if horizontalSizeClass == .regular {
+                        Text(list.name)
+                            .tag(list)
+                    } else {
+                        NavigationLink(list.name) { ListDetailView(list: list, allReminders: allReminders) }
+                    }
                 }
             }
             
@@ -103,37 +130,44 @@ struct ListsView: View {
     }
     
     private func listRow(for list: ReminderList) -> some View {
-        NavigationLink(list.name) { ListDetailView(list: list, allReminders: allReminders) }
-            .contextMenu {
-                if let section = list.section {
-                    Button {
-                        list.section = nil
-                        try? context.save()
-                    } label: {
-                        Label("Remove from \(section.name)", systemImage: "folder.badge.minus")
-                    }
-                } else {
-                    Menu {
-                        ForEach(sections) { section in
-                            Button {
-                                list.section = section
-                                try? context.save()
-                            } label: {
-                                Label(section.name, systemImage: "folder")
-                            }
-                        }
-                    } label: {
-                        Label("Move to Section", systemImage: "folder")
-                    }
-                }
-                
-                Button(role: .destructive) {
-                    context.delete(list)
+        Group {
+            if horizontalSizeClass == .regular {
+                Text(list.name)
+                    .tag(list)
+            } else {
+                NavigationLink(list.name) { ListDetailView(list: list, allReminders: allReminders) }
+            }
+        }
+        .contextMenu {
+            if let section = list.section {
+                Button {
+                    list.section = nil
                     try? context.save()
                 } label: {
-                    Label("Delete List", systemImage: "trash")
+                    Label("Remove from \(section.name)", systemImage: "folder.badge.minus")
+                }
+            } else {
+                Menu {
+                    ForEach(sections) { section in
+                        Button {
+                            list.section = section
+                            try? context.save()
+                        } label: {
+                            Label(section.name, systemImage: "folder")
+                        }
+                    }
+                } label: {
+                    Label("Move to Section", systemImage: "folder")
                 }
             }
+            
+            Button(role: .destructive) {
+                context.delete(list)
+                try? context.save()
+            } label: {
+                Label("Delete List", systemImage: "trash")
+            }
+        }
     }
 
     private func addList(to section: ListSection? = nil) {
@@ -142,7 +176,7 @@ struct ListsView: View {
         list.section = section
         list.order = maxOrder + 1
         context.insert(list)
-        do { try context.save() } catch { Logger(subsystem: "Remember", category: "Lists").error("Add list failed: \(String(describing: error))") }
+                        do { try context.save() } catch { Logger(subsystem: "a-do", category: "Lists").error("Add list failed: \(String(describing: error))") }
         newListName = ""
     }
     
@@ -154,7 +188,7 @@ struct ListsView: View {
             colorHex: Tag.defaultColors.randomElement() ?? "#7C4DFF"
         )
         context.insert(section)
-        do { try context.save() } catch { Logger(subsystem: "Remember", category: "Lists").error("Add section failed: \(String(describing: error))") }
+        do { try context.save() } catch { Logger(subsystem: "a-do", category: "Lists").error("Add section failed: \(String(describing: error))") }
         newSectionName = ""
     }
 }
@@ -177,7 +211,7 @@ struct ListDetailView: View {
                 if list.isSmart { return }
                 let reminders = list.reminders
                 for index in indexSet { context.delete(reminders[index]) }
-                do { try context.save() } catch { Logger(subsystem: "Remember", category: "Lists").error("Delete reminder failed: \(String(describing: error))") }
+                do { try context.save() } catch { Logger(subsystem: "a-do", category: "Lists").error("Delete reminder failed: \(String(describing: error))") }
             }
         }
         .navigationTitle(list.name)

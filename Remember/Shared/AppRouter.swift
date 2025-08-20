@@ -26,7 +26,7 @@ final class AppRouter {
     var destination: DeepLinkDestination?
 
     func handle(url: URL) {
-        guard url.scheme == "remember" else { return }
+        guard url.scheme == "a-do" else { return }
         let path = url.path.lowercased()
         if path.hasPrefix("/smart/today") {
             destination = .smartToday
@@ -47,7 +47,7 @@ final class AppRouter {
     }
 
     func checkGroupDeeplinkFlag() {
-        let defaults = UserDefaults(suiteName: "group.JAMSoft.Remember")
+        let defaults = UserDefaults(suiteName: "group.JAMSoft.a-do")
         if defaults?.bool(forKey: "deeplink_open_today") == true {
             defaults?.set(false, forKey: "deeplink_open_today")
             destination = .smartToday

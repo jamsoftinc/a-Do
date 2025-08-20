@@ -5,6 +5,7 @@ import os
 
 struct HomeView: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query(sort: \Reminder.createdAt, order: .reverse) private var reminders: [Reminder]
 
     @State private var viewModel = ReminderHomeViewModel()
@@ -17,21 +18,35 @@ struct HomeView: View {
                 AppTheme.backgroundGradient.ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 20) {
-                        quickAdd
-                        locationStatus
-                        todayReminders
-                        todayCalendar
-                        upcomingCalendar
+                    if horizontalSizeClass == .regular {
+                        // iPad layout - use grid for better space utilization
+                        LazyVGrid(columns: adaptiveColumns, spacing: 20) {
+                            quickAdd
+                            locationStatus
+                            todayReminders
+                            todayCalendar
+                            upcomingCalendar
+                        }
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 24)
+                    } else {
+                        // iPhone layout - vertical stack
+                        VStack(spacing: 20) {
+                            quickAdd
+                            locationStatus
+                            todayReminders
+                            todayCalendar
+                            upcomingCalendar
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 24)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 24)
                 }
                 .scrollIndicators(.hidden)
 
                 addButton
             }
-            .navigationTitle("Remember")
+            .navigationTitle("a-do")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -73,6 +88,15 @@ struct HomeView: View {
             case .smartHighPriority, .tag, .priority:
                 break
             }
+        }
+    }
+    
+    // MARK: - iPad Adaptive Layout
+    private var adaptiveColumns: [GridItem] {
+        if horizontalSizeClass == .regular {
+            return [GridItem(.flexible(), spacing: 20), GridItem(.flexible(), spacing: 20)]
+        } else {
+            return [GridItem(.flexible())]
         }
     }
 
@@ -146,13 +170,26 @@ struct HomeView: View {
         GlassCard {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Today's Calendar Events").font(.headline)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
+                if horizontalSizeClass == .regular {
+                    // iPad - use LazyVGrid for better layout
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 12)], spacing: 12) {
                         ForEach(calendarManager.todayEvents, id: \.eventIdentifier) { event in
                             EventCard(event: event)
                         }
-                        if calendarManager.todayEvents.isEmpty {
-                            Text("No events today").foregroundStyle(.secondary)
+                    }
+                    if calendarManager.todayEvents.isEmpty {
+                        Text("No events today").foregroundStyle(.secondary)
+                    }
+                } else {
+                    // iPhone - horizontal scroll
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(calendarManager.todayEvents, id: \.eventIdentifier) { event in
+                                EventCard(event: event)
+                            }
+                            if calendarManager.todayEvents.isEmpty {
+                                Text("No events today").foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }
@@ -164,13 +201,26 @@ struct HomeView: View {
         GlassCard {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Upcoming 5 Days").font(.headline)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
+                if horizontalSizeClass == .regular {
+                    // iPad - use LazyVGrid for better layout
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 12)], spacing: 12) {
                         ForEach(calendarManager.upcomingEvents, id: \.eventIdentifier) { event in
                             EventCard(event: event)
                         }
-                        if calendarManager.upcomingEvents.isEmpty {
-                            Text("No upcoming events").foregroundStyle(.secondary)
+                    }
+                    if calendarManager.upcomingEvents.isEmpty {
+                        Text("No upcoming events").foregroundStyle(.secondary)
+                    }
+                } else {
+                    // iPhone - horizontal scroll
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(calendarManager.upcomingEvents, id: \.eventIdentifier) { event in
+                                EventCard(event: event)
+                            }
+                            if calendarManager.upcomingEvents.isEmpty {
+                                Text("No upcoming events").foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }
@@ -250,7 +300,7 @@ private struct ReminderRow: View {
             Button {
                 isCompleted.toggle()
                 reminder.isCompleted = isCompleted
-                do { try context.save() } catch { Logger(subsystem: "Remember", category: "Home").error("Toggle complete failed: \(String(describing: error))") }
+                do { try context.save() } catch { Logger(subsystem: "a-do", category: "Home").error("Toggle complete failed: \(String(describing: error))") }
             } label: {
                 Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
                     .foregroundStyle(isCompleted ? .green : .secondary)

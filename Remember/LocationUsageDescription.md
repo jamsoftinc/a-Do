@@ -34,3 +34,4 @@ This app uses your location to create location-based reminders that notify you w
 For background location monitoring, also ensure you have:
 - Background Modes capability enabled
 - Location updates background mode selected
+

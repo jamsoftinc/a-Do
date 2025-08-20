@@ -1,6 +1,6 @@
 //
-//  RememberApp.swift
-//  Remember
+//  ADoApp.swift
+//  a-do
 //
 //  Created by Ahmad Hamilton on 8/10/25.
 //
@@ -9,17 +9,19 @@ import SwiftUI
 import SwiftData
 
 @main
-struct RememberApp: App {
+struct ADoApp: App {
     var sharedModelContainer: ModelContainer = AppContainer.container
     @State private var router = AppRouter()
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .modelContainer(sharedModelContainer)
-                .environment(router)
-                .onOpenURL { url in router.handle(url: url) }
-                .task { router.checkGroupDeeplinkFlag() }
+            LaunchScreenWrapper {
+                ContentView()
+                    .modelContainer(sharedModelContainer)
+                    .environment(router)
+                    .onOpenURL { url in router.handle(url: url) }
+                    .task { router.checkGroupDeeplinkFlag() }
+            }
         }
     }
 }

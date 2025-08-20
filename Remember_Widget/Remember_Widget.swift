@@ -28,7 +28,7 @@ struct Remember_WidgetEntryView: View {
         ZStack {
             LinearGradient(colors: AppTheme.gradientColors, startPoint: .topLeading, endPoint: .bottomTrailing)
             VStack {
-                Text("Today's Reminders")
+                Text("Today's Tasks")
                     .font(.headline).foregroundStyle(.white)
                 Text("\(entry.count)")
                     .font(.system(size: 48, weight: .bold)).foregroundStyle(.white)
@@ -46,7 +46,7 @@ struct Remember_Widget: Widget {
             Remember_WidgetEntryView(entry: entry)
         }
         .configurationDisplayName("Today Count")
-        .description("Shows the number of reminders due today.")
+        .description("Shows the number of tasks due today.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
