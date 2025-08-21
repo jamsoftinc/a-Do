@@ -41,8 +41,7 @@ final class AppContainer {
                 isStoredInMemoryOnly: false,
                 allowsSave: true,
                 groupContainer: .automatic,
-                cloudKitDatabase: .none,
-                shouldDeleteOldDataOnModelMismatch: true
+                cloudKitDatabase: .none
             )
             let localContainer = try ModelContainer(for: schema, configurations: localConfig)
             #if DEBUG
@@ -65,8 +64,7 @@ final class AppContainer {
                     isStoredInMemoryOnly: false,
                     allowsSave: true,
                     groupContainer: .automatic,
-                    cloudKitDatabase: .none,
-                    shouldDeleteOldDataOnModelMismatch: true
+                    cloudKitDatabase: .none
                 )
                 let localContainer = try ModelContainer(for: schema, configurations: localConfig)
                 #if DEBUG
@@ -126,5 +124,114 @@ final class AppContainer {
         #if DEBUG
         print("🗑️ Cleared all database files from all directories")
         #endif
+    }
+    
+    // MARK: - Demo Data Management
+    
+    @MainActor
+    static func clearAllDemoData(context: ModelContext) {
+        #if DEBUG
+        print("🧹 Clearing all demo data from database...")
+        #endif
+        
+        // Clear all reminders
+        let reminderDescriptor = FetchDescriptor<Reminder>()
+        if let reminders = try? context.fetch(reminderDescriptor) {
+            for reminder in reminders {
+                context.delete(reminder)
+            }
+            #if DEBUG
+            print("🗑️ Deleted \(reminders.count) reminders")
+            #endif
+        }
+        
+        // Clear all tags
+        let tagDescriptor = FetchDescriptor<Tag>()
+        if let tags = try? context.fetch(tagDescriptor) {
+            for tag in tags {
+                context.delete(tag)
+            }
+            #if DEBUG
+            print("🗑️ Deleted \(tags.count) tags")
+            #endif
+        }
+        
+        // Clear all reminder lists
+        let listDescriptor = FetchDescriptor<ReminderList>()
+        if let lists = try? context.fetch(listDescriptor) {
+            for list in lists {
+                context.delete(list)
+            }
+            #if DEBUG
+            print("🗑️ Deleted \(lists.count) reminder lists")
+            #endif
+        }
+        
+        // Clear all list sections
+        let sectionDescriptor = FetchDescriptor<ListSection>()
+        if let sections = try? context.fetch(sectionDescriptor) {
+            for section in sections {
+                context.delete(section)
+            }
+            #if DEBUG
+            print("🗑️ Deleted \(sections.count) list sections")
+            #endif
+        }
+        
+        // Clear all location triggers
+        let locationDescriptor = FetchDescriptor<LocationTrigger>()
+        if let locations = try? context.fetch(locationDescriptor) {
+            for location in locations {
+                context.delete(location)
+            }
+            #if DEBUG
+            print("🗑️ Deleted \(locations.count) location triggers")
+            #endif
+        }
+        
+        // Clear all notifications
+        let notificationDescriptor = FetchDescriptor<ReminderNotification>()
+        if let notifications = try? context.fetch(notificationDescriptor) {
+            for notification in notifications {
+                context.delete(notification)
+            }
+            #if DEBUG
+            print("🗑️ Deleted \(notifications.count) notifications")
+            #endif
+        }
+        
+        // Clear all tagged contacts
+        let contactDescriptor = FetchDescriptor<TaggedContact>()
+        if let contacts = try? context.fetch(contactDescriptor) {
+            for contact in contacts {
+                context.delete(contact)
+            }
+            #if DEBUG
+            print("🗑️ Deleted \(contacts.count) tagged contacts")
+            #endif
+        }
+        
+        // Clear all note attachments
+        let noteDescriptor = FetchDescriptor<AppleNoteAttachment>()
+        if let notes = try? context.fetch(noteDescriptor) {
+            for note in notes {
+                context.delete(note)
+            }
+            #if DEBUG
+            print("🗑️ Deleted \(notes.count) note attachments")
+            #endif
+        }
+        
+        // Save changes
+        do {
+            try context.save()
+            #if DEBUG
+            print("✅ All demo data cleared successfully")
+            #endif
+        } catch {
+            #if DEBUG
+            print("❌ Failed to save after clearing demo data: \(error)")
+            #endif
+        }
     }
 }

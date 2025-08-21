@@ -3,6 +3,7 @@ import SwiftData
 import os
 import Observation
 import CoreLocation
+import SwiftUI
 
 @MainActor
 @Observable

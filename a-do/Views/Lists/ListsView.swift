@@ -126,7 +126,7 @@ struct ListsView: View {
                 }
             }
         }
-        .task { SmartListEngine.ensureDefaultSmartLists(context: context) }
+        // .task { SmartListEngine.ensureDefaultSmartLists(context: context) } // Disabled to prevent demo data creation
     }
     
     private func listRow(for list: ReminderList) -> some View {

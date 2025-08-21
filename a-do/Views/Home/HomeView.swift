@@ -33,6 +33,7 @@ struct HomeView: View {
     @State private var viewModel = ReminderHomeViewModel()
     @State private var calendarManager = CalendarManager.shared
     @Environment(AppRouter.self) private var router
+    @FocusState private var isQuickAddFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -86,6 +87,15 @@ struct HomeView: View {
                             } label: {
                                 Label("Import from Reminders", systemImage: "square.and.arrow.down")
                             }
+                            
+                            #if DEBUG
+                            Button {
+                                AppContainer.clearAllDemoData(context: context)
+                            } label: {
+                                Label("Clear All Demo Data", systemImage: "trash")
+                            }
+                            .foregroundColor(.red)
+                            #endif
                         } label: {
                             Image(systemName: "tray.and.arrow.down.fill")
                                 .imageScale(.large)
@@ -130,8 +140,13 @@ struct HomeView: View {
                 HStack {
                     TextField("Quick reminder...", text: $viewModel.quickTitle)
                         .textFieldStyle(.plain)
+                        .focused($isQuickAddFocused)
+                        .onTapGesture {
+                            isQuickAddFocused = true
+                        }
                     Button {
                         viewModel.addQuickReminder(context: context)
+                        isQuickAddFocused = false
                     } label: {
                         Label("Add", systemImage: "plus.circle.fill")
                             .foregroundStyle(.white)

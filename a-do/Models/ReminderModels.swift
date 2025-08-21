@@ -230,11 +230,8 @@ final class Reminder {
 
 extension ReminderList {
     static func defaultSmartLists() -> [ReminderList] {
-        return [
-            ReminderList(name: "Today", isSmart: true, rules: [SmartListRule(type: .dueToday)]),
-            ReminderList(name: "High Priority", isSmart: true, rules: [SmartListRule(type: .priority, priority: .high)]),
-            ReminderList(name: "Overdue", isSmart: true, rules: [SmartListRule(type: .overdue)])
-        ]
+        // Return empty array - no demo data in production
+        return []
     }
 }
 
