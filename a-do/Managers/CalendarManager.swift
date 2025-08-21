@@ -19,7 +19,7 @@ final class CalendarManager {
         await withCheckedContinuation { continuation in
             store.requestFullAccessToEvents { granted, error in
                 Task { @MainActor in
-                    if let error { Logger(subsystem: "Remember", category: "Calendar").error("Access error: \(String(describing: error))") }
+                    if let error { Logger(subsystem: "a-do", category: "Calendar").error("Access error: \(String(describing: error))") }
                     self.accessGranted = granted
                     continuation.resume()
                 }

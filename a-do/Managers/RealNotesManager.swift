@@ -13,13 +13,10 @@ final class RealNotesManager {
     private init() {}
     
     func requestAuthorization() async -> Bool {
-        // Apple Notes doesn't have a public framework, so we use URL schemes
-        // and the Notes app integration available to apps with the entitlement
+        // Without the Notes entitlement, we use URL schemes for integration
+        // This provides Notes functionality without requiring Apple approval
         
-        // For apps with the com.apple.developer.notes entitlement,
-        // we can use private APIs or URL schemes to interact with Notes
-        
-        // Check if Notes app is available
+        // Check if Notes app is available on the device
         guard let notesURL = URL(string: "mobilenotes://") else {
             self.authorizationStatus = .denied
             return false
@@ -33,13 +30,11 @@ final class RealNotesManager {
     func fetchNotes() async -> [Note] {
         guard authorizationStatus == .authorized else { return [] }
         
-        // With the Notes entitlement, you would typically use private APIs
-        // or CloudKit to sync with Notes data. For this implementation,
-        // we'll provide a hybrid approach with better integration
+        // Without the Notes entitlement, we can't access private Notes data
+        // Users can create new notes that will open in the actual Notes app
+        // This provides excellent UX while staying within App Store guidelines
         
-        // This is a more realistic implementation that could work with
-        // the actual Notes entitlement
-        return await fetchNotesFromSystem()
+        return await fetchSampleNotesForDemo()
     }
     
     func createNote(title: String, content: String) async -> Note? {
@@ -107,38 +102,9 @@ final class RealNotesManager {
     
     // MARK: - Private Methods
     
-    private func fetchNotesFromSystem() async -> [Note] {
-        // This would use private APIs available with the Notes entitlement
-        // For demonstration, we'll return enhanced sample data
-        
-        // In a real implementation with the entitlement, you would:
-        // 1. Use CloudKit to sync with Notes data
-        // 2. Use private Notes framework APIs
-        // 3. Parse Notes database files (if permitted)
-        
-        return [
-            Note(
-                identifier: "real-note-1",
-                title: "Welcome to Real Notes",
-                content: "This note demonstrates real Apple Notes integration with the proper entitlement.",
-                creationDate: Date().addingTimeInterval(-86400),
-                modificationDate: Date()
-            ),
-            Note(
-                identifier: "real-note-2",
-                title: "Project Planning",
-                content: "• Define requirements\n• Create wireframes\n• Develop prototype\n• Test with users",
-                creationDate: Date().addingTimeInterval(-172800),
-                modificationDate: Date().addingTimeInterval(-3600)
-            ),
-            Note(
-                identifier: "real-note-3",
-                title: "Meeting Agenda",
-                content: "1. Review last week's progress\n2. Discuss blockers\n3. Plan next sprint\n4. Q&A session",
-                creationDate: Date().addingTimeInterval(-259200),
-                modificationDate: Date().addingTimeInterval(-7200)
-            )
-        ]
+    private func fetchSampleNotesForDemo() async -> [Note] {
+        // Return empty array - no demo notes in production
+        return []
     }
 }
 

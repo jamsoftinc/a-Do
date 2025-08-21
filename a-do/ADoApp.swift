@@ -10,18 +10,32 @@ import SwiftData
 
 @main
 struct ADoApp: App {
-    var sharedModelContainer: ModelContainer = AppContainer.container
-    @State private var router = AppRouter()
-
     var body: some Scene {
         WindowGroup {
-            LaunchScreenWrapper {
-                ContentView()
-                    .modelContainer(sharedModelContainer)
-                    .environment(router)
-                    .onOpenURL { url in router.handle(url: url) }
-                    .task { router.checkGroupDeeplinkFlag() }
-            }
+            RootView()
+        }
+    }
+}
+
+struct RootView: View {
+    @State private var router = AppRouter()
+    
+    var body: some View {
+        LaunchScreenWrapper {
+            ContentView()
+                .modelContainer(for: [
+                    Reminder.self,
+                    Tag.self,
+                    ReminderList.self,
+                    ReminderNotification.self,
+                    LocationTrigger.self,
+                    ListSection.self,
+                    TaggedContact.self,
+                    AppleNoteAttachment.self
+                ])
+                .environment(router)
+                .onOpenURL { url in router.handle(url: url) }
+                .task { router.checkGroupDeeplinkFlag() }
         }
     }
 }

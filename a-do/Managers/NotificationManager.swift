@@ -47,7 +47,7 @@ final class NotificationManager {
             let request = UNNotificationRequest(identifier: "reminder_\(reminderId.uuidString)_\(Int(lead))", content: content, trigger: trigger)
             await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
                 center.add(request) { error in
-                    if let error { Logger(subsystem: "Remember", category: "Notifications").error("Add request failed: \(String(describing: error))") }
+                    if let error { Logger(subsystem: "a-do", category: "Notifications").error("Add request failed: \(String(describing: error))") }
                     continuation.resume(returning: ())
                 }
             }
@@ -74,7 +74,7 @@ final class NotificationManager {
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
         let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
         UNUserNotificationCenter.current().add(request) { error in
-            if let error { Logger(subsystem: "Remember", category: "Notifications").error("Fire now failed: \(String(describing: error))") }
+            if let error { Logger(subsystem: "a-do", category: "Notifications").error("Fire now failed: \(String(describing: error))") }
         }
     }
 

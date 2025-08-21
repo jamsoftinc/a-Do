@@ -6,7 +6,14 @@ import os
 struct HomeView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Query(sort: \Reminder.createdAt, order: .reverse) private var reminders: [Reminder]
+    @Query(sort: \Reminder.createdAt, order: .reverse) private var allReminders: [Reminder]
+    
+    // Filter to show incomplete reminders first, then completed ones
+    private var reminders: [Reminder] {
+        let incomplete = allReminders.filter { !$0.isCompleted }
+        let completed = allReminders.filter { $0.isCompleted }
+        return incomplete + completed
+    }
 
     @State private var viewModel = ReminderHomeViewModel()
     @State private var calendarManager = CalendarManager.shared
@@ -152,7 +159,15 @@ struct HomeView: View {
                 HStack {
                     Text("Today's Reminders")
                         .font(.headline)
+                    Text("(\(allReminders.count) total)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     Spacer()
+                    Button("Refresh") {
+                        // Force a refresh by touching the context
+                        _ = context.container
+                    }
+                    .font(.caption)
                     NavigationLink("All", destination: ListsView())
                 }
                 ForEach(reminders.prefix(5)) { reminder in

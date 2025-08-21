@@ -38,12 +38,12 @@ final class ContactsManager {
     }
 
     func myPhoneNumber() async -> String? {
-        let defaults = UserDefaults(suiteName: "group.JAMSoft.Remember") ?? .standard
+        let defaults = UserDefaults(suiteName: "group.JAMSoft.a-do") ?? .standard
         return defaults.string(forKey: "my_phone_number")
     }
 
     func setMyPhoneNumber(_ number: String?) {
-        let defaults = UserDefaults(suiteName: "group.JAMSoft.Remember") ?? .standard
+        let defaults = UserDefaults(suiteName: "group.JAMSoft.a-do") ?? .standard
         if let number, !number.isEmpty {
             defaults.set(number, forKey: "my_phone_number")
         } else {

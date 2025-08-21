@@ -14,7 +14,12 @@ final class ReminderHomeViewModel {
         guard !safeTitle.isEmpty else { return }
         let reminder = Reminder(title: safeTitle)
         context.insert(reminder)
-        do { try context.save() } catch { Logger(subsystem: "Remember", category: "Reminders").error("Quick add failed: \(String(describing: error))") }
+        do { 
+            try context.save() 
+            Logger(subsystem: "a-do", category: "Reminders").info("Quick reminder saved: '\(safeTitle)' with ID: \(reminder.id)")
+        } catch { 
+            Logger(subsystem: "a-do", category: "Reminders").error("Quick add failed: \(String(describing: error))") 
+        }
         quickTitle = ""
     }
 }
@@ -78,13 +83,13 @@ final class ReminderFormViewModel {
             target.locationTrigger = LocationTrigger(label: locationLabel, latitude: self.locationLatitude, longitude: self.locationLongitude, radius: locationRadius, type: locationType)
         } else if !locationLabel.isEmpty && !hasValidCoordinates {
             // Log invalid coordinates but don't create location trigger
-            Logger(subsystem: "Remember", category: "Location").error("Invalid coordinates provided: lat=\(self.locationLatitude), lon=\(self.locationLongitude)")
+            Logger(subsystem: "a-do", category: "Location").error("Invalid coordinates provided: lat=\(self.locationLatitude), lon=\(self.locationLongitude)")
         }
         target.autoTextTaggedContacts = autoTextTaggedContacts
         target.autoTextMe = autoTextMe
         target.appleNote = attachedNote
         if existing == nil { context.insert(target) }
-        do { try context.save() } catch { Logger(subsystem: "Remember", category: "Reminders").error("Save failed: \(String(describing: error))") }
+        do { try context.save() } catch { Logger(subsystem: "a-do", category: "Reminders").error("Save failed: \(String(describing: error))") }
         return target
     }
     

@@ -44,7 +44,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         
         isUpdatingLocation = true
         manager.startUpdatingLocation()
-        Logger(subsystem: "Remember", category: "Location").info("Started location updates")
+        Logger(subsystem: "a-do", category: "Location").info("Started location updates")
     }
     
     func stopLocationUpdates() {
@@ -92,7 +92,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
                 }
             }
         } catch {
-            Logger(subsystem: "Remember", category: "Location").error("Reverse geocoding failed: \(String(describing: error))")
+            Logger(subsystem: "a-do", category: "Location").error("Reverse geocoding failed: \(String(describing: error))")
         }
     }
 
@@ -130,7 +130,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
-        Logger(subsystem: "Remember", category: "Location").info("didExitRegion: \(region.identifier)")
+        Logger(subsystem: "a-do", category: "Location").info("didExitRegion: \(region.identifier)")
         Task { @MainActor in
             NotificationManager.shared.fireNow(title: "Left: \(region.identifier)")
         }

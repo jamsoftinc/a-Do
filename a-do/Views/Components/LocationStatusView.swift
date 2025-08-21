@@ -3,6 +3,7 @@ import CoreLocation
 
 struct LocationStatusView: View {
     let locationManager = LocationManager.shared
+    @State private var showingLocationAlert = false
     
     var body: some View {
         HStack(spacing: 12) {
@@ -26,6 +27,14 @@ struct LocationStatusView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
+                } else if locationManager.authorizationStatus == .notDetermined {
+                    Text("Tap to enable location access")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                } else if locationManager.authorizationStatus == .denied || locationManager.authorizationStatus == .restricted {
+                    Text("Tap to open Settings")
+                        .font(.caption)
+                        .foregroundColor(.blue)
                 }
             }
             
@@ -34,11 +43,26 @@ struct LocationStatusView: View {
             if locationManager.isUpdatingLocation {
                 ProgressView()
                     .scaleEffect(0.8)
+            } else if locationManager.authorizationStatus == .notDetermined || locationManager.authorizationStatus == .denied || locationManager.authorizationStatus == .restricted {
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.blue)
+                    .font(.caption)
             }
         }
         .padding(12)
         .background(Color(.systemGray6))
         .cornerRadius(8)
+        .onTapGesture {
+            handleLocationAccess()
+        }
+        .alert("Location Access", isPresented: $showingLocationAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Open Settings") {
+                openAppSettings()
+            }
+        } message: {
+            Text("Location access is required for location-based reminders. Please enable location access in Settings.")
+        }
     }
     
     private var locationIcon: String {
@@ -83,6 +107,28 @@ struct LocationStatusView: View {
             return "Location Access Required"
         @unknown default:
             return "Location Status Unknown"
+        }
+    }
+    
+    private func handleLocationAccess() {
+        switch locationManager.authorizationStatus {
+        case .notDetermined:
+            locationManager.requestAuthorization()
+        case .denied, .restricted:
+            showingLocationAlert = true
+        case .authorizedWhenInUse, .authorizedAlways:
+            // Start location updates if not already running
+            if !locationManager.isUpdatingLocation {
+                locationManager.startLocationUpdates()
+            }
+        @unknown default:
+            break
+        }
+    }
+    
+    private func openAppSettings() {
+        if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(settingsUrl)
         }
     }
 }

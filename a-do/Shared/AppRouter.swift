@@ -29,7 +29,9 @@ final class AppRouter {
         guard url.scheme == "a-do" else { 
             // Handle Notes app callbacks
             if url.scheme == "mobilenotes" {
-                _ = RealNotesManager.shared.handleNotesURL(url)
+                Task { @MainActor in
+                    _ = RealNotesManager.shared.handleNotesURL(url)
+                }
             }
             return 
         }
@@ -52,7 +54,9 @@ final class AppRouter {
             else if value == "low" { destination = .priority(.low) }
         } else if path.hasPrefix("/notes/") {
             // Handle Notes-related deep links
-            _ = RealNotesManager.shared.handleNotesURL(url)
+            Task { @MainActor in
+                _ = RealNotesManager.shared.handleNotesURL(url)
+            }
         }
     }
 

@@ -2,8 +2,13 @@ import Foundation
 import SwiftData
 import os
 
-enum AppContainer {
-    static var container: ModelContainer = {
+final class AppContainer {
+    static let shared = AppContainer()
+    
+    private init() {}
+    
+    @MainActor
+    lazy var container: ModelContainer = {
         let schema = Schema([
             Reminder.self,
             Tag.self,
@@ -15,39 +20,44 @@ enum AppContainer {
             AppleNoteAttachment.self
         ])
 
-        // Default to a local persistent store. Enable CloudKit later when entitlements are configured.
+        #if DEBUG
+        print("🔄 Initializing SwiftData container...")
+        #endif
+        
+        // Start with local storage to avoid CloudKit issues
         do {
-            let localConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+            let localConfig = ModelConfiguration(
+                schema: schema,
+                isStoredInMemoryOnly: false
+            )
             let localContainer = try ModelContainer(for: schema, configurations: localConfig)
             #if DEBUG
             print("✅ SwiftData local persistent container initialized")
             #endif
             return localContainer
         } catch {
-            // Last resort: in-memory
+            #if DEBUG
+            print("⚠️ Local container failed, trying in-memory: \(error)")
+            #endif
+            
+            // Fallback to in-memory storage
             do {
-                let memoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+                let memoryConfig = ModelConfiguration(
+                    schema: schema,
+                    isStoredInMemoryOnly: true
+                )
                 let memoryContainer = try ModelContainer(for: schema, configurations: memoryConfig)
                 #if DEBUG
-                print("⚠️ Using in-memory SwiftData container due to init error: \(error)")
+                print("⚠️ Using in-memory SwiftData container (data won't persist)")
                 #endif
                 return memoryContainer
             } catch {
-                // Graceful fallback: return a basic in-memory container
                 #if DEBUG
-                print("❌ Critical: Unable to initialize any SwiftData container: \(error)")
+                print("❌ Critical: Even in-memory container failed: \(error)")
                 #endif
-                // Create a minimal in-memory container as last resort
-                let minimalConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-                if let minimalContainer = try? ModelContainer(for: schema, configurations: minimalConfig) {
-                    return minimalContainer
-                } else {
-                    // If even the minimal container fails, the app cannot function
-                    // This should be extremely rare and indicates a system-level issue
-                    return (try? ModelContainer(for: Reminder.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))) ?? {
-                        fatalError("Unable to initialize even an in-memory SwiftData container. Critical system error.")
-                    }()
-                }
+                
+                // This should never happen, but if it does, we need to know
+                fatalError("Unable to initialize any SwiftData container. Error: \(error)")
             }
         }
     }()

@@ -33,13 +33,13 @@ struct TagsView: View {
     private func addTag() {
         let tag = Tag(name: newName, colorHex: selectedColor)
         context.insert(tag)
-        do { try context.save() } catch { Logger(subsystem: "Remember", category: "Tags").error("Save failed: \(String(describing: error))") }
+                    do { try context.save() } catch { Logger(subsystem: "a-do", category: "Tags").error("Save failed: \(String(describing: error))") }
         newName = ""
     }
 
     private func delete(_ tag: Tag) {
         context.delete(tag)
-        do { try context.save() } catch { Logger(subsystem: "Remember", category: "Tags").error("Delete failed: \(String(describing: error))") }
+                    do { try context.save() } catch { Logger(subsystem: "a-do", category: "Tags").error("Delete failed: \(String(describing: error))") }
     }
 }
 

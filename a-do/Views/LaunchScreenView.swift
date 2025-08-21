@@ -40,7 +40,7 @@ struct LaunchScreenView: View {
                             .scaleEffect(progressViewScale)
                             .tint(.white.opacity(0.8))
                         
-                        Text("Loading your reminders...")
+                        Text("Loading...")
                             .font(adaptiveSubtitleFont)
                             .foregroundColor(.white.opacity(0.8))
                             .multilineTextAlignment(.center)

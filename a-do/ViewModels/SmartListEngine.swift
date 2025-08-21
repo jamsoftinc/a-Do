@@ -10,7 +10,7 @@ enum SmartListEngine {
         let defaults = ReminderList.defaultSmartLists().filter { !names.contains($0.name) }
         for list in defaults { context.insert(list) }
         if !defaults.isEmpty {
-            do { try context.save() } catch { Logger(subsystem: "Remember", category: "SmartLists").error("Seed failed: \(String(describing: error))") }
+            do { try context.save() } catch { Logger(subsystem: "a-do", category: "SmartLists").error("Seed failed: \(String(describing: error))") }
         }
     }
 

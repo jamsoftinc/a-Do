@@ -10,7 +10,27 @@ struct AddQuickReminder: AppIntent {
     @Parameter(title: "Due In Minutes", default: 0) var dueInMinutes: Int
 
     func perform() async throws -> some ProvidesDialog {
-        let container = await MainActor.run { AppContainer.container }
+        // Create container directly using SwiftData
+        let container = await MainActor.run {
+            let schema = Schema([
+                Reminder.self,
+                Tag.self,
+                ReminderList.self,
+                ReminderNotification.self,
+                LocationTrigger.self,
+                ListSection.self,
+                TaggedContact.self,
+                AppleNoteAttachment.self
+            ])
+            
+            do {
+                let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+                return try ModelContainer(for: schema, configurations: config)
+            } catch {
+                let memoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+                return try! ModelContainer(for: schema, configurations: memoryConfig)
+            }
+        }
         let context = ModelContext(container)
         let due: Date? = dueInMinutes > 0 ? Date().addingTimeInterval(Double(dueInMinutes) * 60) : nil
         let reminder = Reminder(title: reminderTitle, dueDate: due)
@@ -32,7 +52,7 @@ struct AddQuickReminder: AppIntent {
 struct OpenTodayList: AppIntent {
     static var title: LocalizedStringResource = "Open Today List"
     func perform() async throws -> some IntentResult {
-        let defaults = UserDefaults(suiteName: "group.JAMSoft.Remember")
+        let defaults = UserDefaults(suiteName: "group.JAMSoft.a-do")
         defaults?.set(true, forKey: "deeplink_open_today")
         return .result()
     }
@@ -47,7 +67,7 @@ struct SendTextForReminder: AppIntent {
     func perform() async throws -> some IntentResult {
         guard let uuid = UUID(uuidString: reminderId) else { return .result(dialog: "Invalid UUID.") }
         // Set a flag for the app to check when it opens
-        let defaults = UserDefaults(suiteName: "group.JAMSoft.Remember")
+        let defaults = UserDefaults(suiteName: "group.JAMSoft.a-do")
         defaults?.set(uuid.uuidString, forKey: "deeplink_send_text_reminder_id")
         // Bring the app to foreground if supported (iOS 26+)
         if #available(iOS 26.0, *) {
