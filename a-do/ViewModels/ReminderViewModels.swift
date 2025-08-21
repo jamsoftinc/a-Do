@@ -18,7 +18,7 @@ final class ReminderHomeViewModel {
         context.insert(reminder)
         do { 
             try context.save() 
-            Logger(subsystem: "a-do", category: "Reminders").info("Quick reminder saved: '\(safeTitle)' with ID: \(reminder.id), due: \(self.quickDueDate?.description ?? "none")")
+            Logger(subsystem: "a-do", category: "Reminders").info("Quick reminder saved: '\(safeTitle)' with ID: \(String(describing: reminder.id)), due: \(self.quickDueDate?.description ?? "none")")
         } catch { 
             Logger(subsystem: "a-do", category: "Reminders").error("Quick add failed: \(String(describing: error))") 
         }
@@ -92,8 +92,8 @@ final class ReminderFormViewModel {
         target.details = details.isEmpty ? nil : details
         target.dueDate = dueDate
         target.priority = priority
-        target.tags = Array(selectedTags)
-        target.notifications = leadTimes.isEmpty ? [] : leadTimes.map { ReminderNotification(leadTimeSeconds: $0) }
+        target.tags = selectedTags.isEmpty ? nil : Array(selectedTags)
+        target.notifications = leadTimes.isEmpty ? nil : leadTimes.map { ReminderNotification(leadTimeSeconds: $0) }
         if !locationLabel.isEmpty && hasValidCoordinates {
             target.locationTrigger = LocationTrigger(label: locationLabel, latitude: self.locationLatitude, longitude: self.locationLongitude, radius: locationRadius, type: locationType)
         } else if !locationLabel.isEmpty && !hasValidCoordinates {

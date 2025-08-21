@@ -106,7 +106,7 @@ struct HomeView: View {
                 // Here we just push ListsView; user sees Today at top
                 break
             case .sendText(let rid):
-                if let reminder = allReminders.first(where: { $0.id == rid }) {
+                if let reminder = allReminders.first(where: { $0.uuid == rid }) {
                     Task { await composeAndSend(reminder: reminder) }
                 }
             case .smartHighPriority, .tag, .priority:
@@ -444,7 +444,7 @@ private struct ReminderRow: View {
                     await NotificationManager.shared.scheduleNotifications(
                         for: reminder.id,
                         dueDate: reminder.dueDate,
-                        leadTimes: reminder.notifications.map { $0.leadTimeSeconds },
+                        leadTimes: reminder.notifications?.map { $0.leadTimeSeconds } ?? [],
                         title: reminder.title
                     )
                 }
@@ -469,7 +469,7 @@ extension HomeView {
     func composeAndSend(reminder: Reminder) async {
         var recipients: [String] = []
         if reminder.autoTextTaggedContacts {
-            recipients.append(contentsOf: reminder.taggedContacts.compactMap { $0.phoneNumber })
+            recipients.append(contentsOf: reminder.taggedContacts?.compactMap { $0.phoneNumber } ?? [])
         }
         if reminder.autoTextMe, let my = await ContactsManager.shared.myPhoneNumber() { recipients.append(my) }
         recipients = Array(Set(recipients)).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }

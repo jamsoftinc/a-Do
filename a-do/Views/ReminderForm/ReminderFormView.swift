@@ -227,7 +227,7 @@ struct ReminderFormView: View {
                     await NotificationManager.shared.scheduleNotifications(
                         for: saved.id,
                         dueDate: saved.dueDate,
-                        leadTimes: saved.notifications.map { $0.leadTimeSeconds },
+                        leadTimes: saved.notifications?.map { $0.leadTimeSeconds } ?? [],
                         title: saved.title
                     )
                 }
@@ -257,8 +257,8 @@ struct ReminderFormView: View {
             viewModel.details = existing.details ?? ""
             viewModel.dueDate = existing.dueDate
             viewModel.priority = existing.priority
-            viewModel.selectedTags = existing.tags
-            viewModel.leadTimes = existing.notifications.map { $0.leadTimeSeconds }
+            viewModel.selectedTags = existing.tags ?? []
+            viewModel.leadTimes = existing.notifications?.map { $0.leadTimeSeconds } ?? []
             viewModel.autoTextTaggedContacts = existing.autoTextTaggedContacts
             viewModel.autoTextMe = existing.autoTextMe
             viewModel.attachedNote = existing.appleNote

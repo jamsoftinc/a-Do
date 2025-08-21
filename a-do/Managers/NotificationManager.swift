@@ -4,6 +4,7 @@ import os
 import Observation
 import Contacts
 import UIKit
+import SwiftData
 
 @MainActor
 @Observable
@@ -29,7 +30,7 @@ final class NotificationManager {
         }
     }
 
-    func scheduleNotifications(for reminderId: UUID, dueDate: Date?, leadTimes: [TimeInterval], title: String) async {
+    func scheduleNotifications(for reminderId: PersistentIdentifier, dueDate: Date?, leadTimes: [TimeInterval], title: String) async {
         guard let dueDate else { return }
         let center = UNUserNotificationCenter.current()
         // Register categories once
@@ -44,7 +45,7 @@ final class NotificationManager {
             content.sound = .default
             content.categoryIdentifier = "REMEMBER_CATEGORY"
             let trigger = UNCalendarNotificationTrigger(dateMatching: Calendar.current.dateComponents([.year,.month,.day,.hour,.minute,.second], from: triggerDate), repeats: false)
-            let request = UNNotificationRequest(identifier: "reminder_\(reminderId.uuidString)_\(Int(lead))", content: content, trigger: trigger)
+            let request = UNNotificationRequest(identifier: "reminder_\(reminderId)_\(Int(lead))", content: content, trigger: trigger)
             await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
                 center.add(request) { error in
                     if let error { Logger(subsystem: "a-do", category: "Notifications").error("Add request failed: \(String(describing: error))") }
@@ -54,9 +55,9 @@ final class NotificationManager {
         }
     }
 
-    func cancelNotifications(for reminderId: UUID) {
+    func cancelNotifications(for reminderId: PersistentIdentifier) {
         UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
-            let ids = requests.map { $0.identifier }.filter { $0.hasPrefix("reminder_\(reminderId.uuidString)") }
+            let ids = requests.map { $0.identifier }.filter { $0.hasPrefix("reminder_\(reminderId)") }
             UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
         }
     }

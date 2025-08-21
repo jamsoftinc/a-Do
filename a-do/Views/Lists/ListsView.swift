@@ -61,7 +61,7 @@ struct ListsView: View {
             // Sectioned Lists
             ForEach(sections) { section in
                 Section {
-                    ForEach(section.lists.sorted { $0.order < $1.order }) { list in
+                    ForEach((section.lists ?? []).sorted { $0.order < $1.order }) { list in
                         listRow(for: list)
                     }
                     
@@ -200,7 +200,7 @@ struct ListDetailView: View {
 
     var body: some View {
         List {
-            ForEach(list.isSmart ? SmartListEngine.reminders(for: list, from: allReminders) : list.reminders) { reminder in
+            ForEach(list.isSmart ? SmartListEngine.reminders(for: list, from: allReminders) : (list.reminders ?? [])) { reminder in
                 HStack {
                     Text(reminder.title)
                     Spacer()
@@ -209,7 +209,7 @@ struct ListDetailView: View {
             }
             .onDelete { indexSet in
                 if list.isSmart { return }
-                let reminders = list.reminders
+                let reminders = list.reminders ?? []
                 for index in indexSet { context.delete(reminders[index]) }
                 do { try context.save() } catch { Logger(subsystem: "a-do", category: "Lists").error("Delete reminder failed: \(String(describing: error))") }
             }

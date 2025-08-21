@@ -10,26 +10,9 @@ struct AddQuickReminder: AppIntent {
     @Parameter(title: "Due In Minutes", default: 0) var dueInMinutes: Int
 
     func perform() async throws -> some ProvidesDialog {
-        // Create container directly using SwiftData
+        // Use the shared container to ensure consistency
         let container = await MainActor.run {
-            let schema = Schema([
-                Reminder.self,
-                Tag.self,
-                ReminderList.self,
-                ReminderNotification.self,
-                LocationTrigger.self,
-                ListSection.self,
-                TaggedContact.self,
-                AppleNoteAttachment.self
-            ])
-            
-            do {
-                let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-                return try ModelContainer(for: schema, configurations: config)
-            } catch {
-                let memoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-                return try! ModelContainer(for: schema, configurations: memoryConfig)
-            }
+            return AppContainer.shared.container
         }
         let context = ModelContext(container)
         let due: Date? = dueInMinutes > 0 ? Date().addingTimeInterval(Double(dueInMinutes) * 60) : nil
@@ -37,9 +20,9 @@ struct AddQuickReminder: AppIntent {
         context.insert(reminder)
         try? context.save()
         // Schedule notifications on MainActor to ensure thread safety
-        let reminderId = reminder.id
         let reminderTitleCopy = reminderTitle
         let dueCopy = due
+        let reminderId = reminder.persistentModelID
         _ = await MainActor.run {
             Task { [reminderId, dueCopy, reminderTitleCopy] in
                 await NotificationManager.shared.scheduleNotifications(for: reminderId, dueDate: dueCopy, leadTimes: [], title: reminderTitleCopy)

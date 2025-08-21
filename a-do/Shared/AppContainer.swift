@@ -9,6 +9,11 @@ final class AppContainer {
     
     @MainActor
     lazy var container: ModelContainer = {
+        return createContainer()
+    }()
+    
+    @MainActor
+    private func createContainer() -> ModelContainer {
         let schema = Schema([
             Reminder.self,
             Tag.self,
@@ -24,11 +29,20 @@ final class AppContainer {
         print("🔄 Initializing SwiftData container...")
         #endif
         
-        // Start with local storage to avoid CloudKit issues
+        // Force clean start for simulator to avoid persistent issues
+        #if targetEnvironment(simulator)
+        return createInMemoryContainer(schema: schema)
+        #else
+        
+        // Try to create persistent container on device
         do {
             let localConfig = ModelConfiguration(
                 schema: schema,
-                isStoredInMemoryOnly: false
+                isStoredInMemoryOnly: false,
+                allowsSave: true,
+                groupContainer: .automatic,
+                cloudKitDatabase: .none,
+                shouldDeleteOldDataOnModelMismatch: true
             )
             let localContainer = try ModelContainer(for: schema, configurations: localConfig)
             #if DEBUG
@@ -37,28 +51,80 @@ final class AppContainer {
             return localContainer
         } catch {
             #if DEBUG
-            print("⚠️ Local container failed, trying in-memory: \(error)")
+            print("⚠️ Local container failed: \(error)")
+            print("🔄 Attempting complete database reset...")
             #endif
             
-            // Fallback to in-memory storage
+            // Clear all possible database files
+            clearAllDatabaseFiles()
+            
+            // Try creating container again with fresh database
             do {
-                let memoryConfig = ModelConfiguration(
+                let localConfig = ModelConfiguration(
                     schema: schema,
-                    isStoredInMemoryOnly: true
+                    isStoredInMemoryOnly: false,
+                    allowsSave: true,
+                    groupContainer: .automatic,
+                    cloudKitDatabase: .none,
+                    shouldDeleteOldDataOnModelMismatch: true
                 )
-                let memoryContainer = try ModelContainer(for: schema, configurations: memoryConfig)
+                let localContainer = try ModelContainer(for: schema, configurations: localConfig)
                 #if DEBUG
-                print("⚠️ Using in-memory SwiftData container (data won't persist)")
+                print("✅ SwiftData container created with fresh database")
                 #endif
-                return memoryContainer
+                return localContainer
             } catch {
                 #if DEBUG
-                print("❌ Critical: Even in-memory container failed: \(error)")
+                print("⚠️ Fresh database creation failed, falling back to in-memory: \(error)")
                 #endif
                 
-                // This should never happen, but if it does, we need to know
-                fatalError("Unable to initialize any SwiftData container. Error: \(error)")
+                return createInMemoryContainer(schema: schema)
             }
         }
-    }()
+        #endif
+    }
+    
+    @MainActor
+    private func createInMemoryContainer(schema: Schema) -> ModelContainer {
+        do {
+            let memoryConfig = ModelConfiguration(
+                schema: schema,
+                isStoredInMemoryOnly: true
+            )
+            let memoryContainer = try ModelContainer(for: schema, configurations: memoryConfig)
+            #if DEBUG
+            print("⚠️ Using in-memory SwiftData container (data won't persist)")
+            #endif
+            return memoryContainer
+        } catch {
+            #if DEBUG
+            print("❌ Critical: Even in-memory container failed: \(error)")
+            #endif
+            
+            // This should never happen, but if it does, we need to know
+            fatalError("Unable to initialize any SwiftData container. Error: \(error)")
+        }
+    }
+    
+    private func clearAllDatabaseFiles() {
+        let fileManager = FileManager.default
+        let urls = [
+            fileManager.urls(for: .documentDirectory, in: .userDomainMask).first,
+            fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first,
+            fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first
+        ].compactMap { $0 }
+        
+        let databaseNames = ["default.store", "default.store-wal", "default.store-shm"]
+        
+        for url in urls {
+            for dbName in databaseNames {
+                let dbURL = url.appendingPathComponent(dbName)
+                try? fileManager.removeItem(at: dbURL)
+            }
+        }
+        
+        #if DEBUG
+        print("🗑️ Cleared all database files from all directories")
+        #endif
+    }
 }

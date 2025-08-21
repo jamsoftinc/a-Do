@@ -15,7 +15,7 @@ enum SmartListEngine {
     }
 
     static func reminders(for list: ReminderList, from all: [Reminder]) -> [Reminder] {
-        guard list.isSmart else { return list.reminders }
+        guard list.isSmart else { return list.reminders ?? [] }
         var candidates = all
         for rule in list.rules {
             switch rule.type {
@@ -37,7 +37,7 @@ enum SmartListEngine {
                 candidates = candidates.filter { $0.priority == p }
             case .tag:
                 if let tagName = rule.tagName {
-                    candidates = candidates.filter { $0.tags.contains(where: { $0.name == tagName }) }
+                    candidates = candidates.filter { $0.tags?.contains(where: { $0.name == tagName }) == true }
                 }
             }
         }
