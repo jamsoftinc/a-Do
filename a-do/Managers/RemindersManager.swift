@@ -15,6 +15,7 @@ final class RemindersManager {
     var importProgress: Double = 0.0
     var importedCount: Int = 0
     var lastImportError: String?
+    var availableRemindersCount: Int = 0
 
     private init() {}
 
@@ -35,6 +36,43 @@ final class RemindersManager {
         }
     }
 
+    func checkAvailableReminders(into context: ModelContext) async {
+        do {
+            try await requestAccess()
+            
+            await withCheckedContinuation { continuation in
+                let predicate = store.predicateForReminders(in: nil)
+                store.fetchReminders(matching: predicate) { [weak self] reminders in
+                    Task { @MainActor in
+                        guard let self = self else {
+                            continuation.resume()
+                            return
+                        }
+                        
+                        guard let reminders = reminders else {
+                            self.availableRemindersCount = 0
+                            continuation.resume()
+                            return
+                        }
+                        
+                        // Filter out reminders that already exist
+                        let existingReminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+                        let existingTitles = Set(existingReminders.map { $0.title })
+                        let newReminders = reminders.filter { reminder in
+                            guard let title = reminder.title, !title.isEmpty else { return false }
+                            return !existingTitles.contains(title)
+                        }
+                        
+                        self.availableRemindersCount = newReminders.count
+                        continuation.resume()
+                    }
+                }
+            }
+        } catch {
+            self.availableRemindersCount = 0
+        }
+    }
+    
     func importReminders(into context: ModelContext) async {
         guard !isImporting else { 
             Logger(subsystem: "a-do", category: "Import").warning("Import already in progress")
@@ -78,6 +116,7 @@ final class RemindersManager {
                             return !existingTitles.contains(title)
                         }
                         
+                        self.availableRemindersCount = newReminders.count
                         Logger(subsystem: "a-do", category: "Import").info("Importing \(newReminders.count) new reminders (skipping \(reminders.count - newReminders.count) duplicates)")
                         
                         let total = Double(newReminders.count)

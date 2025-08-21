@@ -34,6 +34,7 @@ struct HomeView: View {
     @State private var calendarManager = CalendarManager.shared
     @Environment(AppRouter.self) private var router
     @FocusState private var isQuickAddFocused: Bool
+    @State private var showingImportReminders = false
 
     var body: some View {
         NavigationStack {
@@ -83,7 +84,7 @@ struct HomeView: View {
                         }
                         Menu {
                             Button {
-                                Task { try? await RemindersManager.shared.requestAccess(); await RemindersManager.shared.importReminders(into: context) }
+                                showingImportReminders = true
                             } label: {
                                 Label("Import from Reminders", systemImage: "square.and.arrow.down")
                             }
@@ -107,6 +108,9 @@ struct HomeView: View {
         }
         .task { await calendarManager.requestAccess() }
         .task { NotificationManager.shared.requestAuthorization() }
+        .sheet(isPresented: $showingImportReminders) {
+            ImportRemindersView()
+        }
         .onChange(of: router.destination) { _, dest in
             guard let dest else { return }
             switch dest {
@@ -377,13 +381,31 @@ struct HomeView: View {
 
 private struct EventCard: View {
     let event: EKEvent
+    @State private var isPressed = false
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(event.title).font(.subheadline).bold().lineLimit(1)
+            HStack {
+                Text(event.title).font(.subheadline).bold().lineLimit(1)
+                Spacer()
+                Image(systemName: "calendar")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Text(event.startDate, style: .time).font(.caption).foregroundStyle(.secondary)
         }
         .padding(12)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .scaleEffect(isPressed ? 0.95 : 1.0)
+        .animation(.easeInOut(duration: 0.1), value: isPressed)
+        .onTapGesture {
+            isPressed = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                isPressed = false
+                CalendarManager.shared.openEventInCalendar(event)
+            }
+        }
+        .contentShape(Rectangle())
     }
 }
 

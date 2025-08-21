@@ -2,6 +2,7 @@ import Foundation
 import EventKit
 import os
 import Observation
+import UIKit
 
 @MainActor
 @Observable
@@ -61,6 +62,35 @@ final class CalendarManager {
         event.calendar = store.defaultCalendarForNewEvents
         try store.save(event, span: .thisEvent, commit: true)
         await loadEvents()
+    }
+    
+    func openEventInCalendar(_ event: EKEvent) {
+        // Try to open the specific event using EventKit's URL scheme
+        if let eventURL = event.eventIdentifier.isEmpty ? nil : URL(string: "calshow://event/\(event.eventIdentifier)") {
+            Task {
+                await UIApplication.shared.open(eventURL)
+            }
+            return
+        }
+        
+        // Fallback: Open Calendar app at the event's date
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let dateString = dateFormatter.string(from: event.startDate)
+        
+        if let calendarURL = URL(string: "calshow://\(dateString)") {
+            Task {
+                await UIApplication.shared.open(calendarURL)
+            }
+            return
+        }
+        
+        // Final fallback: Open Calendar app
+        if let calendarURL = URL(string: "calshow://") {
+            Task {
+                await UIApplication.shared.open(calendarURL)
+            }
+        }
     }
 }
 

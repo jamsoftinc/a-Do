@@ -26,6 +26,36 @@ struct ImportRemindersView: View {
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
+                    
+                    // Available reminders count
+                    if remindersManager.availableRemindersCount > 0 {
+                        HStack(spacing: 12) {
+                            Image(systemName: "list.bullet")
+                                .foregroundStyle(.blue)
+                            Text("\(remindersManager.availableRemindersCount) reminders available to import")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color(.systemBlue).opacity(0.1))
+                        .cornerRadius(8)
+                    }
+                    
+                    // Import stats
+                    if remindersManager.importedCount > 0 {
+                        HStack(spacing: 12) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(.green)
+                            Text("\(remindersManager.importedCount) reminders imported")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                    }
                 }
                 
                 Spacer()
@@ -60,6 +90,8 @@ struct ImportRemindersView: View {
                             await remindersManager.importReminders(into: context)
                             if remindersManager.lastImportError == nil {
                                 showingSuccessAlert = true
+                                // Refresh available count after successful import
+                                await remindersManager.checkAvailableReminders(into: context)
                             } else {
                                 showingErrorAlert = true
                             }
@@ -74,6 +106,11 @@ struct ImportRemindersView: View {
                                 Image(systemName: "arrow.down.circle")
                             }
                             Text(remindersManager.isImporting ? "Importing..." : "Import Reminders")
+                            if !remindersManager.isImporting && remindersManager.availableRemindersCount > 0 {
+                                Text("(\(remindersManager.availableRemindersCount))")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -89,6 +126,9 @@ struct ImportRemindersView: View {
             .padding()
             .navigationTitle("Import Reminders")
             .navigationBarTitleDisplayMode(.inline)
+            .task {
+                await remindersManager.checkAvailableReminders(into: context)
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
