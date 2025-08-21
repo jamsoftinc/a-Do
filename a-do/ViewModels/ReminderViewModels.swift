@@ -8,19 +8,34 @@ import CoreLocation
 @Observable
 final class ReminderHomeViewModel {
     var quickTitle: String = ""
+    var quickDueDate: Date?
+    var showingQuickDatePicker: Bool = false
 
     func addQuickReminder(context: ModelContext) {
         let safeTitle = quickTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !safeTitle.isEmpty else { return }
-        let reminder = Reminder(title: safeTitle)
+        let reminder = Reminder(title: safeTitle, dueDate: quickDueDate)
         context.insert(reminder)
         do { 
             try context.save() 
-            Logger(subsystem: "a-do", category: "Reminders").info("Quick reminder saved: '\(safeTitle)' with ID: \(reminder.id)")
+            Logger(subsystem: "a-do", category: "Reminders").info("Quick reminder saved: '\(safeTitle)' with ID: \(reminder.id), due: \(self.quickDueDate?.description ?? "none")")
         } catch { 
             Logger(subsystem: "a-do", category: "Reminders").error("Quick add failed: \(String(describing: error))") 
         }
         quickTitle = ""
+        quickDueDate = nil
+    }
+    
+    func clearQuickDueDate() {
+        quickDueDate = nil
+    }
+    
+    func setQuickDueDateToToday() {
+        quickDueDate = Calendar.current.startOfDay(for: Date())
+    }
+    
+    func setQuickDueDateToTomorrow() {
+        quickDueDate = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: Date()))
     }
 }
 

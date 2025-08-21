@@ -3,16 +3,31 @@ import SwiftData
 import EventKit
 import os
 
+extension Calendar {
+    func isDateInTomorrow(_ date: Date) -> Bool {
+        guard let tomorrow = self.date(byAdding: .day, value: 1, to: Date()) else { return false }
+        return self.isDate(date, inSameDayAs: tomorrow)
+    }
+}
+
 struct HomeView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query(sort: \Reminder.createdAt, order: .reverse) private var allReminders: [Reminder]
     
-    // Filter to show incomplete reminders first, then completed ones
-    private var reminders: [Reminder] {
-        let incomplete = allReminders.filter { !$0.isCompleted }
-        let completed = allReminders.filter { $0.isCompleted }
-        return incomplete + completed
+    // Filter reminders for different sections
+    private var inboxReminders: [Reminder] {
+        allReminders.filter { reminder in
+            !reminder.isCompleted && (reminder.dueDate == nil || !Calendar.current.isDateInToday(reminder.dueDate!))
+        }
+    }
+    
+    private var todayReminders: [Reminder] {
+        allReminders.filter { reminder in
+            !reminder.isCompleted && 
+            reminder.dueDate != nil && 
+            Calendar.current.isDateInToday(reminder.dueDate!)
+        }
     }
 
     @State private var viewModel = ReminderHomeViewModel()
@@ -30,7 +45,8 @@ struct HomeView: View {
                         LazyVGrid(columns: adaptiveColumns, spacing: 20) {
                             quickAdd
                             locationStatus
-                            todayReminders
+                            inboxSection
+                            todayRemindersSection
                             todayCalendar
                             upcomingCalendar
                         }
@@ -41,7 +57,8 @@ struct HomeView: View {
                         VStack(spacing: 20) {
                             quickAdd
                             locationStatus
-                            todayReminders
+                            inboxSection
+                            todayRemindersSection
                             todayCalendar
                             upcomingCalendar
                         }
@@ -89,7 +106,7 @@ struct HomeView: View {
                 // Here we just push ListsView; user sees Today at top
                 break
             case .sendText(let rid):
-                if let reminder = reminders.first(where: { $0.id == rid }) {
+                if let reminder = allReminders.first(where: { $0.id == rid }) {
                     Task { await composeAndSend(reminder: reminder) }
                 }
             case .smartHighPriority, .tag, .priority:
@@ -109,18 +126,80 @@ struct HomeView: View {
 
     private var quickAdd: some View {
         GlassCard {
-            HStack {
-                TextField("Quick reminder...", text: $viewModel.quickTitle)
-                    .textFieldStyle(.plain)
-                Button {
-                    viewModel.addQuickReminder(context: context)
-                } label: {
-                    Label("Add", systemImage: "plus.circle.fill")
-                        .foregroundStyle(.white)
+            VStack(spacing: 12) {
+                HStack {
+                    TextField("Quick reminder...", text: $viewModel.quickTitle)
+                        .textFieldStyle(.plain)
+                    Button {
+                        viewModel.addQuickReminder(context: context)
+                    } label: {
+                        Label("Add", systemImage: "plus.circle.fill")
+                            .foregroundStyle(.white)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.blue)
+                    .disabled(viewModel.quickTitle.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.blue)
-                .disabled(viewModel.quickTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+                
+                // Due date options
+                HStack(spacing: 8) {
+                    Button("No Date") {
+                        viewModel.clearQuickDueDate()
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(viewModel.quickDueDate == nil ? .blue : .secondary)
+                    
+                    Button("Today") {
+                        viewModel.setQuickDueDateToToday()
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(viewModel.quickDueDate != nil && Calendar.current.isDateInToday(viewModel.quickDueDate!) ? .blue : .secondary)
+                    
+                    Button("Tomorrow") {
+                        viewModel.setQuickDueDateToTomorrow()
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(viewModel.quickDueDate != nil && Calendar.current.isDateInTomorrow(viewModel.quickDueDate!) ? .blue : .secondary)
+                    
+                    Button("Pick Date") {
+                        viewModel.showingQuickDatePicker = true
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(viewModel.quickDueDate != nil && 
+                          !Calendar.current.isDateInToday(viewModel.quickDueDate!) && 
+                          !Calendar.current.isDateInTomorrow(viewModel.quickDueDate!) ? .blue : .secondary)
+                }
+                .font(.caption)
+                
+                if let dueDate = viewModel.quickDueDate {
+                    Text("Due: \(dueDate, style: .date) at \(dueDate, style: .time)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .sheet(isPresented: $viewModel.showingQuickDatePicker) {
+            NavigationStack {
+                DatePicker("Due Date", selection: Binding(
+                    get: { self.viewModel.quickDueDate ?? Date() },
+                    set: { self.viewModel.quickDueDate = $0 }
+                ), displayedComponents: [.date, .hourAndMinute])
+                .datePickerStyle(.wheel)
+                .padding()
+                .navigationTitle("Set Due Date")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Cancel") {
+                            viewModel.showingQuickDatePicker = false
+                        }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") {
+                            viewModel.showingQuickDatePicker = false
+                        }
+                    }
+                }
             }
         }
     }
@@ -153,13 +232,36 @@ struct HomeView: View {
         }
     }
 
-    private var todayReminders: some View {
+    private var inboxSection: some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Inbox")
+                        .font(.headline)
+                    Text("(\(inboxReminders.count))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    NavigationLink("All", destination: ListsView())
+                }
+                ForEach(inboxReminders.prefix(5)) { reminder in
+                    ReminderRow(reminder: reminder)
+                }
+                if inboxReminders.isEmpty {
+                    Text("No reminders in inbox.")
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+    
+    private var todayRemindersSection: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Text("Today's Reminders")
                         .font(.headline)
-                    Text("(\(allReminders.count) total)")
+                    Text("(\(todayReminders.count))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -168,13 +270,12 @@ struct HomeView: View {
                         _ = context.container
                     }
                     .font(.caption)
-                    NavigationLink("All", destination: ListsView())
                 }
-                ForEach(reminders.prefix(5)) { reminder in
+                ForEach(todayReminders.prefix(5)) { reminder in
                     ReminderRow(reminder: reminder)
                 }
-                if reminders.isEmpty {
-                    Text("No reminders yet.")
+                if todayReminders.isEmpty {
+                    Text("No reminders due today.")
                         .foregroundStyle(.secondary)
                 }
             }
