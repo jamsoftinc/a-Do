@@ -148,7 +148,8 @@ struct ReminderFormView: View {
                     if allTags.isEmpty {
                         Text("No tags available")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.primary)
                     } else {
                         FlowLayout(alignment: .leading, spacing: 8) {
                             ForEach(allTags) { tag in

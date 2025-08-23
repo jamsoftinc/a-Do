@@ -46,7 +46,8 @@ struct CompletedRemindersView: View {
                             
                             Text("Completed reminders will appear here for 30 days before being automatically cleaned up.")
                                 .font(.body)
-                                .foregroundStyle(.secondary)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
                                 .multilineTextAlignment(.center)
                         }
                         .padding(.horizontal, 40)
@@ -227,8 +228,9 @@ private struct CompletedReminderCard: View {
                                     .foregroundStyle(.green)
                                 Text("Completed \(completedAt, style: .relative)")
                             }
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                                                    .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.primary)
                         }
                     }
                     
@@ -271,7 +273,8 @@ private struct CompletedReminderCard: View {
                             Text("Was due: \(due, style: .date)")
                         }
                         .font(.caption)
-                        .foregroundStyle(.secondary.opacity(0.7))
+                        .fontWeight(.medium)
+                        .foregroundStyle(.primary.opacity(0.8))
                     }
                     
                     HStack(spacing: 4) {
@@ -279,8 +282,9 @@ private struct CompletedReminderCard: View {
                             .imageScale(.small)
                         Text("Created: \(reminder.createdAt, style: .date)")
                     }
-                    .font(.caption)
-                    .foregroundStyle(.secondary.opacity(0.7))
+                                            .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.primary.opacity(0.8))
                 }
                 
                 // Tags and attachments

@@ -47,6 +47,9 @@ struct HomeView: View {
 
                 ScrollView {
                     LazyVStack(spacing: 16) {
+                        // Voice Reminder Section
+                        voiceReminderSection
+                        
                         // Quick Actions Section
                         quickActionsSection
                         
@@ -98,7 +101,7 @@ struct HomeView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 12) {
-                        // Voice memo button
+                        // Voice reminder button
                         Button {
                             Task {
                                 await startQuickVoiceMemo()
@@ -111,6 +114,7 @@ struct HomeView: View {
                                 .background(.ultraThinMaterial, in: Circle())
                         }
                         .disabled(AudioManager.shared.isTranscribing)
+                        .accessibilityLabel("Create voice reminder")
                         
                         NavigationLink(destination: ListsView()) {
                             Image(systemName: "list.bullet.rectangle.portrait")
@@ -190,6 +194,96 @@ struct HomeView: View {
         }
     }
     
+    // MARK: - Voice Reminder Section
+    private var voiceReminderSection: some View {
+        GlassCard {
+            VStack(spacing: 16) {
+                // Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Voice Reminder")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                        Text("Speak to create a reminder")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.primary)
+                    }
+                    Spacer()
+                }
+                
+                // Voice recording button
+                Button {
+                    Task {
+                        await startQuickVoiceMemo()
+                    }
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: AudioManager.shared.isRecording ? "stop.circle.fill" : "mic.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(AudioManager.shared.isRecording ? .red : .white)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(AudioManager.shared.isRecording ? "Stop Recording" : "Start Voice Recording")
+                                .font(.body)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.white)
+                            
+                            if AudioManager.shared.isRecording {
+                                Text("Recording... \(Int(AudioManager.shared.recordingDuration))s")
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.8))
+                            } else {
+                                Text("Tap to record your reminder")
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.8))
+                            }
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(16)
+                    .background(
+                        LinearGradient(
+                            colors: AudioManager.shared.isRecording ? [.red, .orange] : [.purple, .blue],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        in: RoundedRectangle(cornerRadius: 12)
+                    )
+                }
+                .disabled(AudioManager.shared.isTranscribing)
+                
+                // Status indicators
+                if AudioManager.shared.isTranscribing {
+                    HStack(spacing: 8) {
+                        Image(systemName: "text.bubble")
+                            .foregroundColor(.orange)
+                            .imageScale(.small)
+                        Text("Transcribing voice to text...")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 4)
+                }
+                
+                if !AudioManager.shared.transcribedText.isEmpty && !AudioManager.shared.isRecording && !AudioManager.shared.isTranscribing {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                            .imageScale(.small)
+                        Text("Creating reminder from voice...")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 4)
+                }
+            }
+        }
+    }
+    
     // MARK: - Quick Actions Section
     private var quickActionsSection: some View {
         VStack(spacing: 12) {
@@ -205,19 +299,7 @@ struct HomeView: View {
                                 isQuickAddFocused = true
                             }
                         
-                        // Voice memo button
-                        Button {
-                            Task {
-                                await startQuickVoiceMemo()
-                            }
-                        } label: {
-                            Image(systemName: AudioManager.shared.isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                                .foregroundStyle(AudioManager.shared.isRecording ? .red : .blue)
-                                .imageScale(.large)
-                                .frame(width: 32, height: 32)
-                                .background(.ultraThinMaterial, in: Circle())
-                        }
-                        .disabled(AudioManager.shared.isTranscribing)
+
                         
                         // Add button
                         Button {
@@ -233,52 +315,7 @@ struct HomeView: View {
                         .disabled(viewModel.quickTitle.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                     
-                    // Voice recording status
-                    if AudioManager.shared.isRecording {
-                        HStack {
-                            Image(systemName: "record.circle")
-                                .foregroundColor(.red)
-                                .imageScale(.small)
-                            Text("Recording... \(Int(AudioManager.shared.recordingDuration))s")
-                                .font(.caption)
-                                .foregroundColor(.red)
-                            Spacer()
-                            Button("Stop") {
-                                stopQuickVoiceMemo()
-                            }
-                            .font(.caption)
-                            .foregroundColor(.red)
-                        }
-                    }
-                    
-                    if AudioManager.shared.isTranscribing {
-                        HStack {
-                            Image(systemName: "text.bubble")
-                                .foregroundColor(.orange)
-                                .imageScale(.small)
-                            Text("Transcribing...")
-                                .font(.caption)
-                                .foregroundColor(.orange)
-                        }
-                    }
-                    
-                    // Success message for voice memo creation
-                    if !AudioManager.shared.transcribedText.isEmpty && !AudioManager.shared.isRecording && !AudioManager.shared.isTranscribing {
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                                .imageScale(.small)
-                            Text("Voice reminder created!")
-                                .font(.caption)
-                                .foregroundColor(.green)
-                            Spacer()
-                            Button("Clear") {
-                                AudioManager.shared.transcribedText = ""
-                            }
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        }
-                    }
+
                     
                     // Due date options - compact horizontal layout
                     HStack(spacing: 8) {
@@ -333,7 +370,8 @@ struct HomeView: View {
                             .foregroundColor(.orange)
                         Text("Enable location for location-based reminders")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
                         Spacer()
                         Button("Enable") {
                             LocationManager.shared.requestAuthorization()
@@ -411,7 +449,8 @@ struct HomeView: View {
                             .fontWeight(.semibold)
                         Text("\(inboxReminders.count) items")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.primary)
                     }
                     Spacer()
                     NavigationLink("View All", destination: ListsView())
@@ -425,7 +464,8 @@ struct HomeView: View {
                             .foregroundStyle(.secondary)
                         Text("No reminders in inbox")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.primary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 8)
@@ -439,7 +479,8 @@ struct HomeView: View {
                             HStack {
                                 Text("+ \(inboxReminders.count - 3) more")
                                     .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(.primary)
                                 Spacer()
                             }
                             .padding(.top, 4)
@@ -460,7 +501,8 @@ struct HomeView: View {
                             .fontWeight(.semibold)
                         Text("\(todayReminders.count) due today")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.primary)
                     }
                     Spacer()
                     Button("Refresh") {
@@ -477,7 +519,8 @@ struct HomeView: View {
                             .foregroundStyle(.green)
                         Text("All caught up!")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.primary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 8)
@@ -491,7 +534,8 @@ struct HomeView: View {
                             HStack {
                                 Text("+ \(todayReminders.count - 3) more")
                                     .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(.primary)
                                 Spacer()
                             }
                             .padding(.top, 4)
@@ -516,7 +560,10 @@ struct HomeView: View {
                         }
                     }
                     if calendarManager.todayEvents.isEmpty {
-                        Text("No events today").foregroundStyle(.secondary)
+                                                    Text("No events today")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
                     }
                 } else {
                     // iPhone - horizontal scroll
@@ -526,7 +573,10 @@ struct HomeView: View {
                                 EventCard(event: event)
                             }
                             if calendarManager.todayEvents.isEmpty {
-                                Text("No events today").foregroundStyle(.secondary)
+                                Text("No events today")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
                             }
                         }
                     }
@@ -547,7 +597,10 @@ struct HomeView: View {
                         }
                     }
                     if calendarManager.upcomingEvents.isEmpty {
-                        Text("No upcoming events").foregroundStyle(.secondary)
+                                                    Text("No upcoming events")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
                     }
                 } else {
                     // iPhone - horizontal scroll
@@ -557,7 +610,10 @@ struct HomeView: View {
                                 EventCard(event: event)
                             }
                             if calendarManager.upcomingEvents.isEmpty {
-                                Text("No upcoming events").foregroundStyle(.secondary)
+                                Text("No upcoming events")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
                             }
                         }
                     }
@@ -651,7 +707,10 @@ private struct EventCard: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Text(event.startDate, style: .time).font(.caption).foregroundStyle(.secondary)
+            Text(event.startDate, style: .time)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(.primary)
         }
         .padding(12)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
@@ -706,7 +765,8 @@ private struct ReminderRow: View {
                             Text(due, style: .time)
                         }
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.primary)
                     }
                     
                     if reminder.autoTextTaggedContacts || reminder.autoTextMe {
@@ -899,40 +959,50 @@ extension HomeView {
         // Start recording
         await AudioManager.shared.startRecording()
         
-        // Monitor recording state and transcription
-        while AudioManager.shared.isRecording || AudioManager.shared.isTranscribing {
-            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        // Set up a task to monitor transcription and create reminder automatically
+        Task {
+            // Wait for recording to stop and transcription to complete
+            while AudioManager.shared.isRecording || AudioManager.shared.isTranscribing {
+                try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+            }
+            
+            // Automatically create reminder from transcribed text
+            await createVoiceReminderFromTranscription()
+        }
+    }
+    
+    private func createVoiceReminderFromTranscription() async {
+        guard !AudioManager.shared.transcribedText.isEmpty else { return }
+        
+        let transcribedText = AudioManager.shared.transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Create a new reminder with the transcribed text as title
+        let reminder = Reminder(
+            title: transcribedText,
+            dueDate: viewModel.quickDueDate
+        )
+        
+        context.insert(reminder)
+        
+        // Create voice reminder attachment if audio file exists
+        if let audioFileURL = AudioManager.shared.getAudioFileURL() {
+            let fileName = audioFileURL.lastPathComponent
+            let voiceReminder = VoiceReminder(
+                audioFileName: fileName,
+                transcribedText: transcribedText,
+                recordingDuration: AudioManager.shared.recordingDuration
+            )
+            reminder.voiceReminder = voiceReminder
         }
         
-        // Create reminder from transcribed text if successful
-        if !AudioManager.shared.transcribedText.isEmpty {
-            let transcribedText = AudioManager.shared.transcribedText
+        do {
+            try context.save()
+            Logger(subsystem: "a-do", category: "Voice").info("Voice reminder created automatically: '\(transcribedText)'")
             
-            // Create a new reminder with the transcribed text
-            let reminder = Reminder(
-                title: transcribedText,
-                dueDate: viewModel.quickDueDate
-            )
-            
-            context.insert(reminder)
-            
-            // Create voice reminder attachment
-            if let audioFileURL = AudioManager.shared.getAudioFileURL() {
-                let fileName = audioFileURL.lastPathComponent
-                let voiceReminder = VoiceReminder(
-                    audioFileName: fileName,
-                    transcribedText: transcribedText,
-                    recordingDuration: AudioManager.shared.recordingDuration
-                )
-                reminder.voiceReminder = voiceReminder
-            }
-            
-            do {
-                try context.save()
-                Logger(subsystem: "a-do", category: "Voice").info("Quick voice reminder created: '\(transcribedText)'")
-            } catch {
-                Logger(subsystem: "a-do", category: "Voice").error("Failed to save quick voice reminder: \(String(describing: error))")
-            }
+            // Clear the transcribed text after successful creation
+            AudioManager.shared.transcribedText = ""
+        } catch {
+            Logger(subsystem: "a-do", category: "Voice").error("Failed to create voice reminder: \(String(describing: error))")
         }
     }
     

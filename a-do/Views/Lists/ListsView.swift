@@ -24,8 +24,9 @@ struct ListsView: View {
                     ListDetailView(list: selectedList, allReminders: allReminders)
                 } else {
                     Text("Select a list to view its contents")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.primary)
                         .font(.title2)
+                        .fontWeight(.medium)
                 }
             }
         } else {
