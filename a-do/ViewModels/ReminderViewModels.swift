@@ -4,6 +4,7 @@ import os
 import Observation
 import CoreLocation
 import SwiftUI
+import AVFoundation
 
 @MainActor
 @Observable
@@ -37,6 +38,40 @@ final class ReminderHomeViewModel {
     
     func setQuickDueDateToTomorrow() {
         quickDueDate = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: Date()))
+    }
+    
+    // MARK: - Reminder Completion
+    
+    func markReminderComplete(_ reminder: Reminder, context: ModelContext) {
+        reminder.isCompleted = true
+        reminder.completedAt = Date()
+        
+        // Cancel any pending notifications for this reminder
+        NotificationManager.shared.cancelNotifications(for: reminder.id)
+        
+        // Stop location monitoring if this reminder has location triggers
+        if let locationTrigger = reminder.locationTrigger {
+            LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
+        }
+        
+        do {
+            try context.save()
+            Logger(subsystem: "a-do", category: "Reminders").info("Reminder marked complete: '\(reminder.title)'")
+        } catch {
+            Logger(subsystem: "a-do", category: "Reminders").error("Failed to mark reminder complete: \(String(describing: error))")
+        }
+    }
+    
+    func markReminderIncomplete(_ reminder: Reminder, context: ModelContext) {
+        reminder.isCompleted = false
+        reminder.completedAt = nil
+        
+        do {
+            try context.save()
+            Logger(subsystem: "a-do", category: "Reminders").info("Reminder marked incomplete: '\(reminder.title)'")
+        } catch {
+            Logger(subsystem: "a-do", category: "Reminders").error("Failed to mark reminder incomplete: \(String(describing: error))")
+        }
     }
 }
 
@@ -75,6 +110,11 @@ final class ReminderFormViewModel {
     // Apple Note attachment
     var attachedNote: AppleNoteAttachment?
     var showNotePicker: Bool = false
+    
+    // Voice reminder
+    var voiceReminder: VoiceReminder?
+    var isRecordingVoice: Bool = false
+    var voiceRecordingError: String?
     
     // Calendar invite settings
     var createCalendarInvite: Bool = false
@@ -120,6 +160,7 @@ final class ReminderFormViewModel {
         target.autoTextTaggedContacts = autoTextTaggedContacts
         target.autoTextMe = autoTextMe
         target.appleNote = attachedNote
+        target.voiceReminder = voiceReminder
         if existing == nil { context.insert(target) }
         do { try context.save() } catch { Logger(subsystem: "a-do", category: "Reminders").error("Save failed: \(String(describing: error))") }
         return target
@@ -165,6 +206,73 @@ final class ReminderFormViewModel {
             calendarInviteError = "Error creating calendar invite: \(error.localizedDescription)"
             Logger(subsystem: "a-do", category: "Calendar").error("Calendar invite creation failed: \(String(describing: error))")
         }
+    }
+    
+    // MARK: - Voice Reminder Methods
+    
+    func startVoiceRecording() async {
+        isRecordingVoice = true
+        voiceRecordingError = nil
+        
+        // Start recording - this method handles errors internally and doesn't throw
+        await AudioManager.shared.startRecording()
+        
+        // Monitor recording state
+        while AudioManager.shared.isRecording {
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        }
+        
+        isRecordingVoice = false
+        
+        // Check for errors
+        if let error = AudioManager.shared.recordingError {
+            voiceRecordingError = error
+        } else if !AudioManager.shared.transcribedText.isEmpty {
+            // Create voice reminder from transcribed text
+            if let audioFileURL = AudioManager.shared.getAudioFileURL() {
+                let fileName = audioFileURL.lastPathComponent
+                voiceReminder = VoiceReminder(
+                    audioFileName: fileName,
+                    transcribedText: AudioManager.shared.transcribedText,
+                    recordingDuration: AudioManager.shared.recordingDuration
+                )
+                
+                // Pre-fill title with transcribed text if title is empty
+                if title.isEmpty {
+                    title = AudioManager.shared.transcribedText
+                }
+                
+                Logger(subsystem: "a-do", category: "Voice").info("Voice reminder created: \(fileName)")
+            }
+        }
+    }
+    
+    func stopVoiceRecording() {
+        AudioManager.shared.stopRecording()
+        isRecordingVoice = false
+    }
+    
+    func cancelVoiceRecording() {
+        AudioManager.shared.cancelRecording()
+        isRecordingVoice = false
+        voiceRecordingError = nil
+    }
+    
+    func playVoiceRecording() async {
+        if let voiceReminder = voiceReminder, let audioFileURL = voiceReminder.audioFileURL {
+            do {
+                let player = try AVAudioPlayer(contentsOf: audioFileURL)
+                player.play()
+                Logger(subsystem: "a-do", category: "Voice").info("Playing voice recording: \(voiceReminder.audioFileName)")
+            } catch {
+                Logger(subsystem: "a-do", category: "Voice").error("Failed to play voice recording: \(String(describing: error))")
+            }
+        }
+    }
+    
+    func deleteVoiceRecording() {
+        AudioManager.shared.deleteAudioFile()
+        voiceReminder = nil
     }
     
     func detectCurrentLocation() async {

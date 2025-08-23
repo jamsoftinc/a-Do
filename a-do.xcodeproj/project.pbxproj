@@ -252,7 +252,7 @@
 				CODE_SIGN_ENTITLEMENTS = "a-do/a-do.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -262,7 +262,9 @@
 				INFOPLIST_KEY_NSContactsUsageDescription = "This app accesses your contacts to let you tag people in reminders and send them messages about tasks.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Location is used to trigger location-based reminders when arriving or leaving places.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location is used to trigger location-based reminders when arriving or leaving places.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app uses your microphone to record voice reminders and convert them to text.";
 				INFOPLIST_KEY_NSRemindersUsageDescription = "This app imports reminders from Apple Reminders to keep your tasks in sync.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "This app uses speech recognition to convert your voice recordings into text for reminders.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIBackgroundModes = "location remote-notification";
@@ -273,7 +275,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.6;
+				MARKETING_VERSION = 1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-do";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -299,7 +301,7 @@
 				CODE_SIGN_ENTITLEMENTS = "a-do/a-do.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -309,7 +311,9 @@
 				INFOPLIST_KEY_NSContactsUsageDescription = "This app accesses your contacts to let you tag people in reminders and send them messages about tasks.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Location is used to trigger location-based reminders when arriving or leaving places.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location is used to trigger location-based reminders when arriving or leaving places.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app uses your microphone to record voice reminders and convert them to text.";
 				INFOPLIST_KEY_NSRemindersUsageDescription = "This app imports reminders from Apple Reminders to keep your tasks in sync.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "This app uses speech recognition to convert your voice recordings into text for reminders.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIBackgroundModes = "location remote-notification";
@@ -320,7 +324,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.6;
+				MARKETING_VERSION = 1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-do";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

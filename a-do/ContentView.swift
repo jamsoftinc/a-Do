@@ -11,6 +11,10 @@ import SwiftData
 struct ContentView: View {
     var body: some View {
         HomeView()
+            .task {
+                // Initialize the cleanup manager
+                _ = ReminderCleanupManager.shared
+            }
     }
 }
 

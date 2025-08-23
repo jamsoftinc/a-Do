@@ -50,7 +50,8 @@ struct RootView: View {
                 LocationTrigger.self,
                 ListSection.self,
                 TaggedContact.self,
-                AppleNoteAttachment.self
+                AppleNoteAttachment.self,
+                VoiceReminder.self
             ])
             
             let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)

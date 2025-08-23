@@ -170,6 +170,7 @@ final class Reminder {
     var dueDate: Date?
     var createdAt: Date = Date()
     var isCompleted: Bool = false
+    var completedAt: Date?
     var priorityRaw: Int = 0
     // Messaging preferences
     var autoTextTaggedContacts: Bool = false
@@ -182,6 +183,7 @@ final class Reminder {
     @Relationship(deleteRule: .cascade, inverse: \LocationTrigger.reminder) var locationTrigger: LocationTrigger?
     @Relationship(deleteRule: .cascade, inverse: \TaggedContact.reminder) var taggedContacts: [TaggedContact]? = []
     @Relationship(deleteRule: .cascade, inverse: \AppleNoteAttachment.reminder) var appleNote: AppleNoteAttachment?
+    @Relationship(deleteRule: .cascade, inverse: \VoiceReminder.reminder) var voiceReminder: VoiceReminder?
     @Relationship(inverse: \ReminderList.reminders) var list: ReminderList?
 
     // Required parameterless initializer for SwiftData
@@ -198,6 +200,7 @@ final class Reminder {
         dueDate: Date? = nil,
         createdAt: Date = .now,
         isCompleted: Bool = false,
+        completedAt: Date? = nil,
         priority: Priority = .none,
         tags: [Tag] = [],
         notifications: [ReminderNotification] = [],
@@ -206,6 +209,7 @@ final class Reminder {
         autoTextTaggedContacts: Bool = false,
         autoTextMe: Bool = false,
         appleNote: AppleNoteAttachment? = nil,
+        voiceReminder: VoiceReminder? = nil,
         uuid: UUID = UUID(),
         calendarInviteCreated: Bool = false
     ) {
@@ -215,6 +219,7 @@ final class Reminder {
         self.dueDate = dueDate
         self.createdAt = createdAt
         self.isCompleted = isCompleted
+        self.completedAt = completedAt
         self.priorityRaw = priority.rawValue
         self.tags = tags.isEmpty ? nil : tags
         self.notifications = notifications.isEmpty ? nil : notifications
@@ -223,12 +228,43 @@ final class Reminder {
         self.autoTextTaggedContacts = autoTextTaggedContacts
         self.autoTextMe = autoTextMe
         self.appleNote = appleNote
+        self.voiceReminder = voiceReminder
         self.calendarInviteCreated = calendarInviteCreated
     }
 
     var priority: Priority {
         get { Priority(rawValue: priorityRaw) ?? .none }
         set { priorityRaw = newValue.rawValue }
+    }
+    
+    // Check if completed reminder should be automatically deleted (older than 30 days)
+    var shouldAutoDelete: Bool {
+        guard isCompleted, let completedAt = completedAt else { return false }
+        let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+        return completedAt < thirtyDaysAgo
+    }
+}
+
+@Model
+final class VoiceReminder {
+    var audioFileName: String = ""
+    var transcribedText: String = ""
+    var recordingDuration: TimeInterval = 0
+    var createdAt: Date = Date()
+    
+    @Relationship var reminder: Reminder?
+    
+    init(audioFileName: String, transcribedText: String, recordingDuration: TimeInterval) {
+        self.audioFileName = audioFileName
+        self.transcribedText = transcribedText
+        self.recordingDuration = recordingDuration
+        self.createdAt = Date()
+    }
+    
+    // Computed property to get the full audio file URL
+    var audioFileURL: URL? {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        return documentsPath.appendingPathComponent(audioFileName)
     }
 }
 
