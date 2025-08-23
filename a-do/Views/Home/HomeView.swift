@@ -448,6 +448,14 @@ private struct ReminderRow: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                if reminder.calendarInviteCreated {
+                    HStack(spacing: 6) {
+                        Image(systemName: "calendar.badge.checkmark").foregroundStyle(.orange)
+                        Text("Calendar invite created")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             Spacer()
             Button {
@@ -490,8 +498,26 @@ private struct ReminderRow: View {
                 try? RemindersManager.shared.export(reminder: reminder)
             } label: { Label("Export to Apple Reminders", systemImage: "arrow.up.square") }
             Button {
-                Task { try? await CalendarManager.shared.createEvent(from: reminder.title, dueDate: reminder.dueDate) }
-            } label: { Label("Create Calendar Event", systemImage: "calendar.badge.plus") }
+                Task { 
+                    do {
+                        let event = try await CalendarManager.shared.createCalendarInvite(
+                            title: reminder.title,
+                            details: reminder.details,
+                            dueDate: reminder.dueDate,
+                            duration: 30 * 60, // 30 minutes default
+                            location: reminder.locationTrigger?.label,
+                            attendees: [], // Could be enhanced to include tagged contacts
+                            reminder: reminder
+                        )
+                        if let event = event {
+                            // Show success feedback
+                            Logger(subsystem: "a-do", category: "Calendar").info("Calendar invite created from context menu for reminder: \(reminder.title)")
+                        }
+                    } catch {
+                        Logger(subsystem: "a-do", category: "Calendar").error("Failed to create calendar invite: \(error.localizedDescription)")
+                    }
+                }
+            } label: { Label("Create Calendar Invite", systemImage: "calendar.badge.plus") }
             if reminder.appleNote != nil {
                 Button {
                     NotesManager.shared.openNoteInNotesApp(noteIdentifier: reminder.appleNote!.noteIdentifier)

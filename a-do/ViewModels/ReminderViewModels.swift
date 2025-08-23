@@ -76,6 +76,14 @@ final class ReminderFormViewModel {
     var attachedNote: AppleNoteAttachment?
     var showNotePicker: Bool = false
     
+    // Calendar invite settings
+    var createCalendarInvite: Bool = false
+    var calendarDuration: TimeInterval = 30 * 60 // 30 minutes default
+    var calendarLocation: String = ""
+    var calendarAttendees: String = "" // Comma-separated email addresses
+    var calendarInviteCreated: Bool = false
+    var calendarInviteError: String?
+    
     // Location detection
     var isDetectingLocation: Bool = false
     var locationDetectionError: String?
@@ -84,6 +92,14 @@ final class ReminderFormViewModel {
     var hasValidCoordinates: Bool {
         return self.locationLatitude >= -90 && self.locationLatitude <= 90 &&
                self.locationLongitude >= -180 && self.locationLongitude <= 180
+    }
+    
+    // Computed property to get attendee emails
+    var attendeeEmails: [String] {
+        return calendarAttendees
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
     }
 
     @discardableResult
@@ -107,6 +123,48 @@ final class ReminderFormViewModel {
         if existing == nil { context.insert(target) }
         do { try context.save() } catch { Logger(subsystem: "a-do", category: "Reminders").error("Save failed: \(String(describing: error))") }
         return target
+    }
+    
+    // Create calendar invite from reminder
+    func createCalendarInviteFromReminder() async {
+        guard createCalendarInvite else { return }
+        
+        calendarInviteError = nil
+        calendarInviteCreated = false
+        
+        do {
+            // Request calendar access if needed
+            if !CalendarManager.shared.accessGranted {
+                await CalendarManager.shared.requestAccess()
+            }
+            
+            guard CalendarManager.shared.accessGranted else {
+                calendarInviteError = "Calendar access denied. Please enable calendar access in Settings."
+                return
+            }
+            
+            // Create the calendar invite
+            let event = try await CalendarManager.shared.createCalendarInvite(
+                title: title,
+                details: details.isEmpty ? nil : details,
+                dueDate: dueDate,
+                duration: calendarDuration,
+                location: calendarLocation.isEmpty ? nil : calendarLocation,
+                attendees: attendeeEmails,
+                reminder: nil // We'll pass the actual reminder after it's saved
+            )
+            
+            if event != nil {
+                calendarInviteCreated = true
+                Logger(subsystem: "a-do", category: "Calendar").info("Calendar invite created successfully")
+            } else {
+                calendarInviteError = "Failed to create calendar invite"
+            }
+            
+        } catch {
+            calendarInviteError = "Error creating calendar invite: \(error.localizedDescription)"
+            Logger(subsystem: "a-do", category: "Calendar").error("Calendar invite creation failed: \(String(describing: error))")
+        }
     }
     
     func detectCurrentLocation() async {

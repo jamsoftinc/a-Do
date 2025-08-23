@@ -33,6 +33,7 @@ struct ReminderFormView: View {
                     basicDetailsSection
                     tagsSection
                     notificationsSection
+                    calendarInviteSection
                 }
                 .frame(maxWidth: .infinity)
                 
@@ -63,6 +64,7 @@ struct ReminderFormView: View {
             basicDetailsSection
             tagsSection
             notificationsSection
+            calendarInviteSection
             autoMessageSection
             tagPeopleSection
             appleNoteSection
@@ -123,6 +125,69 @@ struct ReminderFormView: View {
     private var notificationsSection: some View {
         Section("Notifications") {
             LeadTimesPicker(leadTimes: $viewModel.leadTimes)
+        }
+    }
+    
+    private var calendarInviteSection: some View {
+        Section("Calendar Invite") {
+            if viewModel.calendarInviteCreated {
+                HStack {
+                    Image(systemName: "calendar.badge.checkmark")
+                        .foregroundColor(.orange)
+                    Text("Calendar invite already created")
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
+            } else {
+                Toggle("Create Calendar Event", isOn: $viewModel.createCalendarInvite)
+                
+                if viewModel.createCalendarInvite {
+                    VStack(alignment: .leading, spacing: 12) {
+                        // Duration picker
+                        HStack {
+                            Text("Duration:")
+                            Spacer()
+                            Picker("Duration", selection: $viewModel.calendarDuration) {
+                                Text("15 min").tag(TimeInterval(15 * 60))
+                                Text("30 min").tag(TimeInterval(30 * 60))
+                                Text("1 hour").tag(TimeInterval(60 * 60))
+                                Text("2 hours").tag(TimeInterval(2 * 60 * 60))
+                                Text("All day").tag(TimeInterval(24 * 60 * 60))
+                            }
+                            .pickerStyle(MenuPickerStyle())
+                        }
+                        
+                        // Location field
+                        TextField("Location (optional)", text: $viewModel.calendarLocation)
+                        
+                        // Attendees field
+                        TextField("Attendees (comma-separated emails)", text: $viewModel.calendarAttendees)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                        
+                        // Status messages
+                        if viewModel.calendarInviteCreated {
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                Text("Calendar invite created successfully")
+                                    .foregroundColor(.green)
+                                    .font(.caption)
+                            }
+                        }
+                        
+                        if let error = viewModel.calendarInviteError {
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.red)
+                                Text(error)
+                                    .foregroundColor(.red)
+                                    .font(.caption)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
     private var autoMessageSection: some View {
@@ -230,6 +295,9 @@ struct ReminderFormView: View {
                         leadTimes: saved.notifications?.map { $0.leadTimeSeconds } ?? [],
                         title: saved.title
                     )
+                    
+                    // Create calendar invite if requested
+                    await viewModel.createCalendarInviteFromReminder()
                 }
                 if !viewModel.locationLabel.isEmpty {
                     let notifyOnEntry = viewModel.locationType == .onArrival
@@ -269,6 +337,14 @@ struct ReminderFormView: View {
                 viewModel.locationRadius = location.radius
                 viewModel.locationType = location.type
             }
+            
+            // For existing reminders, don't create calendar invites by default
+            // as they likely already exist
+            viewModel.createCalendarInvite = false
+            viewModel.calendarDuration = 30 * 60
+            viewModel.calendarLocation = ""
+            viewModel.calendarAttendees = ""
+            viewModel.calendarInviteCreated = existing.calendarInviteCreated
         } else {
             // For new reminders, try to pre-fill with current location
             Task {

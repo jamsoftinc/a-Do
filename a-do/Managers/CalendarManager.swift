@@ -64,6 +64,102 @@ final class CalendarManager {
         await loadEvents()
     }
     
+    // Enhanced calendar invite creation with attendees and location
+    func createCalendarInvite(
+        title: String,
+        details: String?,
+        dueDate: Date?,
+        duration: TimeInterval = 30 * 60, // 30 minutes default
+        location: String? = nil,
+        attendees: [String] = [], // Array of email addresses
+        reminder: Reminder? = nil
+    ) async throws -> EKEvent? {
+        guard accessGranted else { 
+            Logger(subsystem: "a-do", category: "Calendar").error("Calendar access not granted")
+            return nil 
+        }
+        
+        let event = EKEvent(eventStore: store)
+        event.title = title
+        
+        // Set start and end dates
+        if let dueDate = dueDate {
+            event.startDate = dueDate
+            event.endDate = dueDate.addingTimeInterval(duration)
+        } else {
+            let now = Date()
+            event.startDate = now
+            event.endDate = now.addingTimeInterval(duration)
+        }
+        
+        // Set location if provided
+        if let location = location, !location.isEmpty {
+            event.location = location
+        }
+        
+        // Set notes/description
+        var notes = ""
+        if let details = details, !details.isEmpty {
+            notes += details
+        }
+        
+        // Add reminder context if available
+        if let reminder = reminder {
+            if !notes.isEmpty { notes += "\n\n" }
+            notes += "Created from Remember reminder"
+            if let tags = reminder.tags, !tags.isEmpty {
+                let tagNames = tags.map { $0.name }.joined(separator: ", ")
+                notes += "\nTags: \(tagNames)"
+            }
+        }
+        
+        if !notes.isEmpty {
+            event.notes = notes
+        }
+        
+        // Add attendees from the provided list
+        var allAttendees = attendees
+        
+        // Add attendees from tagged contacts if reminder is provided
+        if let reminder = reminder, let taggedContacts = reminder.taggedContacts {
+            for contact in taggedContacts {
+                // Try to get email from contacts manager
+                if let email = await ContactsManager.shared.getEmailForContact(identifier: contact.identifier) {
+                    allAttendees.append(email)
+                }
+            }
+        }
+        
+        // Remove duplicates and add to event
+        let uniqueAttendees = Array(Set(allAttendees)).filter { !$0.isEmpty }
+        
+        // Add attendees to the event notes for now
+        // This ensures compatibility across all iOS versions
+        if !uniqueAttendees.isEmpty {
+            var attendeeNote = "\n\nAttendees:"
+            for email in uniqueAttendees {
+                attendeeNote += "\n- \(email)"
+            }
+            event.notes = (event.notes ?? "") + attendeeNote
+        }
+        
+        // Set calendar
+        event.calendar = store.defaultCalendarForNewEvents
+        
+        // Save the event
+        try store.save(event, span: .thisEvent, commit: true)
+        
+        // Mark the reminder as having a calendar invite created
+        if let reminder = reminder {
+            reminder.calendarInviteCreated = true
+        }
+        
+        Logger(subsystem: "a-do", category: "Calendar").info("Calendar invite created: '\(title)' with \(uniqueAttendees.count) attendees")
+        
+        await loadEvents()
+        return event
+    }
+    
     func openEventInCalendar(_ event: EKEvent) {
         // Try to open the specific event using EventKit's URL scheme
         if let eventURL = event.eventIdentifier.isEmpty ? nil : URL(string: "calshow://event/\(event.eventIdentifier)") {

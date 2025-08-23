@@ -174,6 +174,8 @@ final class Reminder {
     // Messaging preferences
     var autoTextTaggedContacts: Bool = false
     var autoTextMe: Bool = false
+    // Calendar tracking
+    var calendarInviteCreated: Bool = false
 
     @Relationship(deleteRule: .cascade, inverse: \Tag.reminders) var tags: [Tag]? = []
     @Relationship(deleteRule: .cascade, inverse: \ReminderNotification.reminder) var notifications: [ReminderNotification]? = []
@@ -204,7 +206,8 @@ final class Reminder {
         autoTextTaggedContacts: Bool = false,
         autoTextMe: Bool = false,
         appleNote: AppleNoteAttachment? = nil,
-        uuid: UUID = UUID()
+        uuid: UUID = UUID(),
+        calendarInviteCreated: Bool = false
     ) {
         self.uuid = uuid
         self.title = title
@@ -220,6 +223,7 @@ final class Reminder {
         self.autoTextTaggedContacts = autoTextTaggedContacts
         self.autoTextMe = autoTextMe
         self.appleNote = appleNote
+        self.calendarInviteCreated = calendarInviteCreated
     }
 
     var priority: Priority {
