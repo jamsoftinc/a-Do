@@ -214,8 +214,14 @@ struct HomeView: View {
                 
                 // Voice recording button
                 Button {
-                    Task {
-                        await startQuickVoiceMemo()
+                    if AudioManager.shared.isRecording {
+                        // Stop recording
+                        stopQuickVoiceMemo()
+                    } else {
+                        // Start recording
+                        Task {
+                            await startQuickVoiceMemo()
+                        }
                     }
                 } label: {
                     HStack(spacing: 12) {
@@ -260,7 +266,7 @@ struct HomeView: View {
                         Image(systemName: "text.bubble")
                             .foregroundColor(.orange)
                             .imageScale(.small)
-                        Text("Transcribing voice to text...")
+                        Text("Using Apple Intelligence to transcribe...")
                             .font(.caption)
                             .foregroundColor(.orange)
                         Spacer()
@@ -273,7 +279,7 @@ struct HomeView: View {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(.green)
                             .imageScale(.small)
-                        Text("Creating reminder from voice...")
+                        Text("Creating reminder from transcribed text...")
                             .font(.caption)
                             .foregroundColor(.green)
                         Spacer()
@@ -972,9 +978,18 @@ extension HomeView {
     }
     
     private func createVoiceReminderFromTranscription() async {
-        guard !AudioManager.shared.transcribedText.isEmpty else { return }
+        guard !AudioManager.shared.transcribedText.isEmpty else { 
+            Logger(subsystem: "a-do", category: "Voice").warning("No transcribed text available for reminder creation")
+            return 
+        }
         
         let transcribedText = AudioManager.shared.transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Validate that we have meaningful text
+        guard transcribedText.count > 2 else {
+            Logger(subsystem: "a-do", category: "Voice").warning("Transcribed text too short: '\(transcribedText)'")
+            return
+        }
         
         // Create a new reminder with the transcribed text as title
         let reminder = Reminder(
@@ -993,11 +1008,13 @@ extension HomeView {
                 recordingDuration: AudioManager.shared.recordingDuration
             )
             reminder.voiceReminder = voiceReminder
+            
+            Logger(subsystem: "a-do", category: "Voice").info("Voice recording attached: \(fileName)")
         }
         
         do {
             try context.save()
-            Logger(subsystem: "a-do", category: "Voice").info("Voice reminder created automatically: '\(transcribedText)'")
+            Logger(subsystem: "a-do", category: "Voice").info("Voice reminder created successfully using Apple Speech Recognition: '\(transcribedText)'")
             
             // Clear the transcribed text after successful creation
             AudioManager.shared.transcribedText = ""
@@ -1007,7 +1024,11 @@ extension HomeView {
     }
     
     private func stopQuickVoiceMemo() {
+        // Stop the recording - this will trigger transcription automatically
         AudioManager.shared.stopRecording()
+        
+        // The transcription and reminder creation will happen automatically
+        // via the task we set up in startQuickVoiceMemo()
     }
     
     private func createLocationReminder() {
