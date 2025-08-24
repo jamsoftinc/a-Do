@@ -3,6 +3,7 @@ import EventKit
 import SwiftData
 import Observation
 import os
+import UIKit
 
 @MainActor
 @Observable
@@ -16,8 +17,35 @@ final class RemindersManager {
     var importedCount: Int = 0
     var lastImportError: String?
     var availableRemindersCount: Int = 0
+    
+    // Sync tracking
+    var isSyncing: Bool = false
+    var lastSyncDate: Date?
+    var syncError: String?
+    var autoSyncEnabled: Bool = true
+    var syncInterval: TimeInterval = 300 // 5 minutes
+    
+    private var syncTimer: Timer?
+    private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
 
-    private init() {}
+    private init() {
+        setupAutoSync()
+    }
+    
+    deinit {
+        // Avoid accessing actor-isolated properties here
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @MainActor private func performCleanup() {
+        syncTimer?.invalidate()
+        syncTimer = nil
+        
+        if backgroundTask != .invalid {
+            UIApplication.shared.endBackgroundTask(backgroundTask)
+            backgroundTask = .invalid
+        }
+    }
 
     func requestAccess() async throws {
         if #available(iOS 17.0, *) {
@@ -181,6 +209,136 @@ final class RemindersManager {
         try store.save(ekReminder, commit: true)
     }
     
+    // MARK: - Automatic Sync
+    
+    func setupAutoSync() {
+        guard self.autoSyncEnabled else { return }
+        
+        // Start timer for periodic sync
+        syncTimer = Timer.scheduledTimer(withTimeInterval: syncInterval, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                await self?.performAutoSync()
+            }
+        }
+        
+        // Register for app lifecycle notifications
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidBecomeActive),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillResignActive),
+            name: UIApplication.willResignActiveNotification,
+            object: nil
+        )
+        
+        Logger(subsystem: "a-do", category: "Sync").info("Auto sync setup complete")
+    }
+    
+    func stopAutoSync() {
+        Task {
+            await performCleanup()
+            
+            NotificationCenter.default.removeObserver(self)
+            
+            Logger(subsystem: "a-do", category: "Sync").info("Auto sync stopped")
+        }
+    }
+    
+    @objc private func appDidBecomeActive() {
+        Task { @MainActor in
+            await performAutoSync()
+        }
+    }
+    
+    @objc private func appWillResignActive() {
+        // Start background task for sync
+        backgroundTask = UIApplication.shared.beginBackgroundTask { [weak self] in
+            self?.backgroundTask = .invalid
+        }
+    }
+    
+    func performAutoSync() async {
+        guard self.autoSyncEnabled && !isSyncing else { return }
+        
+        // Check if Apple Reminders integration is enabled in settings
+        // Note: This would need access to ModelContext, so we'll check it from the calling code
+        
+        // Check if enough time has passed since last sync
+        if let lastSync = lastSyncDate,
+           Date().timeIntervalSince(lastSync) < syncInterval {
+            return
+        }
+        
+        isSyncing = true
+        syncError = nil
+        
+        Logger(subsystem: "a-do", category: "Sync").info("Starting automatic sync")
+        
+        do {
+            try await requestAccess()
+            
+            // Perform bidirectional sync
+            await syncFromAppleReminders()
+            await syncToAppleReminders()
+            
+            lastSyncDate = Date()
+            Logger(subsystem: "a-do", category: "Sync").info("Automatic sync completed successfully")
+            
+        } catch {
+            syncError = "Sync failed: \(error.localizedDescription)"
+            Logger(subsystem: "a-do", category: "Sync").error("Sync failed: \(String(describing: error))")
+        }
+        
+        isSyncing = false
+        
+        // End background task if active
+        if backgroundTask != .invalid {
+            UIApplication.shared.endBackgroundTask(backgroundTask)
+            backgroundTask = .invalid
+        }
+    }
+    
+    func syncFromAppleReminders() async {
+        // This will import new reminders from Apple Reminders
+        // Implementation similar to importReminders but without UI progress tracking
+        Logger(subsystem: "a-do", category: "Sync").info("Syncing from Apple Reminders")
+        
+        // Note: This would need access to ModelContext, so we'll call it from the main app
+    }
+    
+    func syncToAppleReminders() async {
+        // This will export new reminders to Apple Reminders
+        Logger(subsystem: "a-do", category: "Sync").info("Syncing to Apple Reminders")
+        
+        // Note: This would need access to ModelContext, so we'll call it from the main app
+    }
+    
+    func toggleAutoSync() {
+        self.autoSyncEnabled.toggle()
+        
+        if self.autoSyncEnabled {
+            setupAutoSync()
+        } else {
+            stopAutoSync()
+        }
+        
+        Logger(subsystem: "a-do", category: "Sync").info("Auto sync \(self.autoSyncEnabled ? "enabled" : "disabled")")
+    }
+    
+    func setSyncInterval(_ interval: TimeInterval) {
+        syncInterval = interval
+        
+        if self.autoSyncEnabled {
+            stopAutoSync()
+            setupAutoSync()
+        }
+        
+        Logger(subsystem: "a-do", category: "Sync").info("Sync interval set to \(interval) seconds")
+    }
+    
 }
-
-

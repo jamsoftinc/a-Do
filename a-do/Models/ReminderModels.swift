@@ -172,6 +172,8 @@ final class Reminder {
     var isCompleted: Bool = false
     var completedAt: Date?
     var priorityRaw: Int = 0
+    // Apple Reminders sync
+    var appleReminderID: String?
     // Messaging preferences
     var autoTextTaggedContacts: Bool = false
     var autoTextMe: Bool = false

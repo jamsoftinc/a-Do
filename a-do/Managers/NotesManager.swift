@@ -3,6 +3,7 @@ import os
 import Observation
 import UIKit
 import EventKit
+import SwiftData
 
 @MainActor
 @Observable
@@ -26,7 +27,16 @@ final class NotesManager {
         }
     }
     
-    func fetchNotes() async -> [Note] {
+    func fetchNotes(context: ModelContext? = nil) async -> [Note] {
+        // Check if Apple Notes integration is enabled
+        if let context = context {
+            let settings = SettingsManager.shared.getSettings(context: context)
+            guard settings.appleNotesEnabled else {
+                Logger(subsystem: "a-do", category: "Notes").info("Apple Notes integration is disabled")
+                return []
+            }
+        }
+        
         guard authorizationStatus == .authorized else { return [] }
         
         do {
@@ -38,7 +48,16 @@ final class NotesManager {
         }
     }
     
-    func createNote(title: String, content: String) async -> Note? {
+    func createNote(title: String, content: String, context: ModelContext? = nil) async -> Note? {
+        // Check if Apple Notes integration is enabled
+        if let context = context {
+            let settings = SettingsManager.shared.getSettings(context: context)
+            guard settings.appleNotesEnabled else {
+                Logger(subsystem: "a-do", category: "Notes").info("Apple Notes integration is disabled")
+                return nil
+            }
+        }
+        
         guard authorizationStatus == .authorized else { return nil }
         
         do {

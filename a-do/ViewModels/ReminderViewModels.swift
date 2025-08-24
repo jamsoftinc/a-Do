@@ -21,6 +21,14 @@ final class ReminderHomeViewModel {
         do { 
             try context.save() 
             Logger(subsystem: "a-do", category: "Reminders").info("Quick reminder saved: '\(safeTitle)' with ID: \(String(describing: reminder.id)), due: \(self.quickDueDate?.description ?? "none")")
+            
+            // Sync to Apple Reminders (only if enabled)
+            Task {
+                let settings = SettingsManager.shared.getSettings(context: context)
+                if settings.appleRemindersEnabled {
+                    await AppleRemindersSyncManager.shared.performFullSync(context: context)
+                }
+            }
         } catch { 
             Logger(subsystem: "a-do", category: "Reminders").error("Quick add failed: \(String(describing: error))") 
         }
@@ -164,6 +172,14 @@ final class ReminderFormViewModel {
         if existing == nil { context.insert(target) }
         do { 
             try context.save() 
+            
+            // Sync to Apple Reminders (only if enabled)
+            Task {
+                let settings = SettingsManager.shared.getSettings(context: context)
+                if settings.appleRemindersEnabled {
+                    await AppleRemindersSyncManager.shared.performFullSync(context: context)
+                }
+            }
         } catch { 
             Logger(subsystem: "a-do", category: "Reminders").error("Save failed: \(String(describing: error))") 
         }
@@ -171,7 +187,7 @@ final class ReminderFormViewModel {
     }
     
     // Create calendar invite from reminder
-    func createCalendarInviteFromReminder() async {
+    func createCalendarInviteFromReminder(context: ModelContext) async {
         guard createCalendarInvite else { return }
         
         calendarInviteError = nil
@@ -196,7 +212,8 @@ final class ReminderFormViewModel {
                 duration: calendarDuration,
                 location: calendarLocation.isEmpty ? nil : calendarLocation,
                 attendees: attendeeEmails,
-                reminder: nil // We'll pass the actual reminder after it's saved
+                reminder: nil, // We'll pass the actual reminder after it's saved
+                context: context
             )
             
             if event != nil {

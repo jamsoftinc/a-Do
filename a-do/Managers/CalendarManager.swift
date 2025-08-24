@@ -3,6 +3,7 @@ import EventKit
 import os
 import Observation
 import UIKit
+import SwiftData
 
 @MainActor
 @Observable
@@ -72,8 +73,18 @@ final class CalendarManager {
         duration: TimeInterval = 30 * 60, // 30 minutes default
         location: String? = nil,
         attendees: [String] = [], // Array of email addresses
-        reminder: Reminder? = nil
+        reminder: Reminder? = nil,
+        context: ModelContext? = nil
     ) async throws -> EKEvent? {
+        // Check if Apple Calendar integration is enabled
+        if let context = context {
+            let settings = SettingsManager.shared.getSettings(context: context)
+            guard settings.appleCalendarEnabled else {
+                Logger(subsystem: "a-do", category: "Calendar").info("Apple Calendar integration is disabled")
+                return nil
+            }
+        }
+        
         guard accessGranted else { 
             Logger(subsystem: "a-do", category: "Calendar").error("Calendar access not granted")
             return nil 

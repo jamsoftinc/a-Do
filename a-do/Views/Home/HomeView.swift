@@ -39,6 +39,7 @@ struct HomeView: View {
     @FocusState private var isQuickAddFocused: Bool
     @State private var showingImportReminders = false
     @State private var showingReminderForm = false
+    @State private var showingAppleIntegrations = false
 
     var body: some View {
         NavigationStack {
@@ -132,6 +133,16 @@ struct HomeView: View {
                                 .background(.ultraThinMaterial, in: Circle())
                         }
                         
+                        Button {
+                            showingAppleIntegrations = true
+                        } label: {
+                            Image(systemName: "gear")
+                                .imageScale(.large)
+                                .foregroundStyle(.white)
+                                .frame(width: 32, height: 32)
+                                .background(.ultraThinMaterial, in: Circle())
+                        }
+                        
                         Menu {
                             Button {
                                 showingImportReminders = true
@@ -168,8 +179,12 @@ struct HomeView: View {
         }
         .task { await calendarManager.requestAccess() }
         .task { NotificationManager.shared.requestAuthorization() }
+        .task { await AppleRemindersSyncManager.shared.performFullSync(context: context) }
         .sheet(isPresented: $showingImportReminders) {
             ImportRemindersView()
+        }
+        .sheet(isPresented: $showingAppleIntegrations) {
+            AppleIntegrationsView()
         }
         .sheet(isPresented: $showingReminderForm) {
             NavigationStack {
@@ -300,6 +315,7 @@ struct HomeView: View {
                         TextField("Quick reminder...", text: $viewModel.quickTitle)
                             .textFieldStyle(.plain)
                             .focused($isQuickAddFocused)
+                            .primaryText()
                             .onTapGesture {
                                 isQuickAddFocused = true
                             }
@@ -312,10 +328,10 @@ struct HomeView: View {
                             isQuickAddFocused = false
                         } label: {
                             Image(systemName: "plus.circle.fill")
-                                .foregroundStyle(.white)
+                                .foregroundStyle(AppTheme.Colors.primary)
                                 .imageScale(.large)
                                 .frame(width: 32, height: 32)
-                                .background(.white, in: Circle())
+                                .background(AppTheme.Colors.surface, in: Circle())
                         }
                         .disabled(viewModel.quickTitle.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
@@ -345,14 +361,14 @@ struct HomeView: View {
                                 }
                             } label: {
                                 Text(title)
-                                    .font(.caption)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(isSelected ? .white : .clear, in: Capsule())
-                                    .foregroundStyle(isSelected ? .white : .secondary)
+                                    .font(AppTheme.Typography.caption1)
+                                    .padding(.horizontal, AppTheme.Spacing.sm)
+                                    .padding(.vertical, AppTheme.Spacing.xs)
+                                    .background(isSelected ? AppTheme.Colors.primary : AppTheme.Colors.surfaceLight, in: Capsule())
+                                    .foregroundStyle(isSelected ? .white : AppTheme.Colors.textPrimary)
                                     .overlay(
                                         Capsule()
-                                            .stroke(.secondary.opacity(0.3), lineWidth: 1)
+                                            .stroke(AppTheme.Colors.primary.opacity(0.3), lineWidth: 1)
                                     )
                             }
                         }
@@ -360,8 +376,8 @@ struct HomeView: View {
                     
                     if let dueDate = viewModel.quickDueDate {
                         Text("Due: \(dueDate, style: .date) at \(dueDate, style: .time)")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .font(AppTheme.Typography.caption2)
+                            .secondaryText()
                     }
                 }
             }
@@ -374,15 +390,14 @@ struct HomeView: View {
                         Image(systemName: "location.slash")
                             .foregroundColor(.orange)
                         Text("Enable location for location-based reminders")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.primary)
+                            .font(AppTheme.Typography.caption1)
+                            .primaryText()
                         Spacer()
                         Button("Enable") {
                             LocationManager.shared.requestAuthorization()
                         }
-                        .font(.caption)
-                        .foregroundColor(.white)
+                        .font(AppTheme.Typography.caption1)
+                        .foregroundColor(AppTheme.Colors.primary)
                     }
                 }
             }

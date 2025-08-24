@@ -517,7 +517,7 @@ struct ReminderFormView: View {
                         )
                         
                         // Create calendar invite if requested
-                        await viewModel.createCalendarInviteFromReminder()
+                        await viewModel.createCalendarInviteFromReminder(context: context)
                     }
                     if !viewModel.locationLabel.isEmpty {
                         let notifyOnEntry = viewModel.locationType == .onArrival
@@ -714,5 +714,3 @@ private struct LocationPin: Identifiable {
     let coordinate: CLLocationCoordinate2D
     let title: String
 }
-
-
