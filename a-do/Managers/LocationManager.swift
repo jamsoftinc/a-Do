@@ -15,12 +15,19 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     var currentLocation: CLLocation?
     var isUpdatingLocation: Bool = false
     var currentAddress: String?
+    var lastLocationError: String?
 
     private override init() {
         super.init()
         manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
-        manager.distanceFilter = 10 // Update location when user moves 10 meters
+        manager.desiredAccuracy = kCLLocationAccuracyBest
+        manager.distanceFilter = 5 // Update location when user moves 5 meters
+        manager.pausesLocationUpdatesAutomatically = false
+        manager.allowsBackgroundLocationUpdates = true
+        manager.showsBackgroundLocationIndicator = true
+        
+        // Initialize authorization status
+        authorizationStatus = manager.authorizationStatus
     }
     
     // Helper method to validate coordinates
@@ -29,6 +36,8 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     }
 
     func requestAuthorization(always: Bool = false) {
+        Logger(subsystem: "a-do", category: "Location").info("Requesting location authorization: always=\(always)")
+        
         if always {
             manager.requestAlwaysAuthorization()
         } else {
@@ -38,11 +47,14 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     
     func startLocationUpdates() {
         guard authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways else {
-            Logger(subsystem: "a-do", category: "Location").error("Cannot start location updates: authorization not granted")
+            let errorMsg = "Cannot start location updates: authorization not granted (status: \(authorizationStatus.rawValue))"
+            Logger(subsystem: "a-do", category: "Location").error(errorMsg)
+            lastLocationError = errorMsg
             return
         }
         
         isUpdatingLocation = true
+        lastLocationError = nil
         manager.startUpdatingLocation()
         Logger(subsystem: "a-do", category: "Location").info("Started location updates")
     }
@@ -54,24 +66,40 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     }
     
     func getCurrentLocation() async -> CLLocation? {
+        Logger(subsystem: "a-do", category: "Location").info("Getting current location...")
+        
+        // Check authorization first
+        if authorizationStatus == .denied || authorizationStatus == .restricted {
+            let errorMsg = "Location access denied or restricted (status: \(authorizationStatus.rawValue))"
+            Logger(subsystem: "a-do", category: "Location").error(errorMsg)
+            lastLocationError = errorMsg
+            return nil
+        }
+        
         // If we already have a recent location, return it
         if let location = currentLocation, 
            Date().timeIntervalSince(location.timestamp) < 300 { // 5 minutes
+            Logger(subsystem: "a-do", category: "Location").info("Using cached location: \(location.coordinate.latitude), \(location.coordinate.longitude)")
             return location
         }
         
         // Otherwise, start updates and wait for a location
         startLocationUpdates()
         
-        // Wait for up to 10 seconds for a location update
-        for _ in 0..<100 {
+        // Wait for up to 15 seconds for a location update
+        for attempt in 0..<150 {
             if let location = currentLocation {
+                Logger(subsystem: "a-do", category: "Location").info("Location obtained after \(attempt * 0.1) seconds: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+                stopLocationUpdates()
                 return location
             }
             try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
         }
         
         stopLocationUpdates()
+        let errorMsg = "Failed to get location after 15 seconds"
+        Logger(subsystem: "a-do", category: "Location").error(errorMsg)
+        lastLocationError = errorMsg
         return nil
     }
     
@@ -108,17 +136,22 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         region.notifyOnEntry = notifyOnEntry
         region.notifyOnExit = notifyOnExit
         manager.startMonitoring(for: region)
+        
+        Logger(subsystem: "a-do", category: "Location").info("Started monitoring region: \(label) at (\(latitude), \(longitude)) with radius \(clampedRadius)m")
     }
 
     func stopMonitoring(identifier: String) {
         for region in manager.monitoredRegions where region.identifier == identifier {
             manager.stopMonitoring(for: region)
+            Logger(subsystem: "a-do", category: "Location").info("Stopped monitoring region: \(identifier)")
         }
     }
 
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         Task { @MainActor in
+            let oldStatus = self.authorizationStatus
             self.authorizationStatus = manager.authorizationStatus
+            Logger(subsystem: "a-do", category: "Location").info("Location authorization changed from \(oldStatus.rawValue) to \(manager.authorizationStatus.rawValue)")
         }
     }
 
@@ -141,7 +174,8 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         
         Task { @MainActor in
             self.currentLocation = location
-            Logger(subsystem: "a-do", category: "Location").info("Location updated: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+            self.lastLocationError = nil
+            Logger(subsystem: "a-do", category: "Location").info("Location updated: \(location.coordinate.latitude), \(location.coordinate.longitude) (accuracy: \(location.horizontalAccuracy)m)")
             
             // Reverse geocode to get address
             await self.reverseGeocode(location: location)
@@ -150,7 +184,9 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         Task { @MainActor in
-            Logger(subsystem: "a-do", category: "Location").error("Location update failed: \(String(describing: error))")
+            let errorMsg = "Location update failed: \(String(describing: error))"
+            Logger(subsystem: "a-do", category: "Location").error(errorMsg)
+            self.lastLocationError = errorMsg
             self.isUpdatingLocation = false
         }
     }

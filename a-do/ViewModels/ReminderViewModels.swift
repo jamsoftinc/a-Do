@@ -136,10 +136,32 @@ final class ReminderFormViewModel {
     var isDetectingLocation: Bool = false
     var locationDetectionError: String?
     
-    // Computed property to check if coordinates are valid
+    // Computed property to check if coordinates are valid and real
     var hasValidCoordinates: Bool {
-        return self.locationLatitude >= -90 && self.locationLatitude <= 90 &&
+        let isValid = self.locationLatitude >= -90 && self.locationLatitude <= 90 &&
                self.locationLongitude >= -180 && self.locationLongitude <= 180
+        
+        // Additional validation to ensure coordinates are not demo/fake data
+        if isValid {
+            // Check if coordinates are not zero (which could indicate uninitialized data)
+            let isNotZero = self.locationLatitude != 0 || self.locationLongitude != 0
+            
+            // Check if coordinates are not obviously fake (like 0,0 which is in the ocean)
+            let isNotFake = !(abs(self.locationLatitude) < 0.001 && abs(self.locationLongitude) < 0.001)
+            
+            // Check if coordinates are within reasonable bounds for real locations
+            let isReasonable = self.locationLatitude != 0 && self.locationLongitude != 0
+            
+            let isReal = isNotZero && isNotFake && isReasonable
+            
+            if !isReal {
+                Logger(subsystem: "a-do", category: "Location").warning("Coordinates appear to be demo/fake data: lat=\(self.locationLatitude), lon=\(self.locationLongitude)")
+            }
+            
+            return isReal
+        }
+        
+        return false
     }
     
     // Computed property to get attendee emails
@@ -231,6 +253,7 @@ final class ReminderFormViewModel {
     
     // MARK: - Voice Reminder Methods
     
+    @available(iOS 15.0, *)
     func startVoiceRecording() async {
         isRecordingVoice = true
         voiceRecordingError = nil
@@ -268,11 +291,13 @@ final class ReminderFormViewModel {
         }
     }
     
+    @available(iOS 15.0, *)
     func stopVoiceRecording() {
         AudioManager.shared.stopRecording()
         isRecordingVoice = false
     }
     
+    @available(iOS 15.0, *)
     func cancelVoiceRecording() {
         AudioManager.shared.cancelRecording()
         isRecordingVoice = false
@@ -291,6 +316,7 @@ final class ReminderFormViewModel {
         }
     }
     
+    @available(iOS 15.0, *)
     func deleteVoiceRecording() {
         AudioManager.shared.deleteAudioFile()
         voiceReminder = nil
@@ -300,51 +326,85 @@ final class ReminderFormViewModel {
         isDetectingLocation = true
         locationDetectionError = nil
         
+        Logger(subsystem: "a-do", category: "Location").info("Starting location detection...")
+        
         // Request authorization if needed
         if LocationManager.shared.authorizationStatus == .notDetermined {
+            Logger(subsystem: "a-do", category: "Location").info("Requesting location authorization...")
             LocationManager.shared.requestAuthorization()
         }
         
         // Wait a moment for authorization to be processed
         try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
         
+        // Check authorization status
         if LocationManager.shared.authorizationStatus == .denied || LocationManager.shared.authorizationStatus == .restricted {
-            locationDetectionError = "Location access denied. Please enable location access in Settings."
+            locationDetectionError = "Location access denied. Please enable location access in Settings > Privacy & Security > Location Services > a-do"
+            Logger(subsystem: "a-do", category: "Location").error("Location access denied: \(LocationManager.shared.authorizationStatus.rawValue)")
             isDetectingLocation = false
             return
         }
         
-        // Get current location
+        // Get current location with timeout
+        Logger(subsystem: "a-do", category: "Location").info("Getting current location...")
         if let location = await LocationManager.shared.getCurrentLocation() {
-            locationLatitude = location.coordinate.latitude
-            locationLongitude = location.coordinate.longitude
-            
-            // Generate a default label based on location
-            if locationLabel.isEmpty {
-                if let address = LocationManager.shared.currentAddress {
-                    locationLabel = address
-                } else {
-                    locationLabel = "Current Location"
+            // Validate the location accuracy
+            if location.horizontalAccuracy <= 100 { // Within 100 meters accuracy
+                locationLatitude = location.coordinate.latitude
+                locationLongitude = location.coordinate.longitude
+                
+                Logger(subsystem: "a-do", category: "Location").info("Location detected: \(location.coordinate.latitude), \(location.coordinate.longitude) (accuracy: \(location.horizontalAccuracy)m)")
+                
+                // Generate a default label based on location
+                if locationLabel.isEmpty {
+                    if let address = LocationManager.shared.currentAddress {
+                        locationLabel = address
+                        Logger(subsystem: "a-do", category: "Location").info("Using resolved address: \(address)")
+                    } else {
+                        locationLabel = "Current Location"
+                        Logger(subsystem: "a-do", category: "Location").info("Using default label: Current Location")
+                    }
                 }
+            } else {
+                locationDetectionError = "Location accuracy too low (\(Int(location.horizontalAccuracy))m). Please try again or move to an area with better GPS signal."
+                Logger(subsystem: "a-do", category: "Location").error("Location accuracy too low: \(location.horizontalAccuracy)m")
             }
         } else {
-            locationDetectionError = "Unable to detect current location. Please check your location settings."
+            // Check if there's a specific error from the location manager
+            if let error = LocationManager.shared.lastLocationError {
+                locationDetectionError = "Location detection failed: \(error)"
+            } else {
+                locationDetectionError = "Unable to detect current location. Please check your location settings and try again."
+            }
+            Logger(subsystem: "a-do", category: "Location").error("Location detection failed")
         }
         
         isDetectingLocation = false
     }
     
     func prefillWithCurrentLocation() async {
+        Logger(subsystem: "a-do", category: "Location").info("Prefilling with current location...")
+        
         if let location = await LocationManager.shared.getCurrentLocation() {
-            locationLatitude = location.coordinate.latitude
-            locationLongitude = location.coordinate.longitude
-            if locationLabel.isEmpty {
-                if let address = LocationManager.shared.currentAddress {
-                    locationLabel = address
-                } else {
-                    locationLabel = "Current Location"
+            // Only use location if it's reasonably accurate
+            if location.horizontalAccuracy <= 100 {
+                locationLatitude = location.coordinate.latitude
+                locationLongitude = location.coordinate.longitude
+                
+                Logger(subsystem: "a-do", category: "Location").info("Prefilled location: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+                
+                if locationLabel.isEmpty {
+                    if let address = LocationManager.shared.currentAddress {
+                        locationLabel = address
+                    } else {
+                        locationLabel = "Current Location"
+                    }
                 }
+            } else {
+                Logger(subsystem: "a-do", category: "Location").warning("Location accuracy too low for prefill: \(location.horizontalAccuracy)m")
             }
+        } else {
+            Logger(subsystem: "a-do", category: "Location").warning("Could not prefill location")
         }
     }
 }

@@ -4,6 +4,7 @@ import Speech
 import os
 import Observation
 
+@available(iOS 15.0, *)
 @MainActor
 @Observable
 final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerDelegate {
@@ -40,9 +41,17 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
     // MARK: - Permission Requests
     
     func requestMicrophonePermission() async -> Bool {
-        return await withCheckedContinuation { continuation in
-            audioSession.requestRecordPermission { granted in
-                continuation.resume(returning: granted)
+        if #available(iOS 17.0, *) {
+            return await withCheckedContinuation { continuation in
+                AVAudioApplication.requestRecordPermission(completionHandler: { granted in
+                    continuation.resume(returning: granted)
+                })
+            }
+        } else {
+            return await withCheckedContinuation { continuation in
+                audioSession.requestRecordPermission { granted in
+                    continuation.resume(returning: granted)
+                }
             }
         }
     }
@@ -107,8 +116,11 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
             isRecording = true
             
             // Start timer
-            recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-                self.recordingDuration += 1.0
+            recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+                guard let self else { return }
+                Task { @MainActor in
+                    self.recordingDuration += 1.0
+                }
             }
             
             Logger(subsystem: "a-do", category: "Audio").info("Started voice recording")
@@ -230,23 +242,29 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
     
     // MARK: - AVAudioRecorderDelegate
     
-    func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
-        if !flag {
-            recordingError = "Recording failed"
+    nonisolated func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
+        Task { @MainActor in
+            if !flag {
+                recordingError = "Recording failed"
+            }
         }
     }
     
-    func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
-        if let error = error {
-            recordingError = "Recording error: \(error.localizedDescription)"
+    nonisolated func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
+        Task { @MainActor in
+            if let error = error {
+                recordingError = "Recording error: \(error.localizedDescription)"
+            }
         }
     }
     
     // MARK: - SFSpeechRecognizerDelegate
     
-    func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
-        if !available {
-            transcriptionError = "Speech recognition became unavailable"
+    nonisolated func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
+        Task { @MainActor in
+            if !available {
+                transcriptionError = "Speech recognition became unavailable"
+            }
         }
     }
 }

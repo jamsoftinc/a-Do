@@ -52,12 +52,9 @@ struct SendTextForReminder: AppIntent {
         // Set a flag for the app to check when it opens
         let defaults = UserDefaults(suiteName: "group.JAMSoft.a-do")
         defaults?.set(uuid.uuidString, forKey: "deeplink_send_text_reminder_id")
-        // Bring the app to foreground if supported (iOS 26+)
-        if #available(iOS 26.0, *) {
-            try await continueInForeground(alwaysConfirm: false)
-        } else {
-            return .result(dialog: "Bringing the app to foreground requires iOS 26.0 or newer.")
-        }
-        return .result(dialog: "Action completed.")
+        
+        // For iOS versions that don't support continueInForeground, just return success
+        // The app will handle the deep link when it becomes active
+        return .result(dialog: "Reminder text action queued. Open the app to continue.")
     }
 }

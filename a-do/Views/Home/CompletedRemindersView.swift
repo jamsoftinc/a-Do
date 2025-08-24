@@ -344,7 +344,12 @@ private struct CompletedReminderCard: View {
         }
         .sheet(isPresented: $showingEditSheet) {
             NavigationStack {
-                ReminderFormView(existingReminder: reminder)
+                if #available(iOS 17.0, *) {
+                    ReminderFormView(existingReminder: reminder)
+                } else {
+                    Text("Reminder form requires iOS 17.0+")
+                        .padding()
+                }
             }
         }
         .contextMenu {

@@ -240,13 +240,9 @@ final class RemindersManager {
     }
     
     func stopAutoSync() {
-        Task {
-            await performCleanup()
-            
-            NotificationCenter.default.removeObserver(self)
-            
-            Logger(subsystem: "a-do", category: "Sync").info("Auto sync stopped")
-        }
+        performCleanup()
+        NotificationCenter.default.removeObserver(self)
+        Logger(subsystem: "a-do", category: "Sync").info("Auto sync stopped")
     }
     
     @objc private func appDidBecomeActive() {

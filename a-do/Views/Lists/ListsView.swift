@@ -16,27 +16,27 @@ struct ListsView: View {
 
     var body: some View {
         if horizontalSizeClass == .regular {
-            // iPad layout - use NavigationSplitView for better experience
+            // iPad layout - use sidebar
             NavigationSplitView {
                 masterView
             } detail: {
                 if let selectedList = selectedList {
                     ListDetailView(list: selectedList, allReminders: allReminders)
                 } else {
-                    Text("Select a list to view its contents")
-                        .foregroundStyle(.white)
-                        .font(.title2)
-                        .fontWeight(.medium)
+                    Text("Select a list")
+                        .foregroundColor(.secondary)
                 }
             }
         } else {
-            // iPhone layout - standard navigation
-            masterView
+            // iPhone layout - use navigation
+            NavigationStack {
+                masterView
+            }
         }
     }
     
     private var masterView: some View {
-        List(selection: horizontalSizeClass == .regular ? $selectedList : .constant(nil)) {
+        List {
             // Smart Lists Section
             Section("Smart Lists") {
                 ForEach(lists.filter { $0.isSmart }.sorted { $0.order < $1.order }) { list in
@@ -49,88 +49,108 @@ struct ListsView: View {
                 }
             }
             
-            // Unsectioned Lists
-            let unsectionedLists = lists.filter { !$0.isSmart && $0.section == nil }
+            // Custom Lists Sections
+            ForEach(sections) { section in
+                Section(section.name) {
+                    ForEach((section.lists ?? []).sorted { $0.order < $1.order }) { list in
+                        listRow(for: list)
+                    }
+                }
+            }
+            
+            // Unsorted Lists
             if !unsectionedLists.isEmpty {
-                Section("Lists") {
+                Section("Other Lists") {
                     ForEach(unsectionedLists.sorted { $0.order < $1.order }) { list in
                         listRow(for: list)
                     }
                 }
             }
-            
-            // Sectioned Lists
-            ForEach(sections) { section in
-                Section {
-                    ForEach((section.lists ?? []).sorted { $0.order < $1.order }) { list in
-                        listRow(for: list)
-                    }
-                    
-                    // Add list to this section
-                    HStack {
-                        TextField("New list in \(section.name)", text: $newListName)
-                        Spacer()
-                        Button("Add") { 
-                            addList(to: section)
-                        }.disabled(newListName.trimmingCharacters(in: .whitespaces).isEmpty)
-                    }
-                } header: {
-                    HStack {
-                        Circle()
-                            .fill(Color(hex: section.colorHex) ?? .purple)
-                            .frame(width: 8, height: 8)
-                        Text(section.name)
-                            .foregroundStyle(.white)
-                    }
-                }
-            }
-            
-            // Add new list without section
-            Section {
-                HStack {
-                    TextField("New list", text: $newListName)
-                    Spacer()
-                    Button("Add") { addList() }.disabled(newListName.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
         }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
-        .background(AppTheme.Gradients.background)
         .navigationTitle("Lists")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    showingSectionSheet = true
+                Menu {
+                    Button("New List") {
+                        newListName = ""
+                        selectedSection = nil
+                        showingSectionSheet = true
+                    }
+                    Button("New Section") {
+                        newSectionName = ""
+                        showingSectionSheet = true
+                    }
                 } label: {
-                    Label("Add Section", systemImage: "folder.badge.plus")
+                    Image(systemName: "plus")
                 }
             }
         }
         .sheet(isPresented: $showingSectionSheet) {
             NavigationStack {
-                Form {
-                    TextField("Section Name", text: $newSectionName)
+                VStack(spacing: 20) {
+                    if newSectionName.isEmpty {
+                        // New List Sheet
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("New List")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                            
+                            TextField("List name", text: $newListName)
+                                .textFieldStyle(.roundedBorder)
+                            
+                            if !sections.isEmpty {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Section (optional)")
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                    
+                                    Picker("Section", selection: $selectedSection) {
+                                        Text("No section").tag(nil as ListSection?)
+                                        ForEach(sections) { section in
+                                            Text(section.name).tag(section as ListSection?)
+                                        }
+                                    }
+                                    .pickerStyle(.menu)
+                                }
+                            }
+                        }
+                        .padding()
+                    } else {
+                        // New Section Sheet
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("New Section")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                            
+                            TextField("Section name", text: $newSectionName)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                        .padding()
+                    }
                 }
-                .navigationTitle("New Section")
+                .navigationTitle(newSectionName.isEmpty ? "New List" : "New Section")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") { 
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Cancel") {
                             showingSectionSheet = false
-                            newSectionName = ""
                         }
                     }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Add") { 
-                            addSection()
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Save") {
+                            if newSectionName.isEmpty {
+                                createNewList()
+                            } else {
+                                createNewSection()
+                            }
                             showingSectionSheet = false
-                        }.disabled(newSectionName.trimmingCharacters(in: .whitespaces).isEmpty)
+                        }
+                        .disabled(newListName.isEmpty && newSectionName.isEmpty)
                     }
                 }
             }
+            .presentationDetents([.medium])
         }
-        // .task { SmartListEngine.ensureDefaultSmartLists(context: context) } // Disabled to prevent demo data creation
     }
     
     private func listRow(for list: ReminderList) -> some View {
@@ -142,82 +162,154 @@ struct ListsView: View {
                 NavigationLink(list.name) { ListDetailView(list: list, allReminders: allReminders) }
             }
         }
-        .contextMenu {
-            if let section = list.section {
-                Button {
-                    list.section = nil
-                    try? context.save()
-                } label: {
-                    Label("Remove from \(section.name)", systemImage: "folder.badge.minus")
-                }
-            } else {
-                Menu {
-                    ForEach(sections) { section in
-                        Button {
-                            list.section = section
-                            try? context.save()
-                        } label: {
-                            Label(section.name, systemImage: "folder")
-                        }
-                    }
-                } label: {
-                    Label("Move to Section", systemImage: "folder")
-                }
-            }
-            
-            Button(role: .destructive) {
-                context.delete(list)
-                try? context.save()
-            } label: {
-                Label("Delete List", systemImage: "trash")
-            }
-        }
-    }
-
-    private func addList(to section: ListSection? = nil) {
-        let maxOrder = lists.filter { $0.section == section }.map { $0.order }.max() ?? 0
-        let list = ReminderList(name: newListName)
-        list.section = section
-        list.order = maxOrder + 1
-        context.insert(list)
-                        do { try context.save() } catch { Logger(subsystem: "a-do", category: "Lists").error("Add list failed: \(String(describing: error))") }
-        newListName = ""
     }
     
-    private func addSection() {
-        let maxOrder = sections.map { $0.order }.max() ?? 0
-        let section = ListSection(
-            name: newSectionName, 
-            order: maxOrder + 1,
-            colorHex: Tag.defaultColors.randomElement() ?? "#7C4DFF"
-        )
-        context.insert(section)
-        do { try context.save() } catch { Logger(subsystem: "a-do", category: "Lists").error("Add section failed: \(String(describing: error))") }
-        newSectionName = ""
+    private var unsectionedLists: [ReminderList] {
+        lists.filter { !$0.isSmart && $0.section == nil }
+    }
+    
+    private func createNewList() {
+        guard !newListName.isEmpty else { return }
+        
+        let newList = ReminderList(name: newListName)
+        if let selectedSection = selectedSection {
+            newList.section = selectedSection
+        }
+        
+        context.insert(newList)
+        
+        do {
+            try context.save()
+            newListName = ""
+            selectedSection = nil
+        } catch {
+            print("Failed to save new list: \(error.localizedDescription)")
+        }
+    }
+    
+    private func createNewSection() {
+        guard !newSectionName.isEmpty else { return }
+        
+        let newSection = ListSection(name: newSectionName, order: sections.count)
+        context.insert(newSection)
+        
+        do {
+            try context.save()
+            newSectionName = ""
+        } catch {
+            print("Failed to save new section: \(error.localizedDescription)")
+        }
     }
 }
 
 struct ListDetailView: View {
-    @Environment(\.modelContext) private var context
     let list: ReminderList
     let allReminders: [Reminder]
-
+    @Environment(\.modelContext) private var context
+    @State private var showingEditSheet = false
+    
     var body: some View {
         List {
-            ForEach(list.isSmart ? SmartListEngine.reminders(for: list, from: allReminders) : (list.reminders ?? [])) { reminder in
-                HStack {
-                    Text(reminder.title)
-                    Spacer()
-                    Text(reminder.priority.title).foregroundStyle(AppTheme.priorityColor(reminder.priority))
-                }
-            }
-            .onDelete { indexSet in
-                if list.isSmart { return }
-                let reminders = list.reminders ?? []
-                for index in indexSet { context.delete(reminders[index]) }
-                do { try context.save() } catch { Logger(subsystem: "a-do", category: "Lists").error("Delete reminder failed: \(String(describing: error))") }
+            ForEach(listReminders) { reminder in
+                ReminderRowView(reminder: reminder)
+                    .swipeActions(edge: .trailing) {
+                        Button("Delete", role: .destructive) {
+                            deleteReminder(reminder)
+                        }
+                        Button("Edit") {
+                            showingEditSheet = true
+                        }
+                        .tint(.blue)
+                    }
             }
         }
         .navigationTitle(list.name)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Edit") {
+                    showingEditSheet = true
+                }
+            }
+        }
+        .sheet(isPresented: $showingEditSheet) {
+            NavigationStack {
+                if #available(iOS 17.0, *) {
+                    ReminderFormView(existingReminder: listReminders.first)
+                } else {
+                    Text("Reminder form requires iOS 17.0+")
+                        .padding()
+                }
+            }
+        }
+    }
+    
+    private var listReminders: [Reminder] {
+        allReminders.filter { $0.list == list }
+    }
+    
+    private func deleteReminder(_ reminder: Reminder) {
+        context.delete(reminder)
+        
+        do {
+            try context.save()
+        } catch {
+            print("Failed to delete reminder: \(error.localizedDescription)")
+        }
     }
 }
+
+struct ReminderRowView: View {
+    let reminder: Reminder
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(reminder.title)
+                    .font(.headline)
+                    .strikethrough(reminder.isCompleted)
+                
+                Spacer()
+                
+                if reminder.priority == .high {
+                    Image(systemName: "exclamationmark.3")
+                        .foregroundColor(.red)
+                }
+            }
+            
+            if let details = reminder.details, !details.isEmpty {
+                Text(details)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            }
+            
+            if let dueDate = reminder.dueDate {
+                HStack {
+                    Image(systemName: "calendar")
+                        .foregroundColor(.blue)
+                    Text(dueDate, style: .date)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    if reminder.dueDate! < Date() && !reminder.isCompleted {
+                        Text("Overdue")
+                            .font(.caption)
+                            .foregroundColor(.red)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(4)
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+#Preview {
+    ListsView()
+        .modelContainer(for: Reminder.self, inMemory: true)
+}
+
+

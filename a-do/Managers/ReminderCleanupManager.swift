@@ -107,10 +107,10 @@ final class ReminderCleanupManager {
         }
     }
     
-    // MARK: - Deinit
+    // MARK: - Cleanup
     
-    @MainActor
-    deinit {
+    func stopCleanupTimer() {
         cleanupTimer?.invalidate()
+        cleanupTimer = nil
     }
 }

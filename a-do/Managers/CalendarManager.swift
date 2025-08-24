@@ -6,7 +6,6 @@ import UIKit
 import SwiftData
 
 @MainActor
-@Observable
 final class CalendarManager {
     static let shared = CalendarManager()
 
@@ -18,12 +17,16 @@ final class CalendarManager {
     private init() {}
 
     func requestAccess() async {
-        await withCheckedContinuation { continuation in
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             store.requestFullAccessToEvents { granted, error in
                 Task { @MainActor in
-                    if let error { Logger(subsystem: "a-do", category: "Calendar").error("Access error: \(String(describing: error))") }
+                    if let error = error {
+                        Logger(subsystem: "a-do", category: "Calendar").error("Access error: \(error.localizedDescription)")
+                    } else {
+                        Logger(subsystem: "a-do", category: "Calendar").error("Access error: Unknown error")
+                    }
                     self.accessGranted = granted
-                    continuation.resume()
+                    continuation.resume(returning: ())
                 }
             }
         }
@@ -173,7 +176,7 @@ final class CalendarManager {
     
     func openEventInCalendar(_ event: EKEvent) {
         // Try to open the specific event using EventKit's URL scheme
-        if let eventURL = event.eventIdentifier.isEmpty ? nil : URL(string: "calshow://event/\(event.eventIdentifier)") {
+        if let eventIdentifier = event.eventIdentifier, !eventIdentifier.isEmpty, let eventURL = URL(string: "calshow://event/\(eventIdentifier)") {
             Task {
                 await UIApplication.shared.open(eventURL)
             }
@@ -200,4 +203,3 @@ final class CalendarManager {
         }
     }
 }
-

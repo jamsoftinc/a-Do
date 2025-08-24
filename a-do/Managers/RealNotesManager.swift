@@ -22,7 +22,7 @@ final class RealNotesManager {
             return false
         }
         
-        let canOpen = await UIApplication.shared.canOpenURL(notesURL)
+        let canOpen = UIApplication.shared.canOpenURL(notesURL)
         self.authorizationStatus = canOpen ? .authorized : .denied
         return canOpen
     }
@@ -160,3 +160,4 @@ extension RealNotesManager {
         return false
     }
 }
+

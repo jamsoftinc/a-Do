@@ -46,6 +46,10 @@ struct ADoApp: App {
         UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
         UITabBar.appearance().tintColor = UIColor.white
         UITabBar.appearance().unselectedItemTintColor = UIColor(AppTheme.Colors.textTertiary)
+        
+        // Initialize location manager
+        _ = LocationManager.shared
+        print("📍 Location manager initialized")
     }
     
     var body: some Scene {

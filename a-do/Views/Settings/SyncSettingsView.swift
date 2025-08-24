@@ -157,30 +157,15 @@ struct SyncSettingsView: View {
     
     private func performManualSync() async {
         isSyncing = true
-        syncError = nil
-        
-        do {
-            await AppleRemindersSyncManager.shared.performFullSync(context: context)
-            lastSyncDate = AppleRemindersSyncManager.shared.lastSync
-        } catch {
-            syncError = error.localizedDescription
-        }
-        
+        await AppleRemindersSyncManager.shared.performFullSync(context: context)
+        lastSyncDate = AppleRemindersSyncManager.shared.lastSync
         isSyncing = false
     }
     
     private func performImport() async {
         isSyncing = true
-        syncError = nil
-        
-        do {
-            // This would trigger the import process
-            await AppleRemindersSyncManager.shared.performFullSync(context: context)
-            lastSyncDate = AppleRemindersSyncManager.shared.lastSync
-        } catch {
-            syncError = error.localizedDescription
-        }
-        
+        await AppleRemindersSyncManager.shared.performFullSync(context: context)
+        lastSyncDate = AppleRemindersSyncManager.shared.lastSync
         isSyncing = false
     }
 }
