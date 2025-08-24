@@ -102,21 +102,6 @@ struct HomeView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 12) {
-                        // Voice reminder button
-                        Button {
-                            Task {
-                                await startQuickVoiceMemo()
-                            }
-                        } label: {
-                            Image(systemName: AudioManager.shared.isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                                .imageScale(.large)
-                                .foregroundStyle(AudioManager.shared.isRecording ? .red : .white)
-                                .frame(width: 32, height: 32)
-                                .background(.ultraThinMaterial, in: Circle())
-                        }
-                        .disabled(AudioManager.shared.isTranscribing)
-                        .accessibilityLabel("Create voice reminder")
-                        
                         NavigationLink(destination: ListsView()) {
                             Image(systemName: "list.bullet.rectangle.portrait")
                                 .imageScale(.large)
