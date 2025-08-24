@@ -24,7 +24,7 @@ struct ListsView: View {
                     ListDetailView(list: selectedList, allReminders: allReminders)
                 } else {
                     Text("Select a list to view its contents")
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(.white)
                         .font(.title2)
                         .fontWeight(.medium)
                 }
@@ -80,6 +80,7 @@ struct ListsView: View {
                             .fill(Color(hex: section.colorHex) ?? .purple)
                             .frame(width: 8, height: 8)
                         Text(section.name)
+                            .foregroundStyle(.white)
                     }
                 }
             }
@@ -94,6 +95,8 @@ struct ListsView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(AppTheme.Gradients.background)
         .navigationTitle("Lists")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {

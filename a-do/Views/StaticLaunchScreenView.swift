@@ -9,7 +9,7 @@ struct StaticLaunchScreenView: View {
     var body: some View {
         ZStack {
             // Background gradient
-            AppTheme.backgroundGradient
+            AppTheme.Gradients.background
                 .ignoresSafeArea()
             
             VStack(spacing: adaptiveSpacing) {
@@ -44,11 +44,11 @@ struct StaticLaunchScreenView: View {
                 // Fallback using SF Symbols
                 Image(systemName: "bell.fill")
                     .font(.system(size: iconSize * 0.6))
-                    .foregroundColor(.white)
+                    .foregroundColor(AppTheme.Colors.primary)
                     .frame(width: iconSize, height: iconSize)
                     .background(
                         RoundedRectangle(cornerRadius: iconCornerRadius)
-                            .fill(.ultraThinMaterial)
+                            .fill(AppTheme.Colors.surface)
                     )
                     .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
             }

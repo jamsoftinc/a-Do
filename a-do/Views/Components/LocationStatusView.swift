@@ -30,11 +30,11 @@ struct LocationStatusView: View {
                 } else if locationManager.authorizationStatus == .notDetermined {
                     Text("Tap to enable location access")
                         .font(.caption)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.white)
                 } else if locationManager.authorizationStatus == .denied || locationManager.authorizationStatus == .restricted {
                     Text("Tap to open Settings")
                         .font(.caption)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.white)
                 }
             }
             
@@ -45,7 +45,7 @@ struct LocationStatusView: View {
                     .scaleEffect(0.8)
             } else if locationManager.authorizationStatus == .notDetermined || locationManager.authorizationStatus == .denied || locationManager.authorizationStatus == .restricted {
                 Image(systemName: "chevron.right")
-                    .foregroundColor(.blue)
+                    .foregroundColor(.white)
                     .font(.caption)
             }
         }
@@ -81,7 +81,7 @@ struct LocationStatusView: View {
     private var locationColor: Color {
         switch locationManager.authorizationStatus {
         case .authorizedWhenInUse, .authorizedAlways:
-            return locationManager.currentLocation != nil ? .green : .blue
+            return locationManager.currentLocation != nil ? .green : .white
         case .denied, .restricted:
             return .red
         case .notDetermined:

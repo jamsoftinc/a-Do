@@ -6,14 +6,36 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXCopyFilesBuildPhase section */
+		7CD98A912E5A178500B00CBD /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		7CC0E53E2E496AEC00116982 /* a-do.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "a-do.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		7CD98A7A2E5A178200B00CBD /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		7CD98A7C2E5A178200B00CBD /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		7CD98AB92E5A19F000B00CBD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		7CD98AD82E5A1D6500B00CBD /* a-do_WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "a-do_WidgetExtension.entitlements"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		7CC0E5402E496AEC00116982 /* a-do */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "a-do";
+			sourceTree = "<group>";
+		};
+		7CD98AC22E5A1AAA00B00CBD /* a-do_Widget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "a-do_Widget";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -32,8 +54,12 @@
 		7CC0E5352E496AEC00116982 = {
 			isa = PBXGroup;
 			children = (
+				7CD98AD82E5A1D6500B00CBD /* a-do_WidgetExtension.entitlements */,
 				7CC0E5402E496AEC00116982 /* a-do */,
+				7CD98AC22E5A1AAA00B00CBD /* a-do_Widget */,
+				7CD98A792E5A178200B00CBD /* Frameworks */,
 				7CC0E53F2E496AEC00116982 /* Products */,
+				7CD98AB92E5A19F000B00CBD /* Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -43,6 +69,15 @@
 				7CC0E53E2E496AEC00116982 /* a-do.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		7CD98A792E5A178200B00CBD /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				7CD98A7A2E5A178200B00CBD /* WidgetKit.framework */,
+				7CD98A7C2E5A178200B00CBD /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -55,6 +90,7 @@
 				7CC0E53A2E496AEC00116982 /* Sources */,
 				7CC0E53B2E496AEC00116982 /* Frameworks */,
 				7CC0E53C2E496AEC00116982 /* Resources */,
+				7CD98A912E5A178500B00CBD /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
@@ -252,7 +288,7 @@
 				CODE_SIGN_ENTITLEMENTS = "a-do/a-do.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -275,7 +311,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.7;
+				MARKETING_VERSION = 1.8;
 				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-do";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -301,7 +337,7 @@
 				CODE_SIGN_ENTITLEMENTS = "a-do/a-do.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -324,7 +360,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.7;
+				MARKETING_VERSION = 1.8;
 				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-do";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

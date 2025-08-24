@@ -7,7 +7,7 @@ struct AppleNoteAttachmentView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "note.text")
-                    .foregroundColor(.blue)
+                    .foregroundColor(.white)
                 Text("Apple Note")
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -16,7 +16,7 @@ struct AppleNoteAttachmentView: View {
                     NotesManager.shared.openNoteInNotesApp(noteIdentifier: noteAttachment.noteIdentifier)
                 }
                 .font(.caption)
-                .foregroundColor(.blue)
+                .foregroundColor(.white)
             }
             
             VStack(alignment: .leading, spacing: 4) {

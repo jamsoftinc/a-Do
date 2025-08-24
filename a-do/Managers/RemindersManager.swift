@@ -180,6 +180,7 @@ final class RemindersManager {
         ekReminder.calendar = store.defaultCalendarForNewReminders()
         try store.save(ekReminder, commit: true)
     }
+    
 }
 
 

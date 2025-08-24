@@ -31,7 +31,7 @@ struct CompletedRemindersView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                AppTheme.backgroundGradient.ignoresSafeArea()
+                AppTheme.Gradients.background.ignoresSafeArea()
                 
                 if completedReminders.isEmpty {
                     VStack(spacing: 20) {
@@ -43,6 +43,7 @@ struct CompletedRemindersView: View {
                             Text("No Completed Reminders")
                                 .font(.title2)
                                 .fontWeight(.semibold)
+                                .foregroundStyle(.white)
                             
                             Text("Completed reminders will appear here for 30 days before being automatically cleaned up.")
                                 .font(.body)
@@ -242,7 +243,7 @@ private struct CompletedReminderCard: View {
                             onUncomplete()
                         } label: {
                             Image(systemName: "arrow.uturn.backward.circle")
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(.white)
                                 .imageScale(.large)
                         }
                         
@@ -296,7 +297,7 @@ private struct CompletedReminderCard: View {
                             Text("\(reminder.tags?.count ?? 0) tags")
                         }
                         .font(.caption)
-                        .foregroundStyle(.blue.opacity(0.7))
+                        .foregroundStyle(.white.opacity(0.7))
                     }
                     
                     if reminder.autoTextTaggedContacts || reminder.autoTextMe {
@@ -314,7 +315,7 @@ private struct CompletedReminderCard: View {
                             Text("Note")
                         }
                         .font(.caption)
-                        .foregroundStyle(.blue.opacity(0.7))
+                        .foregroundStyle(.white.opacity(0.7))
                     }
                     
                     if reminder.calendarInviteCreated {

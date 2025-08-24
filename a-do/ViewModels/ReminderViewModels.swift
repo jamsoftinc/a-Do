@@ -162,7 +162,11 @@ final class ReminderFormViewModel {
         target.appleNote = attachedNote
         target.voiceReminder = voiceReminder
         if existing == nil { context.insert(target) }
-        do { try context.save() } catch { Logger(subsystem: "a-do", category: "Reminders").error("Save failed: \(String(describing: error))") }
+        do { 
+            try context.save() 
+        } catch { 
+            Logger(subsystem: "a-do", category: "Reminders").error("Save failed: \(String(describing: error))") 
+        }
         return target
     }
     

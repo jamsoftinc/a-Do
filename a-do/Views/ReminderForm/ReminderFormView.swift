@@ -36,7 +36,7 @@ struct ReminderFormView: View {
                 .padding(.vertical, 20)
             }
             .scrollIndicators(.hidden)
-            .background(AppTheme.backgroundGradient.ignoresSafeArea())
+            .background(AppTheme.Gradients.background.ignoresSafeArea())
             .navigationTitle(existingReminder == nil ? "New Reminder" : "Edit Reminder")
             .navigationBarTitleDisplayMode(.large)
             .toolbar { toolbarButtons }
@@ -78,20 +78,21 @@ struct ReminderFormView: View {
                 // Title
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Title")
-                        .font(.headline)
-                        .fontWeight(.semibold)
+                        .font(AppTheme.Typography.headline)
+                        .primaryText()
                     TextField("What needs to be done?", text: $viewModel.title)
                         .textFieldStyle(.plain)
                         .padding(12)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                        .background(AppTheme.Colors.surfaceLight, in: RoundedRectangle(cornerRadius: AppTheme.CornerRadius.small))
+                        .primaryText()
                 }
                 
                 // Due Date & Priority
                 HStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Due Date")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
+                            .font(AppTheme.Typography.subheadline)
+                            .primaryText()
                         DatePicker("", selection: Binding(
                             get: { viewModel.dueDate ?? Date() },
                             set: { viewModel.dueDate = $0 }
@@ -103,8 +104,8 @@ struct ReminderFormView: View {
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Priority")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
+                            .font(AppTheme.Typography.subheadline)
+                            .primaryText()
                         Picker("", selection: $viewModel.priority) {
                             ForEach(Priority.allCases) { p in 
                                 Text(p.title).tag(p) 
@@ -119,12 +120,13 @@ struct ReminderFormView: View {
                 // Notes
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Notes")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                        .font(AppTheme.Typography.subheadline)
+                        .primaryText()
                     TextField("Add details...", text: $viewModel.details, axis: .vertical)
                         .textFieldStyle(.plain)
                         .padding(12)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                        .background(AppTheme.Colors.surfaceLight, in: RoundedRectangle(cornerRadius: AppTheme.CornerRadius.small))
+                        .primaryText()
                         .lineLimit(3...6)
                 }
             }
@@ -136,27 +138,26 @@ struct ReminderFormView: View {
         GlassCard {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Quick Actions")
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                    .font(AppTheme.Typography.headline)
+                    .primaryText()
                 
                 // Tags
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Tags")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                        .font(AppTheme.Typography.subheadline)
+                        .primaryText()
                     
                     if allTags.isEmpty {
                         Text("No tags available")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.primary)
+                            .font(AppTheme.Typography.caption1)
+                            .secondaryText()
                     } else {
                         FlowLayout(alignment: .leading, spacing: 8) {
                             ForEach(allTags) { tag in
                                 let isSelected = viewModel.selectedTags.contains(where: { $0.persistentModelID == tag.persistentModelID })
                                 Text(tag.name)
                                     .padding(.horizontal, 10).padding(.vertical, 6)
-                                    .background((Color(hex: tag.colorHex) ?? .blue).opacity(isSelected ? 0.9 : 0.3), in: Capsule())
+                                    .background((Color(hex: tag.colorHex) ?? .white).opacity(isSelected ? 0.9 : 0.3), in: Capsule())
                                     .foregroundStyle(.white)
                                     .onTapGesture {
                                         if isSelected {
@@ -171,29 +172,29 @@ struct ReminderFormView: View {
                     
                     NavigationLink("Manage Tags", destination: TagsView())
                         .font(.caption)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.white)
                 }
                 
                 // Notifications
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Notifications")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                        .font(AppTheme.Typography.subheadline)
+                        .primaryText()
                     LeadTimesPicker(leadTimes: $viewModel.leadTimes)
                 }
                 
                 // Voice Recording
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Voice Recording")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                        .font(AppTheme.Typography.subheadline)
+                        .primaryText()
                     
                     if let voiceReminder = viewModel.voiceReminder {
                         // Show existing voice reminder
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
                                 Image(systemName: "waveform")
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.white)
                                 Text("Voice Recording")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
@@ -222,7 +223,7 @@ struct ReminderFormView: View {
                                     }
                                 } label: {
                                     Image(systemName: "play.circle.fill")
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(.white)
                                         .imageScale(.small)
                                 }
                             }
@@ -253,9 +254,9 @@ struct ReminderFormView: View {
                                 } label: {
                                     HStack {
                                         Image(systemName: "mic.circle.fill")
-                                            .foregroundColor(.blue)
+                                            .foregroundColor(.white)
                                         Text("Start Recording")
-                                            .foregroundColor(.blue)
+                                            .foregroundColor(.white)
                                     }
                                 }
                                 .disabled(viewModel.isRecordingVoice)
@@ -294,14 +295,14 @@ struct ReminderFormView: View {
         GlassCard {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Advanced Features")
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                    .font(AppTheme.Typography.headline)
+                    .primaryText()
                 
                 // Calendar Invite
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Calendar Invite")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                        .font(AppTheme.Typography.subheadline)
+                        .primaryText()
                     
                     if viewModel.calendarInviteCreated {
                         HStack {
@@ -331,13 +332,15 @@ struct ReminderFormView: View {
                                 
                                 TextField("Location (optional)", text: $viewModel.calendarLocation)
                                     .textFieldStyle(.plain)
-                                    .padding(8)
-                                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 6))
+                                    .padding(AppTheme.Spacing.sm)
+                                    .background(AppTheme.Colors.surfaceLight, in: RoundedRectangle(cornerRadius: AppTheme.CornerRadius.small))
+                                    .primaryText()
                                 
                                 TextField("Attendees (comma-separated emails)", text: $viewModel.calendarAttendees)
                                     .textFieldStyle(.plain)
-                                    .padding(8)
-                                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 6))
+                                    .padding(AppTheme.Spacing.sm)
+                                    .background(AppTheme.Colors.surfaceLight, in: RoundedRectangle(cornerRadius: AppTheme.CornerRadius.small))
+                                    .primaryText()
                                     .textInputAutocapitalization(.never)
                                     .autocorrectionDisabled()
                             }
@@ -348,8 +351,8 @@ struct ReminderFormView: View {
                 // Auto Message
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Auto Message")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                        .font(AppTheme.Typography.subheadline)
+                        .primaryText()
                     
                     Toggle("Text tagged contacts when due", isOn: $viewModel.autoTextTaggedContacts)
                     Toggle("Text me (my number)", isOn: $viewModel.autoTextMe)
@@ -358,14 +361,14 @@ struct ReminderFormView: View {
                         TagPeopleView(reminderTitle: viewModel.title)
                     }
                     .font(.caption)
-                    .foregroundColor(.blue)
+                    .foregroundColor(.white)
                 }
                 
                 // Apple Note
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Apple Note")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                        .font(AppTheme.Typography.subheadline)
+                        .primaryText()
                     
                     if let attachedNote = viewModel.attachedNote {
                         VStack(alignment: .leading, spacing: 8) {
@@ -383,7 +386,7 @@ struct ReminderFormView: View {
                         Button("Attach Apple Note") {
                             viewModel.showNotePicker = true
                         }
-                        .foregroundColor(.blue)
+                        .foregroundColor(.white)
                         .font(.caption)
                     }
                 }
@@ -391,13 +394,14 @@ struct ReminderFormView: View {
                 // Location Trigger
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Location Trigger")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                        .font(AppTheme.Typography.subheadline)
+                        .primaryText()
                     
                     TextField("Label", text: $viewModel.locationLabel)
                         .textFieldStyle(.plain)
-                        .padding(8)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 6))
+                        .padding(AppTheme.Spacing.sm)
+                        .background(AppTheme.Colors.surfaceLight, in: RoundedRectangle(cornerRadius: AppTheme.CornerRadius.small))
+                        .primaryText()
                     
                     // Map View
                     if viewModel.hasValidCoordinates {
@@ -427,7 +431,7 @@ struct ReminderFormView: View {
                         .font(.caption)
                     }
                     .disabled(viewModel.isDetectingLocation)
-                    .foregroundColor(.blue)
+                    .foregroundColor(.white)
                     
                     if let error = viewModel.locationDetectionError {
                         Text(error)
@@ -620,12 +624,13 @@ private struct LeadTimesPicker: View {
         ("5 min", 5*60), ("15 min", 15*60), ("1 hr", 3600), ("1 day", 86400)
     ]
     var body: some View {
-        FlowLayout(alignment: .leading, spacing: 8) {
+        FlowLayout(alignment: .leading, spacing: AppTheme.Spacing.sm) {
             ForEach(options, id: \.1) { label, value in
                 let isSelected = leadTimes.contains(value)
                 Text(label)
-                    .padding(.horizontal, 10).padding(.vertical, 6)
-                    .background((isSelected ? Color.purple : Color.purple.opacity(0.3)), in: Capsule())
+                    .font(AppTheme.Typography.caption1)
+                    .padding(.horizontal, AppTheme.Spacing.md).padding(.vertical, AppTheme.Spacing.sm)
+                    .background((isSelected ? AppTheme.Colors.primary : AppTheme.Colors.primary.opacity(0.3)), in: Capsule())
                     .foregroundStyle(.white)
                     .onTapGesture {
                         if isSelected { leadTimes.removeAll { $0 == value } } else { leadTimes.append(value) }
@@ -665,7 +670,7 @@ private struct LocationMapView: View {
                 VStack(spacing: 4) {
                     // Pin with shadow
                     Image(systemName: "mappin.circle.fill")
-                        .foregroundColor(.red)
+                        .foregroundColor(.white)
                         .font(.title)
                         .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
                     
@@ -687,8 +692,8 @@ private struct LocationMapView: View {
         .overlay(
             // Radius circle overlay - positioned at center
             Circle()
-                .stroke(.blue.opacity(0.4), lineWidth: 2)
-                .background(Circle().fill(.blue.opacity(0.1)))
+                .stroke(.white.opacity(0.4), lineWidth: 2)
+                .background(Circle().fill(.white.opacity(0.1)))
                 .frame(width: radiusInPoints, height: radiusInPoints)
         )
         .allowsHitTesting(false) // Make map non-interactive

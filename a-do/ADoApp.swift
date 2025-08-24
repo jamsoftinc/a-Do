@@ -7,9 +7,47 @@
 
 import SwiftUI
 import SwiftData
+import UIKit
 
 @main
 struct ADoApp: App {
+    init() {
+        // Configure global navigation bar appearance
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(AppTheme.Colors.primary)
+        appearance.titleTextAttributes = [
+            .foregroundColor: UIColor.white,
+            .font: UIFont.systemFont(ofSize: 17, weight: .semibold)
+        ]
+        appearance.largeTitleTextAttributes = [
+            .foregroundColor: UIColor.white,
+            .font: UIFont.systemFont(ofSize: 34, weight: .bold)
+        ]
+        
+        UINavigationBar.appearance().standardAppearance = appearance
+        UINavigationBar.appearance().compactAppearance = appearance
+        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        UINavigationBar.appearance().tintColor = UIColor.white
+        
+        // Configure toolbar appearance
+        let toolbarAppearance = UIToolbarAppearance()
+        toolbarAppearance.configureWithOpaqueBackground()
+        toolbarAppearance.backgroundColor = UIColor(AppTheme.Colors.surface)
+        UIToolbar.appearance().standardAppearance = toolbarAppearance
+        UIToolbar.appearance().compactAppearance = toolbarAppearance
+        UIToolbar.appearance().tintColor = UIColor.white
+        
+        // Configure tab bar appearance
+        let tabBarAppearance = UITabBarAppearance()
+        tabBarAppearance.configureWithOpaqueBackground()
+        tabBarAppearance.backgroundColor = UIColor(AppTheme.Colors.surface)
+        UITabBar.appearance().standardAppearance = tabBarAppearance
+        UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
+        UITabBar.appearance().tintColor = UIColor.white
+        UITabBar.appearance().unselectedItemTintColor = UIColor(AppTheme.Colors.textTertiary)
+    }
+    
     var body: some Scene {
         WindowGroup {
             RootView()

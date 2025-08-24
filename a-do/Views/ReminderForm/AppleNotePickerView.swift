@@ -42,7 +42,7 @@ struct AppleNotePickerView: View {
                             Button("Create New Note") {
                                 showCreateNote = true
                             }
-                            .foregroundColor(.blue)
+                            .foregroundColor(.white)
                         }
                         
                         Section("Existing Notes") {

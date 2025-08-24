@@ -15,11 +15,12 @@ struct ImportRemindersView: View {
                 VStack(spacing: 16) {
                     Image(systemName: "arrow.down.circle.fill")
                         .font(.system(size: 60))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(.white)
                     
                     Text("Import from Apple Reminders")
                         .font(.title2)
                         .fontWeight(.semibold)
+                        .foregroundStyle(.white)
                     
                     Text("Import your existing reminders from the Apple Reminders app. Duplicates will be skipped automatically.")
                         .font(.body)
@@ -31,7 +32,7 @@ struct ImportRemindersView: View {
                     if remindersManager.availableRemindersCount > 0 {
                         HStack(spacing: 12) {
                             Image(systemName: "list.bullet")
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(.white)
                             Text("\(remindersManager.availableRemindersCount) reminders available to import")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)

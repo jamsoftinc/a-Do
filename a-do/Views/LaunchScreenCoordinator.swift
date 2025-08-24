@@ -86,6 +86,6 @@ struct LaunchScreenWrapper<Content: View>: View {
     LaunchScreenWrapper {
         Text("Main App Content")
             .font(.title)
-            .foregroundColor(.primary)
+            .foregroundColor(.white)
     }
 }

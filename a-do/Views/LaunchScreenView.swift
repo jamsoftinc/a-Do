@@ -10,7 +10,7 @@ struct LaunchScreenView: View {
         GeometryReader { geometry in
             ZStack {
                 // Background gradient matching the app theme
-                AppTheme.backgroundGradient
+                AppTheme.Gradients.background
                     .ignoresSafeArea()
                 
                 VStack(spacing: adaptiveSpacing) {
@@ -69,11 +69,11 @@ struct LaunchScreenView: View {
                 // Fallback icon using SF Symbols
                 Image(systemName: "bell.fill")
                     .font(.system(size: iconSize * 0.6))
-                    .foregroundColor(.white)
+                    .foregroundColor(AppTheme.Colors.primary)
                     .frame(width: iconSize, height: iconSize)
                     .background(
                         RoundedRectangle(cornerRadius: iconCornerRadius)
-                            .fill(.ultraThinMaterial)
+                            .fill(AppTheme.Colors.surface)
                     )
                     .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
             }

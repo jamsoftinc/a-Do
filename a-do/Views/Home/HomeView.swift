@@ -43,7 +43,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                AppTheme.backgroundGradient.ignoresSafeArea()
+                AppTheme.Gradients.background.ignoresSafeArea()
 
                 ScrollView {
                     LazyVStack(spacing: 16) {
@@ -202,12 +202,11 @@ struct HomeView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Voice Reminder")
-                            .font(.headline)
-                            .fontWeight(.semibold)
+                            .font(AppTheme.Typography.headline)
+                            .primaryText()
                         Text("Speak to create a reminder")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.primary)
+                            .font(AppTheme.Typography.caption1)
+                            .secondaryText()
                     }
                     Spacer()
                 }
@@ -316,7 +315,7 @@ struct HomeView: View {
                                 .foregroundStyle(.white)
                                 .imageScale(.large)
                                 .frame(width: 32, height: 32)
-                                .background(.blue, in: Circle())
+                                .background(.white, in: Circle())
                         }
                         .disabled(viewModel.quickTitle.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
@@ -349,7 +348,7 @@ struct HomeView: View {
                                     .font(.caption)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 4)
-                                    .background(isSelected ? .blue : .clear, in: Capsule())
+                                    .background(isSelected ? .white : .clear, in: Capsule())
                                     .foregroundStyle(isSelected ? .white : .secondary)
                                     .overlay(
                                         Capsule()
@@ -383,7 +382,7 @@ struct HomeView: View {
                             LocationManager.shared.requestAuthorization()
                         }
                         .font(.caption)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.white)
                     }
                 }
             }
@@ -428,7 +427,7 @@ struct HomeView: View {
                             createLocationReminder()
                         }
                         .buttonStyle(.borderedProminent)
-                        .tint(.blue)
+                        .tint(.white)
                         
                         Spacer()
                         
@@ -451,17 +450,16 @@ struct HomeView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Inbox")
-                            .font(.headline)
-                            .fontWeight(.semibold)
+                            .font(AppTheme.Typography.headline)
+                            .primaryText()
                         Text("\(inboxReminders.count) items")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.primary)
+                            .font(AppTheme.Typography.caption1)
+                            .secondaryText()
                     }
                     Spacer()
                     NavigationLink("View All", destination: ListsView())
-                        .font(.caption)
-                        .foregroundColor(.blue)
+                        .font(AppTheme.Typography.caption1)
+                        .foregroundColor(AppTheme.Colors.primary)
                 }
                 
                 if inboxReminders.isEmpty {
@@ -469,9 +467,8 @@ struct HomeView: View {
                         Image(systemName: "tray")
                             .foregroundStyle(.secondary)
                         Text("No reminders in inbox")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.primary)
+                            .font(AppTheme.Typography.caption1)
+                            .secondaryText()
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 8)
@@ -484,9 +481,8 @@ struct HomeView: View {
                         if inboxReminders.count > 3 {
                             HStack {
                                 Text("+ \(inboxReminders.count - 3) more")
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                                    .foregroundStyle(.primary)
+                                    .font(AppTheme.Typography.caption1)
+                                    .secondaryText()
                                 Spacer()
                             }
                             .padding(.top, 4)
@@ -503,20 +499,19 @@ struct HomeView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Today")
-                            .font(.headline)
-                            .fontWeight(.semibold)
+                            .font(AppTheme.Typography.headline)
+                            .primaryText()
                         Text("\(todayReminders.count) due today")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.primary)
+                            .font(AppTheme.Typography.caption1)
+                            .secondaryText()
                     }
                     Spacer()
                     Button("Refresh") {
                         // Force a refresh by touching the context
                         _ = context.container
                     }
-                    .font(.caption)
-                    .foregroundColor(.blue)
+                    .font(AppTheme.Typography.caption1)
+                    .foregroundColor(AppTheme.Colors.primary)
                 }
                 
                 if todayReminders.isEmpty {
@@ -524,9 +519,8 @@ struct HomeView: View {
                         Image(systemName: "checkmark.circle")
                             .foregroundStyle(.green)
                         Text("All caught up!")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.primary)
+                            .font(AppTheme.Typography.caption1)
+                            .secondaryText()
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 8)
@@ -539,9 +533,8 @@ struct HomeView: View {
                         if todayReminders.count > 3 {
                             HStack {
                                 Text("+ \(todayReminders.count - 3) more")
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                                    .foregroundStyle(.primary)
+                                    .font(AppTheme.Typography.caption1)
+                                    .secondaryText()
                                 Spacer()
                             }
                             .padding(.top, 4)
@@ -557,7 +550,9 @@ struct HomeView: View {
     private var todayCalendar: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Today's Calendar Events").font(.headline)
+                Text("Today's Calendar Events")
+                    .font(AppTheme.Typography.headline)
+                    .primaryText()
                 if horizontalSizeClass == .regular {
                     // iPad - use LazyVGrid for better layout
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 12)], spacing: 12) {
@@ -567,9 +562,8 @@ struct HomeView: View {
                     }
                     if calendarManager.todayEvents.isEmpty {
                                                     Text("No events today")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundStyle(.primary)
+                                .font(AppTheme.Typography.caption1)
+                                .secondaryText()
                     }
                 } else {
                     // iPhone - horizontal scroll
@@ -580,9 +574,8 @@ struct HomeView: View {
                             }
                             if calendarManager.todayEvents.isEmpty {
                                 Text("No events today")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundStyle(.primary)
+                                .font(AppTheme.Typography.caption1)
+                                .secondaryText()
                             }
                         }
                     }
@@ -594,7 +587,9 @@ struct HomeView: View {
     private var upcomingCalendar: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Upcoming 5 Days").font(.headline)
+                Text("Upcoming 5 Days")
+                    .font(AppTheme.Typography.headline)
+                    .primaryText()
                 if horizontalSizeClass == .regular {
                     // iPad - use LazyVGrid for better layout
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 12)], spacing: 12) {
@@ -604,9 +599,8 @@ struct HomeView: View {
                     }
                     if calendarManager.upcomingEvents.isEmpty {
                                                     Text("No upcoming events")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundStyle(.primary)
+                                .font(AppTheme.Typography.caption1)
+                                .secondaryText()
                     }
                 } else {
                     // iPhone - horizontal scroll
@@ -617,9 +611,8 @@ struct HomeView: View {
                             }
                             if calendarManager.upcomingEvents.isEmpty {
                                 Text("No upcoming events")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundStyle(.primary)
+                                .font(AppTheme.Typography.caption1)
+                                .secondaryText()
                             }
                         }
                     }
@@ -659,7 +652,7 @@ struct HomeView: View {
                 .frame(width: 56, height: 56)
                 .background(
                     LinearGradient(
-                        colors: [.blue, .purple],
+                        colors: [.white, .purple],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
@@ -790,7 +783,7 @@ private struct ReminderRow: View {
                             Text("Note")
                         }
                         .font(.caption2)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(.white)
                     }
                     
                     if reminder.calendarInviteCreated {
