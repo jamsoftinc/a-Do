@@ -556,8 +556,8 @@ struct HomeView: View {
                 if horizontalSizeClass == .regular {
                     // iPad - use LazyVGrid for better layout
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 12)], spacing: 12) {
-                        ForEach(calendarManager.todayEvents, id: \.eventIdentifier) { _ in
-                            EventCard(event: calendarManager.todayEvents.first(where: { $0.eventIdentifier == $0.eventIdentifier })!)
+                        ForEach(Array(calendarManager.todayEvents.enumerated()), id: \.offset) { index, event in
+                            EventCard(event: event)
                         }
                     }
                     if calendarManager.todayEvents.isEmpty {
@@ -569,8 +569,8 @@ struct HomeView: View {
                     // iPhone - horizontal scroll
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
-                            ForEach(calendarManager.todayEvents, id: \.eventIdentifier) { _ in
-                                EventCard(event: calendarManager.todayEvents.first(where: { $0.eventIdentifier == $0.eventIdentifier })!)
+                            ForEach(Array(calendarManager.todayEvents.enumerated()), id: \.offset) { index, event in
+                                EventCard(event: event)
                             }
                             if calendarManager.todayEvents.isEmpty {
                                 Text("No events today")
@@ -593,8 +593,8 @@ struct HomeView: View {
                 if horizontalSizeClass == .regular {
                     // iPad - use LazyVGrid for better layout
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 12)], spacing: 12) {
-                        ForEach(calendarManager.upcomingEvents, id: \.eventIdentifier) { _ in
-                            EventCard(event: calendarManager.upcomingEvents.first(where: { $0.eventIdentifier == $0.eventIdentifier })!)
+                        ForEach(Array(calendarManager.upcomingEvents.enumerated()), id: \.offset) { index, event in
+                            EventCard(event: event)
                         }
                     }
                     if calendarManager.upcomingEvents.isEmpty {
@@ -606,8 +606,8 @@ struct HomeView: View {
                     // iPhone - horizontal scroll
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
-                            ForEach(calendarManager.upcomingEvents, id: \.eventIdentifier) { _ in
-                                EventCard(event: calendarManager.upcomingEvents.first(where: { $0.eventIdentifier == $0.eventIdentifier })!)
+                            ForEach(Array(calendarManager.upcomingEvents.enumerated()), id: \.offset) { index, event in
+                                EventCard(event: event)
                             }
                             if calendarManager.upcomingEvents.isEmpty {
                                 Text("No upcoming events")
