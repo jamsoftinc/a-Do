@@ -61,16 +61,27 @@ final class AppRouter {
     }
 
     func checkGroupDeeplinkFlag() {
-        let defaults = UserDefaults(suiteName: "group.JAMSoft.a-do")
-        if defaults?.bool(forKey: "deeplink_open_today") == true {
-            defaults?.set(false, forKey: "deeplink_open_today")
-            destination = .smartToday
+        // Use the centralized AppGroupDefaults utility with extra safety
+        let appDefaults = AppGroupDefaults.shared
+        
+        // Force use standard UserDefaults in problematic environments
+        if appDefaults.forceStandardDefaults {
+            print("⚠️ App group access force disabled - deep linking may not work")
         }
+        
+        // Check for deep link flags
+        if appDefaults.bool(forKey: "deeplink_open_today") == true {
+            appDefaults.set(false, forKey: "deeplink_open_today")
+            destination = .smartToday
+            print("🔗 Deep link: Opening smart today view")
+        }
+        
         // Check for send text reminder deep link
-        if let reminderIdString = defaults?.string(forKey: "deeplink_send_text_reminder_id"),
+        if let reminderIdString = appDefaults.string(forKey: "deeplink_send_text_reminder_id"),
            let reminderId = UUID(uuidString: reminderIdString) {
-            defaults?.removeObject(forKey: "deeplink_send_text_reminder_id")
+            appDefaults.removeObject(forKey: "deeplink_send_text_reminder_id")
             destination = .sendText(reminderId: reminderId)
+            print("🔗 Deep link: Opening send text for reminder \(reminderId)")
         }
     }
 }

@@ -246,19 +246,7 @@ final class AppleRemindersSyncManager {
     // MARK: - Helper Methods
     
     private func requestAccess() async throws {
-        if #available(iOS 17.0, *) {
-            try await self.store.requestFullAccessToReminders()
-        } else {
-            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                self.store.requestAccess(to: .reminder) { _, error in
-                    if let error { 
-                        continuation.resume(throwing: error) 
-                    } else { 
-                        continuation.resume(returning: ()) 
-                    }
-                }
-            }
-        }
+        try await self.store.requestFullAccessToReminders()
     }
     
     private func convertPriority(from ekPriority: Int) -> Priority {

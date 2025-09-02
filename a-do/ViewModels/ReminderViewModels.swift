@@ -253,7 +253,6 @@ final class ReminderFormViewModel {
     
     // MARK: - Voice Reminder Methods
     
-    @available(iOS 15.0, *)
     func startVoiceRecording() async {
         isRecordingVoice = true
         voiceRecordingError = nil
@@ -291,13 +290,11 @@ final class ReminderFormViewModel {
         }
     }
     
-    @available(iOS 15.0, *)
     func stopVoiceRecording() {
         AudioManager.shared.stopRecording()
         isRecordingVoice = false
     }
     
-    @available(iOS 15.0, *)
     func cancelVoiceRecording() {
         AudioManager.shared.cancelRecording()
         isRecordingVoice = false
@@ -316,7 +313,6 @@ final class ReminderFormViewModel {
         }
     }
     
-    @available(iOS 15.0, *)
     func deleteVoiceRecording() {
         AudioManager.shared.deleteAudioFile()
         voiceReminder = nil

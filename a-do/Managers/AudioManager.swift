@@ -4,8 +4,6 @@ import Speech
 import os
 import Observation
 
-@available(iOS 15.0, *)
-@MainActor
 @Observable
 final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerDelegate {
     static let shared = AudioManager()
@@ -38,21 +36,22 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
         speechRecognizer?.delegate = self
     }
     
+    deinit {
+        // Clean up resources synchronously to avoid deinit issues
+        // Note: We can't call async methods in deinit, so we'll just clean up what we can
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        recognitionRequest = nil
+        try? audioSession.setActive(false)
+    }
+    
     // MARK: - Permission Requests
     
     func requestMicrophonePermission() async -> Bool {
-        if #available(iOS 17.0, *) {
-            return await withCheckedContinuation { continuation in
-                AVAudioApplication.requestRecordPermission(completionHandler: { granted in
-                    continuation.resume(returning: granted)
-                })
-            }
-        } else {
-            return await withCheckedContinuation { continuation in
-                audioSession.requestRecordPermission { granted in
-                    continuation.resume(returning: granted)
-                }
-            }
+        return await withCheckedContinuation { continuation in
+            AVAudioApplication.requestRecordPermission(completionHandler: { granted in
+                continuation.resume(returning: granted)
+            })
         }
     }
     

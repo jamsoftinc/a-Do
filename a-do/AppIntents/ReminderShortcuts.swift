@@ -12,7 +12,7 @@ struct AddQuickReminder: AppIntent {
     func perform() async throws -> some ProvidesDialog {
         // Use the shared container to ensure consistency
         let container = await MainActor.run {
-            return AppContainer.shared.container
+            return AppContainer.shared.getContainer()
         }
         let context = ModelContext(container)
         let due: Date? = dueInMinutes > 0 ? Date().addingTimeInterval(Double(dueInMinutes) * 60) : nil
@@ -35,8 +35,8 @@ struct AddQuickReminder: AppIntent {
 struct OpenTodayList: AppIntent {
     static var title: LocalizedStringResource = "Open Today List"
     func perform() async throws -> some IntentResult {
-        let defaults = UserDefaults(suiteName: "group.JAMSoft.a-do")
-        defaults?.set(true, forKey: "deeplink_open_today")
+        // Use the centralized AppGroupDefaults utility
+        AppGroupDefaults.shared.set(true, forKey: "deeplink_open_today")
         return .result()
     }
 }
@@ -50,8 +50,7 @@ struct SendTextForReminder: AppIntent {
     func perform() async throws -> some IntentResult {
         guard let uuid = UUID(uuidString: reminderId) else { return .result(dialog: "Invalid UUID.") }
         // Set a flag for the app to check when it opens
-        let defaults = UserDefaults(suiteName: "group.JAMSoft.a-do")
-        defaults?.set(uuid.uuidString, forKey: "deeplink_send_text_reminder_id")
+        AppGroupDefaults.shared.set(uuid.uuidString, forKey: "deeplink_send_text_reminder_id")
         
         // For iOS versions that don't support continueInForeground, just return success
         // The app will handle the deep link when it becomes active

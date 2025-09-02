@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 
+// MARK: - Enums
 enum Priority: Int, Codable, CaseIterable, Identifiable {
     case none = 0
     case low = 1
@@ -24,6 +25,7 @@ enum LocationTriggerType: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+// MARK: - Smart List Rules
 struct SmartListRule: Codable, Equatable, Identifiable {
     enum RuleType: String, Codable, CaseIterable, Identifiable { 
         case priority, dueToday, overdue, tag
@@ -36,6 +38,7 @@ struct SmartListRule: Codable, Equatable, Identifiable {
     var tagName: String?
 }
 
+// MARK: - Data Models
 @Model
 final class ListSection {
     var name: String = ""
@@ -45,9 +48,18 @@ final class ListSection {
     @Relationship(deleteRule: .nullify, inverse: \ReminderList.section) var lists: [ReminderList]? = []
     
     init(name: String, order: Int = 0, colorHex: String = "#7C4DFF") {
-        self.name = name
-        self.order = order
-        self.colorHex = colorHex
+        self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.order = max(0, order)
+        self.colorHex = Self.validateColorHex(colorHex)
+    }
+    
+    // MARK: - Validation
+    private static func validateColorHex(_ hex: String) -> String {
+        let validHex = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        if validHex.hasPrefix("#") && validHex.count == 7 {
+            return validHex
+        }
+        return "#7C4DFF" // Default fallback
     }
 }
 
@@ -58,8 +70,17 @@ final class Tag {
     @Relationship var reminders: [Reminder]? = []
 
     init(name: String, colorHex: String = "#7C4DFF") {
-        self.name = name
-        self.colorHex = colorHex
+        self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.colorHex = Self.validateColorHex(colorHex)
+    }
+    
+    // MARK: - Validation
+    private static func validateColorHex(_ hex: String) -> String {
+        let validHex = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        if validHex.hasPrefix("#") && validHex.count == 7 {
+            return validHex
+        }
+        return "#7C4DFF" // Default fallback
     }
 }
 
@@ -74,11 +95,11 @@ final class LocationTrigger {
     @Relationship var reminder: Reminder?
 
     init(label: String, latitude: Double, longitude: Double, radius: Double = 150.0, type: LocationTriggerType) {
-        self.label = label
+        self.label = label.trimmingCharacters(in: .whitespacesAndNewlines)
         // Validate and clamp coordinates to valid ranges
         self.latitude = max(-90, min(90, latitude))
         self.longitude = max(-180, min(180, longitude))
-        self.radius = radius
+        self.radius = max(10, min(10000, radius)) // Reasonable radius limits
         self.typeRaw = type.rawValue
     }
     
@@ -100,8 +121,8 @@ final class ReminderNotification {
     @Relationship var reminder: Reminder?
 
     init(leadTimeSeconds: TimeInterval, customSoundName: String? = nil) {
-        self.leadTimeSeconds = leadTimeSeconds
-        self.customSoundName = customSoundName
+        self.leadTimeSeconds = max(0, leadTimeSeconds) // Ensure non-negative
+        self.customSoundName = customSoundName?.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 
@@ -115,10 +136,15 @@ final class TaggedContact {
     @Relationship var reminder: Reminder?
 
     init(identifier: String, givenName: String, familyName: String, phoneNumber: String?) {
-        self.identifier = identifier
-        self.givenName = givenName
-        self.familyName = familyName
-        self.phoneNumber = phoneNumber
+        self.identifier = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.givenName = givenName.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.familyName = familyName.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.phoneNumber = phoneNumber?.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    var displayName: String {
+        let names = [givenName, familyName].filter { !$0.isEmpty }
+        return names.isEmpty ? "Unknown Contact" : names.joined(separator: " ")
     }
 }
 
@@ -132,9 +158,9 @@ final class AppleNoteAttachment {
     @Relationship var reminder: Reminder?
     
     init(noteIdentifier: String, noteTitle: String, noteContent: String, lastModified: Date = Date()) {
-        self.noteIdentifier = noteIdentifier
-        self.noteTitle = noteTitle
-        self.noteContent = noteContent
+        self.noteIdentifier = noteIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.noteTitle = noteTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.noteContent = noteContent.trimmingCharacters(in: .whitespacesAndNewlines)
         self.lastModified = lastModified
     }
 }
@@ -150,15 +176,27 @@ final class ReminderList {
     @Relationship var section: ListSection?
 
     init(name: String, isSmart: Bool = false, rules: [SmartListRule]? = nil, reminders: [Reminder] = []) {
-        self.name = name
+        self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         self.isSmart = isSmart
-        if let rules { self.encodedSmartRules = try? JSONEncoder().encode(rules) }
+        if let rules { 
+            self.encodedSmartRules = try? JSONEncoder().encode(rules) 
+        }
         self.reminders = reminders.isEmpty ? nil : reminders
     }
 
     var rules: [SmartListRule] {
-        guard isSmart, let encodedSmartRules, let rules = try? JSONDecoder().decode([SmartListRule].self, from: encodedSmartRules) else { return [] }
+        guard isSmart, let encodedSmartRules, let rules = try? JSONDecoder().decode([SmartListRule].self, from: encodedSmartRules) else { 
+            return [] 
+        }
         return rules
+    }
+    
+    var reminderCount: Int {
+        return reminders?.count ?? 0
+    }
+    
+    var completedCount: Int {
+        return reminders?.filter { $0.isCompleted }.count ?? 0
     }
 }
 
@@ -185,7 +223,7 @@ final class Reminder {
     @Relationship(deleteRule: .cascade, inverse: \LocationTrigger.reminder) var locationTrigger: LocationTrigger?
     @Relationship(deleteRule: .cascade, inverse: \TaggedContact.reminder) var taggedContacts: [TaggedContact]? = []
     @Relationship(deleteRule: .cascade, inverse: \AppleNoteAttachment.reminder) var appleNote: AppleNoteAttachment?
-    @Relationship(deleteRule: .cascade, inverse: \VoiceReminder.reminder) var voiceReminder: VoiceReminder?
+    @Relationship(deleteRule: .cascade) var voiceReminder: VoiceReminder?
     @Relationship(inverse: \ReminderList.reminders) var list: ReminderList?
 
     // Required parameterless initializer for SwiftData
@@ -216,8 +254,8 @@ final class Reminder {
         calendarInviteCreated: Bool = false
     ) {
         self.uuid = uuid
-        self.title = title
-        self.details = details
+        self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.details = details?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.dueDate = dueDate
         self.createdAt = createdAt
         self.isCompleted = isCompleted
@@ -245,6 +283,31 @@ final class Reminder {
         let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
         return completedAt < thirtyDaysAgo
     }
+    
+    // MARK: - Computed Properties
+    var isOverdue: Bool {
+        guard let dueDate = dueDate, !isCompleted else { return false }
+        return dueDate < Date()
+    }
+    
+    var daysUntilDue: Int? {
+        guard let dueDate = dueDate, !isCompleted else { return nil }
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.day], from: Date(), to: dueDate)
+        return components.day
+    }
+    
+    var tagNames: [String] {
+        return tags?.map { $0.name } ?? []
+    }
+    
+    var hasLocationTrigger: Bool {
+        return locationTrigger != nil
+    }
+    
+    var hasVoiceReminder: Bool {
+        return voiceReminder != nil
+    }
 }
 
 @Model
@@ -254,12 +317,10 @@ final class VoiceReminder {
     var recordingDuration: TimeInterval = 0
     var createdAt: Date = Date()
     
-    @Relationship var reminder: Reminder?
-    
     init(audioFileName: String, transcribedText: String, recordingDuration: TimeInterval) {
-        self.audioFileName = audioFileName
-        self.transcribedText = transcribedText
-        self.recordingDuration = recordingDuration
+        self.audioFileName = audioFileName.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.transcribedText = transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.recordingDuration = max(0, recordingDuration)
         self.createdAt = Date()
     }
     
@@ -268,8 +329,14 @@ final class VoiceReminder {
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         return documentsPath.appendingPathComponent(audioFileName)
     }
+    
+    var hasAudioFile: Bool {
+        guard let url = audioFileURL else { return false }
+        return FileManager.default.fileExists(atPath: url.path)
+    }
 }
 
+// MARK: - Extensions
 extension ReminderList {
     static func defaultSmartLists() -> [ReminderList] {
         // Return empty array - no demo data in production
@@ -281,4 +348,8 @@ extension Tag {
     static let defaultColors: [String] = [
         "#FF6B6B", "#FFD93D", "#6BCB77", "#4D96FF", "#845EC2", "#FFC75F"
     ]
+    
+    static func randomColor() -> String {
+        return defaultColors.randomElement() ?? "#7C4DFF"
+    }
 }

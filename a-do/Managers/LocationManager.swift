@@ -4,13 +4,13 @@ import os
 import Observation
 import Contacts
 
-@MainActor
 @Observable
 final class LocationManager: NSObject, CLLocationManagerDelegate {
     static let shared = LocationManager()
 
     private let manager = CLLocationManager()
     private let geocoder = CLGeocoder()
+    private var geocodingTask: Task<Void, Never>?
     var authorizationStatus: CLAuthorizationStatus = .notDetermined
     var currentLocation: CLLocation?
     var isUpdatingLocation: Bool = false
@@ -23,8 +23,13 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         manager.desiredAccuracy = kCLLocationAccuracyBest
         manager.distanceFilter = 5 // Update location when user moves 5 meters
         manager.pausesLocationUpdatesAutomatically = false
-        manager.allowsBackgroundLocationUpdates = true
-        manager.showsBackgroundLocationIndicator = true
+        
+        // Only enable background location updates if the app has background modes configured
+        // This prevents crashes when background location is not properly set up
+        if Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") != nil {
+            manager.allowsBackgroundLocationUpdates = true
+            manager.showsBackgroundLocationIndicator = true
+        }
         
         // Initialize authorization status
         authorizationStatus = manager.authorizationStatus
@@ -48,7 +53,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     func startLocationUpdates() {
         guard authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways else {
             let errorMsg = "Cannot start location updates: authorization not granted (status: \(authorizationStatus.rawValue))"
-            Logger(subsystem: "a-do", category: "Location").error(errorMsg)
+            Logger(subsystem: "a-do", category: "Location").error("\(errorMsg)")
             lastLocationError = errorMsg
             return
         }
@@ -71,7 +76,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         // Check authorization first
         if authorizationStatus == .denied || authorizationStatus == .restricted {
             let errorMsg = "Location access denied or restricted (status: \(authorizationStatus.rawValue))"
-            Logger(subsystem: "a-do", category: "Location").error(errorMsg)
+            Logger(subsystem: "a-do", category: "Location").error("\(errorMsg)")
             lastLocationError = errorMsg
             return nil
         }
@@ -89,7 +94,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         // Wait for up to 15 seconds for a location update
         for attempt in 0..<150 {
             if let location = currentLocation {
-                Logger(subsystem: "a-do", category: "Location").info("Location obtained after \(attempt * 0.1) seconds: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+                Logger(subsystem: "a-do", category: "Location").info("Location obtained after \(Double(attempt) * 0.1) seconds: \(location.coordinate.latitude), \(location.coordinate.longitude)")
                 stopLocationUpdates()
                 return location
             }
@@ -98,7 +103,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         
         stopLocationUpdates()
         let errorMsg = "Failed to get location after 15 seconds"
-        Logger(subsystem: "a-do", category: "Location").error(errorMsg)
+        Logger(subsystem: "a-do", category: "Location").error("\(errorMsg)")
         lastLocationError = errorMsg
         return nil
     }
@@ -120,7 +125,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
                 }
             }
         } catch {
-            Logger(subsystem: "a-do", category: "Location").error("Reverse geocoding failed: \(String(describing: error))")
+            Logger(subsystem: "a-do", category: "Location").error("Reverse geocoding failed: \(error)")
         }
     }
 
@@ -128,6 +133,12 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         // Validate coordinates before creating region
         guard Self.isValidCoordinate(latitude: latitude, longitude: longitude) else {
             Logger(subsystem: "a-do", category: "Location").error("Invalid coordinates for monitoring: lat=\(latitude), lon=\(longitude)")
+            return
+        }
+        
+        // Only allow region monitoring if background location is properly configured
+        guard Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") != nil else {
+            Logger(subsystem: "a-do", category: "Location").error("Cannot start region monitoring: background modes not configured")
             return
         }
         
@@ -185,11 +196,21 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         Task { @MainActor in
             let errorMsg = "Location update failed: \(String(describing: error))"
-            Logger(subsystem: "a-do", category: "Location").error(errorMsg)
+            Logger(subsystem: "a-do", category: "Location").error("\(errorMsg)")
             self.lastLocationError = errorMsg
             self.isUpdatingLocation = false
         }
     }
+    
+    deinit {
+        // Clean up resources synchronously to avoid deinit issues
+        // Note: We can't call async methods in deinit, so we'll just clean up what we can
+        geocodingTask?.cancel()
+        geocodingTask = nil
+
+        // Stop monitoring all regions
+        for region in manager.monitoredRegions {
+            manager.stopMonitoring(for: region)
+        }
+    }
 }
-
-

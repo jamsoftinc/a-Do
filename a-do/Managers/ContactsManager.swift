@@ -63,16 +63,14 @@ final class ContactsManager {
     }
 
     func myPhoneNumber() async -> String? {
-        let defaults = UserDefaults(suiteName: "group.JAMSoft.a-do") ?? .standard
-        return defaults.string(forKey: "my_phone_number")
+        return AppGroupDefaults.shared.string(forKey: "my_phone_number")
     }
 
     func setMyPhoneNumber(_ number: String?) {
-        let defaults = UserDefaults(suiteName: "group.JAMSoft.a-do") ?? .standard
         if let number, !number.isEmpty {
-            defaults.set(number, forKey: "my_phone_number")
+            AppGroupDefaults.shared.set(number, forKey: "my_phone_number")
         } else {
-            defaults.removeObject(forKey: "my_phone_number")
+            AppGroupDefaults.shared.removeObject(forKey: "my_phone_number")
         }
     }
 }

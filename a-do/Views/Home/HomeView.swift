@@ -173,12 +173,7 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showingReminderForm) {
             NavigationStack {
-                if #available(iOS 17.0, *) {
-                    ReminderFormView()
-                } else {
-                    Text("Reminder form requires iOS 17.0+")
-                        .padding()
-                }
+                ReminderFormView()
             }
         }
         .onChange(of: router.destination) { _, dest in
@@ -217,96 +212,37 @@ struct HomeView: View {
                 }
                 
                 // Voice recording button
-                if #available(iOS 15.0, *) {
-                    Button {
-                        if AudioManager.shared.isRecording {
-                            // Stop recording
-                            stopQuickVoiceMemo()
-                        } else {
-                            // Start recording
-                            Task {
-                                await startQuickVoiceMemo()
-                            }
+                Button {
+                    if AudioManager.shared.isRecording {
+                        // Stop recording
+                        stopQuickVoiceMemo()
+                    } else {
+                        // Start recording
+                        Task {
+                            await startQuickVoiceMemo()
                         }
-                    } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: AudioManager.shared.isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                                .font(.title2)
-                                .foregroundStyle(AudioManager.shared.isRecording ? .red : .white)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(AudioManager.shared.isRecording ? "Stop Recording" : "Start Voice Recording")
-                                    .font(.body)
-                                    .fontWeight(.medium)
-                                    .foregroundStyle(.white)
-                                
-                                if AudioManager.shared.isRecording {
-                                    Text("Recording... \(Int(AudioManager.shared.recordingDuration))s")
-                                        .font(.caption)
-                                        .foregroundStyle(.white.opacity(0.8))
-                                } else {
-                                    Text("Tap to record your reminder")
-                                        .font(.caption)
-                                        .foregroundStyle(.white.opacity(0.8))
-                                }
-                            }
-                            
-                            Spacer()
-                        }
-                        .padding(16)
-                        .background(
-                            LinearGradient(
-                                colors: AudioManager.shared.isRecording ? [.red, .orange] : [.purple, .blue],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            in: RoundedRectangle(cornerRadius: 12)
-                        )
                     }
-                    .disabled(AudioManager.shared.isTranscribing)
-                    
-                    // Status indicators
-                    if AudioManager.shared.isTranscribing {
-                        HStack(spacing: 8) {
-                            Image(systemName: "text.bubble")
-                                .foregroundColor(.orange)
-                                .imageScale(.small)
-                            Text("Using Apple Intelligence to transcribe...")
-                                .font(.caption)
-                                .foregroundColor(.orange)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 4)
-                    }
-                    
-                    if !AudioManager.shared.transcribedText.isEmpty && !AudioManager.shared.isRecording && !AudioManager.shared.isTranscribing {
-                        HStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                                .imageScale(.small)
-                            Text("Creating reminder from transcribed text...")
-                                .font(.caption)
-                                .foregroundColor(.green)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 4)
-                    }
-                } else {
-                    // Fallback for iOS < 15.0
+                } label: {
                     HStack(spacing: 12) {
-                        Image(systemName: "mic.slash")
+                        Image(systemName: AudioManager.shared.isRecording ? "stop.circle.fill" : "mic.circle.fill")
                             .font(.title2)
-                            .foregroundStyle(.gray)
+                            .foregroundStyle(AudioManager.shared.isRecording ? .red : .white)
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Voice Recording Unavailable")
+                            Text(AudioManager.shared.isRecording ? "Stop Recording" : "Start Voice Recording")
                                 .font(.body)
                                 .fontWeight(.medium)
                                 .foregroundStyle(.white)
                             
-                            Text("Requires iOS 15.0 or later")
-                                .font(.caption)
-                                .foregroundStyle(.white.opacity(0.8))
+                            if AudioManager.shared.isRecording {
+                                Text("Recording... \(Int(AudioManager.shared.recordingDuration))s")
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.8))
+                            } else {
+                                Text("Tap to record your reminder")
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.8))
+                            }
                         }
                         
                         Spacer()
@@ -314,12 +250,40 @@ struct HomeView: View {
                     .padding(16)
                     .background(
                         LinearGradient(
-                            colors: [.gray, .gray.opacity(0.8)],
+                            colors: AudioManager.shared.isRecording ? [.red, .orange] : [.purple, .blue],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
                         in: RoundedRectangle(cornerRadius: 12)
                     )
+                }
+                .disabled(AudioManager.shared.isTranscribing)
+                
+                // Status indicators
+                if AudioManager.shared.isTranscribing {
+                    HStack(spacing: 8) {
+                        Image(systemName: "text.bubble")
+                            .foregroundColor(.orange)
+                            .imageScale(.small)
+                        Text("Using Apple Intelligence to transcribe...")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 4)
+                }
+                
+                if !AudioManager.shared.transcribedText.isEmpty && !AudioManager.shared.isRecording && !AudioManager.shared.isTranscribing {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                            .imageScale(.small)
+                        Text("Creating reminder from transcribed text...")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 4)
                 }
             }
         }
@@ -658,14 +622,7 @@ struct HomeView: View {
     }
 
     private var addButton: some View {
-        NavigationLink(destination: Group {
-            if #available(iOS 17.0, *) {
-                ReminderFormView()
-            } else {
-                Text("Reminder form requires iOS 17.0+")
-                    .padding()
-            }
-        }) {
+        NavigationLink(destination: ReminderFormView()) {
             ZStack {
                 Circle().fill(.white).frame(width: 64, height: 64)
                 Image(systemName: "plus")
@@ -884,12 +841,7 @@ private struct ReminderRow: View {
         }
         .sheet(isPresented: $showingEditSheet) {
             NavigationStack {
-                if #available(iOS 17.0, *) {
-                    ReminderFormView(existingReminder: reminder)
-                } else {
-                    Text("Reminder form requires iOS 17.0+")
-                        .padding()
-                }
+                ReminderFormView(existingReminder: reminder)
             }
         }
         .contextMenu {
@@ -1001,7 +953,6 @@ extension HomeView {
     
     // MARK: - Quick Voice Memo Methods
     
-    @available(iOS 15.0, *)
     private func startQuickVoiceMemo() async {
         // Start recording
         await AudioManager.shared.startRecording()
@@ -1018,7 +969,6 @@ extension HomeView {
         }
     }
     
-    @available(iOS 15.0, *)
     private func createVoiceReminderFromTranscription() async {
         guard !AudioManager.shared.transcribedText.isEmpty else { 
             Logger(subsystem: "a-do", category: "Voice").warning("No transcribed text available for reminder creation")
@@ -1065,7 +1015,6 @@ extension HomeView {
         }
     }
     
-    @available(iOS 15.0, *)
     private func stopQuickVoiceMemo() {
         // Stop the recording - this will trigger transcription automatically
         AudioManager.shared.stopRecording()

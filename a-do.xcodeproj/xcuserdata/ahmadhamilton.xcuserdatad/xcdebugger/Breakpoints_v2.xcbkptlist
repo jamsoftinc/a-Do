@@ -18,6 +18,36 @@
             endingLineNumber = "48"
             landmarkName = "createContainer()"
             landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "86DE1087-DF02-4C2D-81F5-10129CC0787B - b3431d8b2749cd33"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "static a_do.AppContainer.clearAllDemoData(context: SwiftData.ModelContext) -&gt; ()"
+                  moduleName = "a-do.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppContainer.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "50"
+                  endingLineNumber = "50">
+               </Location>
+               <Location
+                  uuid = "86DE1087-DF02-4C2D-81F5-10129CC0787B - c9f5e75266043525"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "a_do.AppContainer.getContainer() -&gt; SwiftData.ModelContainer"
+                  moduleName = "a-do.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppContainer.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "50"
+                  endingLineNumber = "50">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

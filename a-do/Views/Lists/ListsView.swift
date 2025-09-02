@@ -36,40 +36,13 @@ struct ListsView: View {
     }
     
     private var masterView: some View {
-        List {
-            // Smart Lists Section
-            Section("Smart Lists") {
-                ForEach(lists.filter { $0.isSmart }.sorted { $0.order < $1.order }) { list in
-                    if horizontalSizeClass == .regular {
-                        Text(list.name)
-                            .tag(list)
-                    } else {
-                        NavigationLink(list.name) { ListDetailView(list: list, allReminders: allReminders) }
-                    }
-                }
-            }
-            
-            // Custom Lists Sections
-            ForEach(sections) { section in
-                Section(section.name) {
-                    ForEach((section.lists ?? []).sorted { $0.order < $1.order }) { list in
-                        listRow(for: list)
-                    }
-                }
-            }
-            
-            // Unsorted Lists
-            if !unsectionedLists.isEmpty {
-                Section("Other Lists") {
-                    ForEach(unsectionedLists.sorted { $0.order < $1.order }) { list in
-                        listRow(for: list)
-                    }
-                }
-            }
-        }
-        .navigationTitle("Lists")
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
+        VStack {
+            // Header
+            HStack {
+                Text("Lists")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                Spacer()
                 Menu {
                     Button("New List") {
                         newListName = ""
@@ -82,7 +55,59 @@ struct ListsView: View {
                     }
                 } label: {
                     Image(systemName: "plus")
+                        .font(.title2)
                 }
+            }
+            .padding()
+            
+            // Content
+            ScrollView {
+                LazyVStack(spacing: 16) {
+                    // Smart Lists
+                    if !lists.filter({ $0.isSmart }).isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Smart Lists")
+                                .font(.headline)
+                                .padding(.horizontal)
+                            
+                            ForEach(lists.filter { $0.isSmart }) { list in
+                                listRow(for: list)
+                                    .padding(.horizontal)
+                            }
+                        }
+                    }
+                    
+                    // Sections
+                    ForEach(sections) { section in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(section.name)
+                                .font(.headline)
+                                .padding(.horizontal)
+                            
+                            if let sectionLists = section.lists, !sectionLists.isEmpty {
+                                ForEach(sectionLists) { list in
+                                    listRow(for: list)
+                                        .padding(.horizontal)
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Unsorted Lists
+                    if !unsectionedLists.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Other Lists")
+                                .font(.headline)
+                                .padding(.horizontal)
+                            
+                            ForEach(unsectionedLists) { list in
+                                listRow(for: list)
+                                    .padding(.horizontal)
+                            }
+                        }
+                    }
+                }
+                .padding(.bottom)
             }
         }
         .sheet(isPresented: $showingSectionSheet) {
@@ -233,12 +258,7 @@ struct ListDetailView: View {
         }
         .sheet(isPresented: $showingEditSheet) {
             NavigationStack {
-                if #available(iOS 17.0, *) {
-                    ReminderFormView(existingReminder: listReminders.first)
-                } else {
-                    Text("Reminder form requires iOS 17.0+")
-                        .padding()
-                }
+                ReminderFormView(existingReminder: listReminders.first)
             }
         }
     }

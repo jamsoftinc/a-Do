@@ -238,52 +238,46 @@ struct ReminderFormView: View {
                     } else {
                         // Show recording interface
                         VStack(alignment: .leading, spacing: 8) {
-                            if #available(iOS 15.0, *) {
-                                if viewModel.isRecordingVoice {
-                                    HStack {
-                                        Image(systemName: "record.circle")
-                                            .foregroundColor(.red)
-                                            .imageScale(.small)
-                                        Text("Recording... \(Int(AudioManager.shared.recordingDuration))s")
-                                            .font(.caption)
-                                            .foregroundColor(.red)
-                                        Spacer()
-                                        Button("Stop") {
-                                            viewModel.stopVoiceRecording()
-                                        }
+                            if viewModel.isRecordingVoice {
+                                HStack {
+                                    Image(systemName: "record.circle")
+                                        .foregroundColor(.red)
+                                        .imageScale(.small)
+                                    Text("Recording... \(Int(AudioManager.shared.recordingDuration))s")
                                         .font(.caption)
                                         .foregroundColor(.red)
+                                    Spacer()
+                                    Button("Stop") {
+                                        viewModel.stopVoiceRecording()
                                     }
-                                } else {
-                                    Button {
-                                        Task {
-                                            await viewModel.startVoiceRecording()
-                                        }
-                                    } label: {
-                                        HStack {
-                                            Image(systemName: "mic.circle.fill")
-                                                .foregroundColor(.white)
-                                            Text("Start Recording")
-                                                .foregroundColor(.white)
-                                        }
-                                    }
-                                    .disabled(viewModel.isRecordingVoice)
-                                }
-                                
-                                if AudioManager.shared.isTranscribing {
-                                    HStack {
-                                        Image(systemName: "text.bubble")
-                                            .foregroundColor(.orange)
-                                            .imageScale(.small)
-                                        Text("Transcribing...")
-                                            .font(.caption)
-                                            .foregroundColor(.orange)
-                                    }
+                                    .font(.caption)
+                                    .foregroundColor(.red)
                                 }
                             } else {
-                                Text("Voice recording requires iOS 15.0+")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
+                                Button {
+                                    Task {
+                                        await viewModel.startVoiceRecording()
+                                    }
+                                } label: {
+                                    HStack {
+                                        Image(systemName: "mic.circle.fill")
+                                            .foregroundColor(.white)
+                                        Text("Start Recording")
+                                            .foregroundColor(.white)
+                                    }
+                                }
+                                .disabled(viewModel.isRecordingVoice)
+                            }
+                            
+                            if AudioManager.shared.isTranscribing {
+                                HStack {
+                                    Image(systemName: "text.bubble")
+                                        .foregroundColor(.orange)
+                                        .imageScale(.small)
+                                    Text("Transcribing...")
+                                        .font(.caption)
+                                        .foregroundColor(.orange)
+                                }
                             }
                             
                             if let error = viewModel.voiceRecordingError {
@@ -416,55 +410,38 @@ struct ReminderFormView: View {
                         .background(AppTheme.Colors.surfaceLight, in: RoundedRectangle(cornerRadius: AppTheme.CornerRadius.small))
                         .primaryText()
                     
-                                           // Map View
-                       if viewModel.hasValidCoordinates {
-                           #if canImport(MapKit)
-                           if #available(iOS 16.0, *) {
-                               LocationMapView(
-                                   latitude: viewModel.locationLatitude,
-                                   longitude: viewModel.locationLongitude,
-                                   radius: viewModel.locationRadius,
-                                   label: viewModel.locationLabel.isEmpty ? "Current Location" : viewModel.locationLabel
-                               )
-                               .frame(height: 200)
-                               .clipShape(RoundedRectangle(cornerRadius: 12))
-                               .overlay(
-                                   RoundedRectangle(cornerRadius: 12)
-                                       .stroke(.secondary.opacity(0.2), lineWidth: 1)
-                               )
-                           } else {
-                               // Fallback for older iOS versions
-                               RoundedRectangle(cornerRadius: 12)
-                                   .fill(.gray.opacity(0.3))
-                                   .frame(height: 200)
-                                   .overlay(
-                                       VStack {
-                                           Image(systemName: "map")
-                                               .font(.largeTitle)
-                                               .foregroundColor(.gray)
-                                           Text("Map requires iOS 16.0+")
-                                               .font(.caption)
-                                               .foregroundColor(.gray)
-                                       }
-                                   )
-                           }
-                           #else
-                           // Fallback when MapKit is not available
-                           RoundedRectangle(cornerRadius: 12)
-                               .fill(.gray.opacity(0.3))
-                               .frame(height: 200)
-                               .overlay(
-                                   VStack {
-                                       Image(systemName: "map")
-                                           .font(.largeTitle)
-                                           .foregroundColor(.gray)
-                                       Text("Map not available")
-                                           .font(.caption)
-                                           .foregroundColor(.gray)
-                                   }
-                               )
-                           #endif
-                       }
+                    // Map View
+                    if viewModel.hasValidCoordinates {
+                        #if canImport(MapKit)
+                        LocationMapView(
+                            latitude: viewModel.locationLatitude,
+                            longitude: viewModel.locationLongitude,
+                            radius: viewModel.locationRadius,
+                            label: viewModel.locationLabel.isEmpty ? "Current Location" : viewModel.locationLabel
+                        )
+                        .frame(height: 200)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(.secondary.opacity(0.2), lineWidth: 1)
+                        )
+                        #else
+                        // Fallback when MapKit is not available
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(.gray.opacity(0.3))
+                            .frame(height: 200)
+                            .overlay(
+                                VStack {
+                                    Image(systemName: "map")
+                                        .font(.largeTitle)
+                                        .foregroundColor(.gray)
+                                    Text("Map not available")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                }
+                            )
+                        #endif
+                    }
                     
                     Button {
                         Task {
@@ -714,54 +691,38 @@ private struct LocationMapView: View {
     }
     
     var body: some View {
-        if #available(iOS 16.0, *) {
-            Map(coordinateRegion: .constant(region), annotationItems: [locationPin]) { pin in
-                MapAnnotation(coordinate: pin.coordinate) {
-                    VStack(spacing: 4) {
-                        // Pin with shadow
-                        Image(systemName: "mappin.circle.fill")
-                            .foregroundColor(.white)
-                            .font(.title)
-                            .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
-                        
-                        // Label with modern styling
-                        if !pin.title.isEmpty {
-                            Text(pin.title)
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(.regularMaterial, in: Capsule())
-                                .foregroundColor(.primary)
-                                .shadow(color: .black.opacity(0.1), radius: 1, x: 0, y: 1)
-                        }
+        Map {
+            Annotation(label, coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude)) {
+                VStack(spacing: 4) {
+                    // Pin with shadow
+                    Image(systemName: "mappin.circle.fill")
+                        .foregroundColor(.white)
+                        .font(.title)
+                        .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
+                    
+                    // Label with modern styling
+                    if !label.isEmpty {
+                        Text(label)
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(.regularMaterial, in: Capsule())
+                            .foregroundColor(.primary)
+                            .shadow(color: .black.opacity(0.1), radius: 1, x: 0, y: 1)
                     }
                 }
             }
-            .modifier(MapStyleModifier())
-            .overlay(
-                // Radius circle overlay - positioned at center
-                Circle()
-                    .stroke(.white.opacity(0.4), lineWidth: 2)
-                    .background(Circle().fill(.white.opacity(0.1)))
-                    .frame(width: radiusInPoints, height: radiusInPoints)
-            )
-            .allowsHitTesting(false) // Make map non-interactive
-        } else {
-            // Fallback for older iOS versions
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.gray.opacity(0.3))
-                .overlay(
-                    VStack {
-                        Image(systemName: "map")
-                            .font(.largeTitle)
-                            .foregroundColor(.gray)
-                        Text("Map requires iOS 16.0+")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                    }
-                )
         }
+        .mapStyle(.standard(elevation: .realistic))
+        .overlay(
+            // Radius circle overlay - positioned at center
+            Circle()
+                .stroke(.white.opacity(0.4), lineWidth: 2)
+                .background(Circle().fill(.white.opacity(0.1)))
+                .frame(width: radiusInPoints, height: radiusInPoints)
+        )
+        .allowsHitTesting(false) // Make map non-interactive
     }
     
     // Convert radius from meters to points for overlay circle
@@ -782,13 +743,3 @@ private struct LocationPin: Identifiable {
 
 #endif
 
-@available(iOS 17.0, *)
-private struct MapStyleModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        if #available(iOS 17.0, *) {
-            content.mapStyle(.standard(elevation: .realistic))
-        } else {
-            content
-        }
-    }
-}

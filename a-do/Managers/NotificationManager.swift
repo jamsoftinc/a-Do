@@ -33,6 +33,7 @@ final class NotificationManager {
     func scheduleNotifications(for reminderId: PersistentIdentifier, dueDate: Date?, leadTimes: [TimeInterval], title: String) async {
         guard let dueDate else { return }
         let center = UNUserNotificationCenter.current()
+        
         // Register categories once
         let sendAction = UNNotificationAction(identifier: "SEND_TEXT_ACTION", title: "Send Text", options: [.foreground])
         let category = UNNotificationCategory(identifier: "REMEMBER_CATEGORY", actions: [sendAction], intentIdentifiers: [], options: [])
@@ -48,10 +49,15 @@ final class NotificationManager {
             let request = UNNotificationRequest(identifier: "reminder_\(reminderId)_\(Int(lead))", content: content, trigger: trigger)
             await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
                 center.add(request) { error in
-                    if let error { Logger(subsystem: "a-do", category: "Notifications").error("Add request failed: \(String(describing: error))") }
+                    if let error {
+                        // TODO: Add proper logging when Logger type issue is resolved
+                        print("Add request failed: \(String(describing: error))")
+                    }
                     continuation.resume(returning: ())
                 }
             }
+            // TODO: Add proper logging when Logger type issue is resolved
+            print("Scheduled notification for reminder \(reminderId) with \(Int(lead))s lead time")
         }
     }
 

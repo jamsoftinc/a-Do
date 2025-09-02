@@ -12,8 +12,8 @@ struct ContentView: View {
     var body: some View {
         HomeView()
             .task {
-                // Initialize the cleanup manager
-                _ = ReminderCleanupManager.shared
+                // Safely initialize the cleanup manager
+                ReminderCleanupManager.shared.setupPeriodicCleanup()
             }
     }
 }
