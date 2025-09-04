@@ -317,6 +317,7 @@ final class VoiceReminder {
     var recordingDuration: TimeInterval = 0
     var createdAt: Date = Date()
     
+    
     init(audioFileName: String, transcribedText: String, recordingDuration: TimeInterval) {
         self.audioFileName = audioFileName.trimmingCharacters(in: .whitespacesAndNewlines)
         self.transcribedText = transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)

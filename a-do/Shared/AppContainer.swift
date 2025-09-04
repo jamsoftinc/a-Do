@@ -13,8 +13,13 @@ final class AppContainer {
     
     // MARK: - Safe Container Access for App Intents
     // This is only used by App Intents that need container access
-    @MainActor
+    private var _container: ModelContainer?
+    
     func getContainer() -> ModelContainer {
+        if let container = _container {
+            return container
+        }
+        
         // Create a simple, safe container for App Intents
         let schema = Schema([
             Reminder.self,
@@ -36,12 +41,16 @@ final class AppContainer {
                 groupContainer: .automatic,
                 cloudKitDatabase: .none  // Disable CloudKit to avoid complications
             )
-            return try ModelContainer(for: schema, configurations: configuration)
+            let container = try ModelContainer(for: schema, configurations: configuration)
+            _container = container
+            return container
         } catch {
             // Fallback to in-memory if persistent fails
             let memoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
             do {
-                return try ModelContainer(for: schema, configurations: memoryConfig)
+                let container = try ModelContainer(for: schema, configurations: memoryConfig)
+                _container = container
+                return container
             } catch {
                 // Last resort - create minimal container
                 fatalError("Failed to create any ModelContainer: \(error)")

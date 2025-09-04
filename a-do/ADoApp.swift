@@ -68,24 +68,24 @@ struct ADoApp: App {
 
 struct RootView: View {
     @State private var router = AppRouter()
+    @State private var container: ModelContainer?
     
     var body: some View {
         LaunchScreenWrapper {
-            ContentView()
-                .modelContainer(for: [
-                    Reminder.self,
-                    Tag.self,
-                    ReminderList.self,
-                    ReminderNotification.self,
-                    LocationTrigger.self,
-                    ListSection.self,
-                    TaggedContact.self,
-                    AppleNoteAttachment.self,
-                    VoiceReminder.self
-                ])
-                .environment(router)
-                .onOpenURL { url in router.handle(url: url) }
-                .task { router.checkGroupDeeplinkFlag() }
+            if let container = container {
+                ContentView()
+                    .modelContainer(container)
+                    .environment(router)
+                    .onOpenURL { url in router.handle(url: url) }
+                    .task { router.checkGroupDeeplinkFlag() }
+            } else {
+                // Show loading state while container initializes
+                ProgressView("Loading...")
+                    .task {
+                        // Initialize container on background thread
+                        container = AppContainer.shared.getContainer()
+                    }
+            }
         }
     }
 }
