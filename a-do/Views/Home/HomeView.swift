@@ -103,12 +103,14 @@ struct HomeView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 12) {
                         NavigationLink(destination: ListsView()) {
-                            Image(systemName: "list.bullet.rectangle.portrait")
+                            Image(systemName: "folder.fill")
                                 .imageScale(.large)
-                                .foregroundStyle(.white)
+                                .foregroundStyle(.blue)
                                 .frame(width: 32, height: 32)
                                 .background(.ultraThinMaterial, in: Circle())
                         }
+                        .accessibilityLabel("Lists")
+                        .accessibilityHint("View and manage your reminder lists")
                         
                         NavigationLink(destination: CompletedRemindersView()) {
                             Image(systemName: "checkmark.circle.fill")
@@ -117,24 +119,30 @@ struct HomeView: View {
                                 .frame(width: 32, height: 32)
                                 .background(.ultraThinMaterial, in: Circle())
                         }
+                        .accessibilityLabel("Completed")
+                        .accessibilityHint("View completed reminders")
                         
                         NavigationLink(destination: HabitsView()) {
-                            Image(systemName: "star.fill")
+                            Image(systemName: "chart.line.uptrend.xyaxis")
                                 .imageScale(.large)
                                 .foregroundStyle(.orange)
                                 .frame(width: 32, height: 32)
                                 .background(.ultraThinMaterial, in: Circle())
                         }
+                        .accessibilityLabel("Habits")
+                        .accessibilityHint("Track your daily habits and progress")
                         
                         Button {
                             showingAppleIntegrations = true
                         } label: {
-                            Image(systemName: "gear")
+                            Image(systemName: "arrow.triangle.2.circlepath")
                                 .imageScale(.large)
-                                .foregroundStyle(.white)
+                                .foregroundStyle(.purple)
                                 .frame(width: 32, height: 32)
                                 .background(.ultraThinMaterial, in: Circle())
                         }
+                        .accessibilityLabel("Sync")
+                        .accessibilityHint("Apple integrations and sync settings")
                         
                         Menu {
                             Button {
