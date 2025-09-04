@@ -82,6 +82,22 @@ final class SettingsManager {
         }
     }
     
+    func setICloudSyncEnabled(_ enabled: Bool, context: ModelContext) {
+        let settings = getSettings(context: context)
+        settings.iCloudSyncEnabled = enabled
+        
+        saveSettings(context: context)
+        
+        // Update CloudKitManager
+        CloudKitManager.shared.setSyncEnabled(enabled)
+        
+        if enabled {
+            logger.info("iCloud sync enabled")
+        } else {
+            logger.info("iCloud sync disabled")
+        }
+    }
+    
     // MARK: - Sync Settings
     
     func setAutoSyncEnabled(_ enabled: Bool, context: ModelContext) {
@@ -244,6 +260,7 @@ final class SettingsManager {
         settings.appleRemindersEnabled = true
         settings.appleCalendarEnabled = true
         settings.appleNotesEnabled = true
+        settings.iCloudSyncEnabled = true
         settings.autoSyncEnabled = true
         settings.syncInterval = 300
         settings.notificationsEnabled = true

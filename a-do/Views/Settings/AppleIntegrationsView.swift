@@ -198,6 +198,62 @@ struct AppleIntegrationsView: View {
                     }
                 }
                 
+                Section("iCloud Integration") {
+                    HStack {
+                        Image(systemName: "icloud.fill")
+                            .foregroundColor(AppTheme.Colors.primary)
+                            .frame(width: 24)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("iCloud Sync")
+                                .font(AppTheme.Typography.subheadline)
+                                .fontWeight(.medium)
+                                .primaryText()
+                            Text("Sync your data across all your devices")
+                                .font(AppTheme.Typography.caption1)
+                                .secondaryText()
+                        }
+                        
+                        Spacer()
+                        
+                        Toggle("", isOn: Binding(
+                            get: { settings?.iCloudSyncEnabled ?? true },
+                            set: { newValue in
+                                if newValue {
+                                    SettingsManager.shared.setICloudSyncEnabled(true, context: context)
+                                } else {
+                                    alertMessage = "Disabling iCloud sync will stop syncing your data across devices. Your data will remain on this device only."
+                                    showingDisableAlert = true
+                                }
+                            }
+                        ))
+                    }
+                    .padding(.vertical, 4)
+                    
+                    if settings?.iCloudSyncEnabled == true {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Features:")
+                                .font(AppTheme.Typography.caption1)
+                                .fontWeight(.medium)
+                                .primaryText()
+                            
+                            Text("• Sync reminders across all your devices")
+                                .font(AppTheme.Typography.caption1)
+                                .secondaryText()
+                            Text("• Automatic backup to iCloud")
+                                .font(AppTheme.Typography.caption1)
+                                .secondaryText()
+                            Text("• Real-time sync when connected")
+                                .font(AppTheme.Typography.caption1)
+                                .secondaryText()
+                            Text("• Secure cloud storage")
+                                .font(AppTheme.Typography.caption1)
+                                .secondaryText()
+                        }
+                        .padding(.leading, 32)
+                    }
+                }
+                
                 Section("Sync Settings") {
                     HStack {
                         Text("Auto Sync")
@@ -215,8 +271,8 @@ struct AppleIntegrationsView: View {
                                 .primaryText()
                             Spacer()
                             Picker("", selection: Binding(
-                                get: { settings?.syncInterval ?? 300 },
-                                set: { SettingsManager.shared.setSyncInterval($0, context: context) }
+                                get: { Int(settings?.syncInterval ?? 300) },
+                                set: { SettingsManager.shared.setSyncInterval(TimeInterval($0), context: context) }
                             )) {
                                 Text("5 minutes").tag(300)
                                 Text("15 minutes").tag(900)
@@ -245,6 +301,28 @@ struct AppleIntegrationsView: View {
                             }
                         }
                     }
+                    
+                    // iCloud Status
+                    HStack {
+                        Text("iCloud Status")
+                            .primaryText()
+                        Spacer()
+                        Button {
+                            CloudKitManager.shared.refreshAccountStatus()
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                                .foregroundColor(AppTheme.Colors.primary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    
+                    HStack {
+                        Text(CloudKitManager.shared.syncStatusMessage)
+                            .font(AppTheme.Typography.caption1)
+                            .secondaryText()
+                        Spacer()
+                    }
+                    .padding(.leading, 16)
                     
                     if let warnings = settings?.validateSettings(), !warnings.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
@@ -298,6 +376,8 @@ struct AppleIntegrationsView: View {
                     SettingsManager.shared.setAppleCalendarEnabled(false, context: context)
                 } else if alertMessage.contains("Apple Notes") {
                     SettingsManager.shared.setAppleNotesEnabled(false, context: context)
+                } else if alertMessage.contains("iCloud sync") {
+                    SettingsManager.shared.setICloudSyncEnabled(false, context: context)
                 }
             }
         } message: {

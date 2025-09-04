@@ -7,6 +7,7 @@ final class AppSettings {
     var appleRemindersEnabled: Bool = true
     var appleCalendarEnabled: Bool = true
     var appleNotesEnabled: Bool = true
+    var iCloudSyncEnabled: Bool = true
     
     // Sync Settings
     var autoSyncEnabled: Bool = true
@@ -37,14 +38,15 @@ final class AppSettings {
     // MARK: - Apple Integration Helpers
     
     var hasAnyAppleIntegration: Bool {
-        return appleRemindersEnabled || appleCalendarEnabled || appleNotesEnabled
+        return appleRemindersEnabled || appleCalendarEnabled || appleNotesEnabled || iCloudSyncEnabled
     }
     
     var integrationStatus: [String: Bool] {
         return [
             "Reminders": appleRemindersEnabled,
             "Calendar": appleCalendarEnabled,
-            "Notes": appleNotesEnabled
+            "Notes": appleNotesEnabled,
+            "iCloud": iCloudSyncEnabled
         ]
     }
     
@@ -53,7 +55,7 @@ final class AppSettings {
     func validateSettings() -> [String] {
         var warnings: [String] = []
         
-        if !appleRemindersEnabled && !appleCalendarEnabled && !appleNotesEnabled {
+        if !appleRemindersEnabled && !appleCalendarEnabled && !appleNotesEnabled && !iCloudSyncEnabled {
             warnings.append("All Apple integrations are disabled. Some features may not work properly.")
         }
         

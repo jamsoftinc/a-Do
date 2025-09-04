@@ -147,7 +147,7 @@ final class HabitEntry {
     var createdAt: Date = Date()
     
     // Relationships
-    @Relationship(inverse: \Habit.entries) var habit: Habit?
+    @Relationship(deleteRule: .nullify) var habit: Habit?
     
     init(date: Date = Date(), count: Int = 0, notes: String = "", habit: Habit? = nil) {
         self.date = date

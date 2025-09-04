@@ -36,26 +36,41 @@ final class AppContainer {
         ])
         
         do {
-            let configuration = ModelConfiguration(
+            // Try CloudKit configuration first
+            let cloudKitConfig = ModelConfiguration(
                 schema: schema,
                 isStoredInMemoryOnly: false,
                 allowsSave: true,
                 groupContainer: .automatic,
-                cloudKitDatabase: .none  // Disable CloudKit to avoid complications
+                cloudKitDatabase: .automatic
             )
-            let container = try ModelContainer(for: schema, configurations: configuration)
+            let container = try ModelContainer(for: schema, configurations: cloudKitConfig)
             _container = container
             return container
         } catch {
-            // Fallback to in-memory if persistent fails
-            let memoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            // If CloudKit fails, try without CloudKit
             do {
-                let container = try ModelContainer(for: schema, configurations: memoryConfig)
+                let localConfig = ModelConfiguration(
+                    schema: schema,
+                    isStoredInMemoryOnly: false,
+                    allowsSave: true,
+                    groupContainer: .automatic,
+                    cloudKitDatabase: .none
+                )
+                let container = try ModelContainer(for: schema, configurations: localConfig)
                 _container = container
                 return container
             } catch {
-                // Last resort - create minimal container
-                fatalError("Failed to create any ModelContainer: \(error)")
+                // Fallback to in-memory if persistent fails
+                let memoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+                do {
+                    let container = try ModelContainer(for: schema, configurations: memoryConfig)
+                    _container = container
+                    return container
+                } catch {
+                    // Last resort - create minimal container
+                    fatalError("Failed to create any ModelContainer: \(error)")
+                }
             }
         }
     }

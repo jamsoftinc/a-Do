@@ -328,11 +328,11 @@ struct ReminderFormView: View {
                                     Text("Duration:")
                                     Spacer()
                                     Picker("Duration", selection: $viewModel.calendarDuration) {
-                                        Text("15 min").tag(TimeInterval(15 * 60))
-                                        Text("30 min").tag(TimeInterval(30 * 60))
-                                        Text("1 hour").tag(TimeInterval(60 * 60))
-                                        Text("2 hours").tag(TimeInterval(2 * 60 * 60))
-                                        Text("All day").tag(TimeInterval(24 * 60 * 60))
+                                        Text("15 min").tag(15 * 60.0)
+                                        Text("30 min").tag(30 * 60.0)
+                                        Text("1 hour").tag(60 * 60.0)
+                                        Text("2 hours").tag(2 * 60 * 60.0)
+                                        Text("All day").tag(24 * 60 * 60.0)
                                     }
                                     .pickerStyle(MenuPickerStyle())
                                 }

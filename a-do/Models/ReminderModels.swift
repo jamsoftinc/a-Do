@@ -45,7 +45,7 @@ final class ListSection {
     var order: Int = 0
     var colorHex: String = "#7C4DFF"
     
-    @Relationship(deleteRule: .nullify, inverse: \ReminderList.section) var lists: [ReminderList]? = []
+    @Relationship(deleteRule: .nullify) var lists: [ReminderList]? = []
     
     init(name: String, order: Int = 0, colorHex: String = "#7C4DFF") {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -218,13 +218,13 @@ final class Reminder {
     // Calendar tracking
     var calendarInviteCreated: Bool = false
 
-    @Relationship(deleteRule: .cascade, inverse: \Tag.reminders) var tags: [Tag]? = []
-    @Relationship(deleteRule: .cascade, inverse: \ReminderNotification.reminder) var notifications: [ReminderNotification]? = []
-    @Relationship(deleteRule: .cascade, inverse: \LocationTrigger.reminder) var locationTrigger: LocationTrigger?
-    @Relationship(deleteRule: .cascade, inverse: \TaggedContact.reminder) var taggedContacts: [TaggedContact]? = []
-    @Relationship(deleteRule: .cascade, inverse: \AppleNoteAttachment.reminder) var appleNote: AppleNoteAttachment?
+    @Relationship(deleteRule: .cascade) var tags: [Tag]? = []
+    @Relationship(deleteRule: .cascade) var notifications: [ReminderNotification]? = []
+    @Relationship(deleteRule: .cascade) var locationTrigger: LocationTrigger?
+    @Relationship(deleteRule: .cascade) var taggedContacts: [TaggedContact]? = []
+    @Relationship(deleteRule: .cascade) var appleNote: AppleNoteAttachment?
     @Relationship(deleteRule: .cascade) var voiceReminder: VoiceReminder?
-    @Relationship(inverse: \ReminderList.reminders) var list: ReminderList?
+    @Relationship(deleteRule: .nullify) var list: ReminderList?
 
     // Required parameterless initializer for SwiftData
     init() {

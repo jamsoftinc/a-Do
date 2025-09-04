@@ -9,6 +9,8 @@ struct SyncSettingsView: View {
     @State private var lastSyncDate: Date?
     @State private var syncError: String?
     @State private var showingSyncAlert = false
+    @State private var syncInterval: Int = 300 // 5 minutes default
+    @State private var iCloudSyncEnabled: Bool = true
     
     var body: some View {
         NavigationStack {
@@ -26,6 +28,27 @@ struct SyncSettingsView: View {
                                 .secondaryText()
                         }
                         Spacer()
+                    }
+                    .padding(.vertical, 8)
+                }
+                
+                Section {
+                    HStack {
+                        Image(systemName: "icloud.fill")
+                            .foregroundColor(AppTheme.Colors.primary)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("iCloud Sync")
+                                .font(AppTheme.Typography.headline)
+                                .primaryText()
+                            Text("Sync your data across all your devices using iCloud")
+                                .font(AppTheme.Typography.caption1)
+                                .secondaryText()
+                        }
+                        Spacer()
+                        Toggle("", isOn: $iCloudSyncEnabled)
+                            .onChange(of: iCloudSyncEnabled) { _, newValue in
+                                SettingsManager.shared.setICloudSyncEnabled(newValue, context: context)
+                            }
                     }
                     .padding(.vertical, 8)
                 }
@@ -97,7 +120,7 @@ struct SyncSettingsView: View {
                         Text("Sync Interval")
                             .primaryText()
                         Spacer()
-                        Picker("", selection: .constant(300)) {
+                        Picker("", selection: $syncInterval) {
                             Text("5 minutes").tag(300)
                             Text("15 minutes").tag(900)
                             Text("30 minutes").tag(1800)
@@ -153,6 +176,9 @@ struct SyncSettingsView: View {
         } message: {
             Text("This will import all reminders from Apple Reminders that aren't already in a-do. Duplicates will be skipped.")
         }
+        .onAppear {
+            loadSettings()
+        }
     }
     
     private func performManualSync() async {
@@ -167,6 +193,11 @@ struct SyncSettingsView: View {
         await AppleRemindersSyncManager.shared.performFullSync(context: context)
         lastSyncDate = AppleRemindersSyncManager.shared.lastSync
         isSyncing = false
+    }
+    
+    private func loadSettings() {
+        let settings = SettingsManager.shared.getSettings(context: context)
+        iCloudSyncEnabled = settings.iCloudSyncEnabled
     }
 }
 

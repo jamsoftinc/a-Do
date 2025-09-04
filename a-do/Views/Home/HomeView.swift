@@ -15,6 +15,7 @@ struct HomeView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query(sort: \Reminder.createdAt, order: .reverse) private var allReminders: [Reminder]
+    @StateObject private var cloudKitManager = CloudKitManager.shared
     
     // Filter reminders for different sections
     private var inboxReminders: [Reminder] {
@@ -99,7 +100,33 @@ struct HomeView: View {
             }
             .navigationTitle("a-do")
             .navigationBarTitleDisplayMode(.large)
+            .onAppear {
+                cloudKitManager.loadSyncSetting(context: context)
+            }
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        cloudKitManager.refreshAccountStatus()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: cloudKitManager.syncStatusIcon)
+                                .foregroundColor(Color(hex: cloudKitManager.syncStatusColor) ?? .gray)
+                                .font(.caption)
+                            
+                            if cloudKitManager.isSignedIn && cloudKitManager.isSyncEnabled {
+                                Text("iCloud")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Text("Offline")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 12) {
                         NavigationLink(destination: ListsView()) {
