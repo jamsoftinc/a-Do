@@ -30,7 +30,9 @@ final class AppContainer {
             ListSection.self,
             TaggedContact.self,
             AppleNoteAttachment.self,
-            VoiceReminder.self
+            VoiceReminder.self,
+            Habit.self,
+            HabitEntry.self
         ])
         
         do {

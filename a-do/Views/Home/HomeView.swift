@@ -118,6 +118,14 @@ struct HomeView: View {
                                 .background(.ultraThinMaterial, in: Circle())
                         }
                         
+                        NavigationLink(destination: HabitsView()) {
+                            Image(systemName: "star.fill")
+                                .imageScale(.large)
+                                .foregroundStyle(.orange)
+                                .frame(width: 32, height: 32)
+                                .background(.ultraThinMaterial, in: Circle())
+                        }
+                        
                         Button {
                             showingAppleIntegrations = true
                         } label: {
@@ -188,6 +196,10 @@ struct HomeView: View {
                 if let reminder = allReminders.first(where: { $0.uuid == rid }) {
                     Task { await composeAndSend(reminder: reminder) }
                 }
+            case .habits:
+                // Navigate to habits view
+                // This will be handled by the NavigationLink in the toolbar
+                break
             case .smartHighPriority, .tag, .priority:
                 break
             }

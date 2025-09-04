@@ -9,6 +9,7 @@ enum DeepLinkDestination: Identifiable, Equatable {
     case tag(String)
     case priority(Priority)
     case sendText(reminderId: UUID)
+    case habits
 
     var id: String {
         switch self {
@@ -17,6 +18,7 @@ enum DeepLinkDestination: Identifiable, Equatable {
         case .tag(let name): return "tag_\(name)"
         case .priority(let p): return "priority_\(p.rawValue)"
         case .sendText(let id): return "send_text_\(id.uuidString)"
+        case .habits: return "habits"
         }
     }
 }
@@ -57,6 +59,8 @@ final class AppRouter {
             Task { @MainActor in
                 _ = RealNotesManager.shared.handleNotesURL(url)
             }
+        } else if path.hasPrefix("/habits") {
+            destination = .habits
         }
     }
 
@@ -82,6 +86,13 @@ final class AppRouter {
             appDefaults.removeObject(forKey: "deeplink_send_text_reminder_id")
             destination = .sendText(reminderId: reminderId)
             print("🔗 Deep link: Opening send text for reminder \(reminderId)")
+        }
+        
+        // Check for habits deep link
+        if appDefaults.bool(forKey: "deeplink_open_habits") == true {
+            appDefaults.set(false, forKey: "deeplink_open_habits")
+            destination = .habits
+            print("🔗 Deep link: Opening habits view")
         }
     }
 }

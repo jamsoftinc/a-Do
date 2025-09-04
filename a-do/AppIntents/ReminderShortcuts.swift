@@ -57,3 +57,48 @@ struct SendTextForReminder: AppIntent {
         return .result(dialog: "Reminder text action queued. Open the app to continue.")
     }
 }
+
+struct IncrementHabit: AppIntent {
+    static var title: LocalizedStringResource = "Complete Habit"
+    static var description = IntentDescription("Mark a habit as completed for today")
+
+    @Parameter(title: "Habit Title") var habitTitle: String
+
+    func perform() async throws -> some ProvidesDialog {
+        let container = await MainActor.run {
+            return AppContainer.shared.getContainer()
+        }
+        let context = ModelContext(container)
+        
+        // Find the habit by title
+        let descriptor = FetchDescriptor<Habit>(
+            predicate: #Predicate<Habit> { habit in
+                habit.title.localizedStandardContains(habitTitle)
+            }
+        )
+        
+        do {
+            let habits = try context.fetch(descriptor)
+            if let habit = habits.first {
+                habit.incrementToday()
+                try context.save()
+                return .result(dialog: "Completed habit: \(habit.title)")
+            } else {
+                return .result(dialog: "Habit '\(habitTitle)' not found")
+            }
+        } catch {
+            return .result(dialog: "Failed to update habit: \(error.localizedDescription)")
+        }
+    }
+}
+
+struct OpenHabitsView: AppIntent {
+    static var title: LocalizedStringResource = "Open Habits"
+    static var description = IntentDescription("Open the habits tracking view")
+    
+    func perform() async throws -> some IntentResult {
+        // Set a flag for the app to open habits view
+        AppGroupDefaults.shared.set(true, forKey: "deeplink_open_habits")
+        return .result()
+    }
+}
