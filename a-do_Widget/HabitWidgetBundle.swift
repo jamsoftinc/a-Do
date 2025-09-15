@@ -12,5 +12,8 @@ import SwiftUI
 struct HabitWidgetBundle: WidgetBundle {
     var body: some Widget {
         HabitWidget()
+        ReminderWidget()
+        FocusWidget()
+        TimeTrackingWidget()
     }
 }

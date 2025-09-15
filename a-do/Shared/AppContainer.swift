@@ -20,8 +20,9 @@ final class AppContainer {
             return container
         }
         
-        // Create a simple, safe container for App Intents
+        // Create a comprehensive schema with all models
         let schema = Schema([
+            // Core reminder models
             Reminder.self,
             Tag.self,
             ReminderList.self,
@@ -31,8 +32,99 @@ final class AppContainer {
             TaggedContact.self,
             AppleNoteAttachment.self,
             VoiceReminder.self,
+            
+            // Habit tracking models
             Habit.self,
-            HabitEntry.self
+            HabitEntry.self,
+            
+            // Time tracking models
+            TimeEntry.self,
+            TimeCategory.self,
+            TimeGoal.self,
+            
+            // Recurring reminders and templates
+            RecurrenceRule.self,
+            RecurringReminder.self,
+            ReminderTemplate.self,
+            TemplateCategory.self,
+            
+            // Collaboration models
+            SharedReminder.self,
+            ShareParticipant.self,
+            ShareActivity.self,
+            SharedList.self,
+            ReminderComment.self,
+            Workspace.self,
+            WorkspaceMember.self,
+            
+            // Advanced smart lists
+            EnhancedSmartList.self,
+            EnhancedSmartListRule.self,
+            SavedSearch.self,
+            
+            // Focus mode models
+            FocusSession.self,
+            FocusInterruption.self,
+            FocusBreak.self,
+            FocusTemplate.self,
+            SystemFocusMode.self,
+            FocusGoal.self,
+            
+            // AI models
+            AISuggestion.self,
+            AIInsight.self,
+            AILearningData.self,
+            AIModelPerformance.self,
+            AIConfiguration.self,
+            
+            // Backup and export models
+            BackupConfiguration.self,
+            BackupRecord.self,
+            ExportTemplate.self,
+            ImportRecord.self,
+            SyncConfiguration.self,
+            SyncRecord.self,
+            
+            // Health integration models
+            HealthIntegrationConfiguration.self,
+            HealthMetric.self,
+            HealthGoal.self,
+            WorkoutIntegration.self,
+            SleepIntegration.self,
+            MindfulnessIntegration.self,
+            HealthReminderTemplate.self,
+            
+            // Smart notification models
+            SmartNotificationConfiguration.self,
+            SmartNotification.self,
+            NotificationPattern.self,
+            NotificationBatch.self,
+            NotificationAnalytics.self,
+            NotificationRule.self,
+            
+            // Search and organization models
+            SearchConfiguration.self,
+            SearchQuery.self,
+            SearchResult.self,
+            SearchFilter.self,
+            SearchIndex.self,
+            OrganizationRule.self,
+            QuickAction.self,
+            SearchAnalytics.self,
+            SavedSearch.self,
+            
+            // Gamification models
+            UserProfile.self,
+            Achievement.self,
+            UserAchievement.self,
+            Badge.self,
+            UserBadge.self,
+            Challenge.self,
+            UserChallenge.self,
+            Reward.self,
+            UserReward.self,
+            Leaderboard.self,
+            LeaderboardEntry.self
         ])
         
         do {
