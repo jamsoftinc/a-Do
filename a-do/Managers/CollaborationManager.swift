@@ -20,10 +20,13 @@ final class CollaborationManager: ObservableObject {
     private let logger = Logger(subsystem: "a-do", category: "Collaboration")
     private let container = CKContainer.default()
     
-    // Current user info
+    // Current user info - Secure user identification
     var currentUserID: String?
     var currentUserName: String?
     var currentUserEmail: String?
+    var currentUserRecordID: String? {
+        return currentUserID // This should be set from CloudKit user record ID
+    }
     
     // Sharing state
     var isSharing: Bool = false
@@ -63,6 +66,32 @@ final class CollaborationManager: ObservableObject {
             return nil
         }
         
+        // Validate user ID format
+        guard SecurityUtils.isValidUserID(userID) else {
+            shareError = "Invalid user credentials"
+            logger.warning("Invalid user ID format in shareReminder")
+            return nil
+        }
+        
+        // Validate participant email addresses
+        let validParticipants = participants.compactMap { email -> String? in
+            let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+            return SecurityUtils.isValidEmail(trimmedEmail) ? trimmedEmail : nil
+        }
+        
+        guard !validParticipants.isEmpty else {
+            shareError = "No valid participant email addresses provided"
+            return nil
+        }
+        
+        // Rate limiting for sharing operations
+        let rateLimitKey = "share_\(userID)"
+        guard SecurityUtils.isWithinRateLimit(key: rateLimitKey, maxAttempts: 10, timeWindow: 300) else {
+            shareError = "Too many sharing requests. Please try again later."
+            logger.warning("Share rate limit exceeded for user: \(userID)")
+            return nil
+        }
+        
         isSharing = true
         defer { isSharing = false }
         
@@ -75,8 +104,8 @@ final class CollaborationManager: ObservableObject {
                 ownerEmail: userEmail
             )
             
-            // Add participants
-            for participantEmail in participants {
+            // Add validated participants
+            for participantEmail in validParticipants {
                 let participant = sharedReminder.addParticipant(
                     userID: "", // Will be filled when they accept
                     email: participantEmail,

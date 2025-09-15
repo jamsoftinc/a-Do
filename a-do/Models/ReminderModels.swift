@@ -55,11 +55,7 @@ final class ListSection {
     
     // MARK: - Validation
     private static func validateColorHex(_ hex: String) -> String {
-        let validHex = hex.trimmingCharacters(in: .whitespacesAndNewlines)
-        if validHex.hasPrefix("#") && validHex.count == 7 {
-            return validHex
-        }
-        return "#7C4DFF" // Default fallback
+        return SecurityUtils.validateHexColor(hex)
     }
 }
 
@@ -76,11 +72,7 @@ final class Tag {
     
     // MARK: - Validation
     private static func validateColorHex(_ hex: String) -> String {
-        let validHex = hex.trimmingCharacters(in: .whitespacesAndNewlines)
-        if validHex.hasPrefix("#") && validHex.count == 7 {
-            return validHex
-        }
-        return "#7C4DFF" // Default fallback
+        return SecurityUtils.validateHexColor(hex)
     }
 }
 
@@ -319,7 +311,7 @@ final class VoiceReminder {
     
     
     init(audioFileName: String, transcribedText: String, recordingDuration: TimeInterval) {
-        self.audioFileName = audioFileName.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.audioFileName = SecurityUtils.sanitizeFileName(audioFileName)
         self.transcribedText = transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
         self.recordingDuration = max(0, recordingDuration)
         self.createdAt = Date()

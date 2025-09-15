@@ -266,7 +266,11 @@ struct SmartSearchView: View {
     // MARK: - Actions
     
     private func performSearch() {
-        guard !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        // Validate and sanitize search input
+        guard let sanitizedQuery = SecurityUtils.sanitizeTextInput(searchText) else {
+            // Show user-friendly error without exposing technical details
+            return
+        }
         
         isSearching = true
         

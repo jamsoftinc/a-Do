@@ -205,7 +205,7 @@ struct WorkspaceCard: View {
                     
                     Spacer()
                     
-                    if workspace.ownerID == "current-user-id" { // TODO: Replace with actual current user ID
+                    if workspace.ownerID == SecurityUtils.getCurrentUserID() {
                         Label("Owner", systemImage: "crown")
                             .font(AppTheme.Typography.caption1)
                             .foregroundColor(AppTheme.Colors.accent)

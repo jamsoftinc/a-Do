@@ -85,12 +85,21 @@ final class AdvancedSearchManager: ObservableObject {
         userId: String,
         context: ModelContext
     ) async -> [SearchResult] {
-        guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        // Validate and sanitize search query
+        guard let sanitizedQuery = SecurityUtils.sanitizeTextInput(query) else {
+            logger.warning("Invalid search query rejected")
+            return []
+        }
+        
+        // Rate limiting for search operations
+        let rateLimitKey = "search_\(userId)"
+        guard SecurityUtils.isWithinRateLimit(key: rateLimitKey, maxAttempts: 50, timeWindow: 60) else {
+            logger.warning("Search rate limit exceeded for user: \(userId)")
             return []
         }
         
         isSearching = true
-        currentQuery = query
+        currentQuery = sanitizedQuery
         
         defer {
             isSearching = false
@@ -100,8 +109,14 @@ final class AdvancedSearchManager: ObservableObject {
         
         logger.info("Starting search: '\(query)' type: \(type.rawValue) scope: \(scope.rawValue)")
         
-        // Create search query record
-        let searchQuery = SearchQuery(userId: userId, query: query, searchType: type)
+        // Validate user ID before creating search query
+        guard SecurityUtils.isValidUserID(userId) else {
+            logger.error("Invalid user ID format rejected: \(userId)")
+            return []
+        }
+        
+        // Create search query record with sanitized input
+        let searchQuery = SearchQuery(userId: userId, query: sanitizedQuery, searchType: type)
         searchQuery.scope = scope
         searchQuery.sortOrder = sortOrder
         
@@ -115,17 +130,17 @@ final class AdvancedSearchManager: ObservableObject {
         
         switch type {
         case .text:
-            results = await performTextSearch(query: query, scope: scope, filters: filters, context: context)
+            results = await performTextSearch(query: sanitizedQuery, scope: scope, filters: filters, context: context)
         case .fuzzy:
-            results = await performFuzzySearch(query: query, scope: scope, filters: filters, context: context)
+            results = await performFuzzySearch(query: sanitizedQuery, scope: scope, filters: filters, context: context)
         case .semantic:
-            results = await performSemanticSearch(query: query, scope: scope, filters: filters, context: context)
+            results = await performSemanticSearch(query: sanitizedQuery, scope: scope, filters: filters, context: context)
         case .voice:
-            results = await performVoiceSearch(query: query, scope: scope, filters: filters, context: context)
+            results = await performVoiceSearch(query: sanitizedQuery, scope: scope, filters: filters, context: context)
         case .regex:
-            results = await performTextSearch(query: query, scope: scope, filters: filters, context: context) // Regex search not implemented yet
+            results = await performTextSearch(query: sanitizedQuery, scope: scope, filters: filters, context: context) // Regex search not implemented yet
         case .advanced:
-            results = await performAdvancedSearch(query: query, scope: scope, filters: filters, context: context)
+            results = await performAdvancedSearch(query: sanitizedQuery, scope: scope, filters: filters, context: context)
         }
         
         // Apply sorting

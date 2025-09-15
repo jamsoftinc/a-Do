@@ -49,7 +49,7 @@ struct HomeView: View {
 
                 ScrollView {
                     LazyVStack(spacing: 16) {
-                        // Voice Reminder Section
+                        // Voice Reminder Section - Back to content area for visibility
                         voiceReminderSection
                         
                         // Features Navigation Section
@@ -85,8 +85,8 @@ struct HomeView: View {
                             }
                             .padding(.horizontal, 16)
                         }
-                    }
-                    .padding(.vertical, 16)
+                        }
+                        .padding(.vertical, 16)
                 }
                 .scrollIndicators(.hidden)
 
@@ -102,7 +102,7 @@ struct HomeView: View {
                 }
             }
             .navigationTitle("a-do")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 cloudKitManager.loadSyncSetting(context: context)
             }
@@ -287,21 +287,22 @@ struct HomeView: View {
     // MARK: - Voice Reminder Section
     private var voiceReminderSection: some View {
         GlassCard {
-            VStack(spacing: 16) {
-                // Header
+            VStack(spacing: 12) {
+                // Compact Header
                 HStack {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 2) {
                         Text("Voice Reminder")
-                            .font(AppTheme.Typography.headline)
+                            .font(AppTheme.Typography.subheadline)
+                            .fontWeight(.semibold)
                             .primaryText()
                         Text("Speak to create a reminder")
-                            .font(AppTheme.Typography.caption1)
+                            .font(AppTheme.Typography.caption2)
                             .secondaryText()
                     }
                     Spacer()
                 }
                 
-                // Voice recording button
+                // Voice recording button - more compact
                 Button {
                     if AudioManager.shared.isRecording {
                         // Stop recording
@@ -315,76 +316,84 @@ struct HomeView: View {
                 } label: {
                     HStack(spacing: 12) {
                         Image(systemName: AudioManager.shared.isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                            .font(.title2)
+                            .font(.title3)
                             .foregroundStyle(AudioManager.shared.isRecording ? .red : .white)
                         
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: 1) {
                             Text(AudioManager.shared.isRecording ? "Stop Recording" : "Start Voice Recording")
-                                .font(.body)
-                                .fontWeight(.medium)
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
                                 .foregroundStyle(.white)
                             
                             if AudioManager.shared.isRecording {
                                 Text("Recording... \(Int(AudioManager.shared.recordingDuration))s")
-                                    .font(.caption)
+                                    .font(.caption2)
                                     .foregroundStyle(.white.opacity(0.8))
                             } else {
                                 Text("Tap to record your reminder")
-                                    .font(.caption)
+                                    .font(.caption2)
                                     .foregroundStyle(.white.opacity(0.8))
                             }
                         }
                         
                         Spacer()
+                        
+                        if AudioManager.shared.isTranscribing {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .tint(.white)
+                        }
                     }
-                    .padding(16)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
                     .background(
                         LinearGradient(
                             colors: AudioManager.shared.isRecording ? [.red, .orange] : [.purple, .blue],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        in: RoundedRectangle(cornerRadius: 12)
+                        in: RoundedRectangle(cornerRadius: 10)
                     )
                 }
                 .disabled(AudioManager.shared.isTranscribing)
                 
-                // Status indicators
+                // Compact Status indicators
                 if AudioManager.shared.isTranscribing {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         Image(systemName: "text.bubble")
                             .foregroundColor(.orange)
                             .imageScale(.small)
-                        Text("Using Apple Intelligence to transcribe...")
-                            .font(.caption)
+                        Text("Transcribing with Apple Intelligence...")
+                            .font(.caption2)
                             .foregroundColor(.orange)
                         Spacer()
                     }
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, 2)
                 }
                 
                 if !AudioManager.shared.transcribedText.isEmpty && !AudioManager.shared.isRecording && !AudioManager.shared.isTranscribing {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(.green)
                             .imageScale(.small)
-                        Text("Creating reminder from transcribed text...")
-                            .font(.caption)
+                        Text("Creating reminder...")
+                            .font(.caption2)
                             .foregroundColor(.green)
                         Spacer()
                     }
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, 2)
                 }
             }
         }
+        .padding(.horizontal, 16)
     }
     
     // MARK: - Quick Actions Section
     private var quickActionsSection: some View {
-        VStack(spacing: 12) {
-            // Quick Add Card
+        VStack(spacing: 10) {
+            // Quick Add Card - More Compact
             GlassCard {
-                VStack(spacing: 12) {
+                VStack(spacing: 10) {
                     HStack(spacing: 12) {
                         // Text input
                         TextField("Quick reminder...", text: $viewModel.quickTitle)
@@ -1128,31 +1137,27 @@ extension HomeView {
     
     private var featuresNavigationSection: some View {
         GlassCard {
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 HStack {
                     Image(systemName: "app.connected.to.app.below.fill")
-                        .font(.title2)
+                        .font(.title3)
                         .foregroundColor(AppTheme.Colors.accent)
                     
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Features")
-                            .font(AppTheme.Typography.headline)
-                            .foregroundColor(AppTheme.Colors.textPrimary)
-                        
-                        Text("Access all app capabilities")
-                            .font(AppTheme.Typography.caption1)
-                            .foregroundColor(AppTheme.Colors.textSecondary)
-                    }
+                    Text("Features")
+                        .font(AppTheme.Typography.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(AppTheme.Colors.textPrimary)
                     
                     Spacer()
                 }
                 
-                // Features Grid
+                // Compact Features Grid - 4 columns for better space usage
                 LazyVGrid(columns: [
                     GridItem(.flexible()),
                     GridItem(.flexible()),
+                    GridItem(.flexible()),
                     GridItem(.flexible())
-                ], spacing: 12) {
+                ], spacing: 8) {
                     
                     // Time Tracking
                     NavigationLink(destination: TimeTrackingView()) {
@@ -1244,25 +1249,27 @@ struct FeatureCard: View {
     let color: Color
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             Image(systemName: icon)
-                .font(.title2)
+                .font(.title3)
                 .foregroundColor(color)
-                .frame(width: 40, height: 40)
-                .background(color.opacity(0.1))
+                .frame(width: 32, height: 32)
+                .background(color.opacity(0.15))
                 .clipShape(Circle())
             
             Text(title)
-                .font(.caption)
+                .font(.caption2)
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.Colors.textPrimary)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
+                .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(AppTheme.Colors.surfaceLight.opacity(0.5))
-        .cornerRadius(12)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 4)
+        .background(AppTheme.Colors.surfaceLight.opacity(0.3))
+        .cornerRadius(10)
     }
 }
 
