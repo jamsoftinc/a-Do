@@ -9,11 +9,12 @@ import Foundation
 import SwiftData
 import CloudKit
 import Observation
+import Combine
 import os
 
 @MainActor
 @Observable
-final class CollaborationManager {
+final class CollaborationManager: ObservableObject {
     static let shared = CollaborationManager()
     
     private let logger = Logger(subsystem: "a-do", category: "Collaboration")
@@ -520,5 +521,31 @@ final class CollaborationManager {
     private func sendWorkspaceInvitation(to email: String, workspace: Workspace) async {
         logger.info("Sending workspace invitation to: \(email)")
         // Implement email/notification sending
+    }
+    
+    // MARK: - Invitation Management
+    
+    func acceptInvitation(_ participant: ShareParticipant, context: ModelContext) async {
+        participant.status = ShareStatus.accepted
+        participant.respondedAt = Date()
+        
+        do {
+            try context.save()
+            logger.info("Accepted invitation for participant: \(participant.email)")
+        } catch {
+            logger.error("Failed to accept invitation: \(error.localizedDescription)")
+        }
+    }
+    
+    func declineInvitation(_ participant: ShareParticipant, context: ModelContext) async {
+        participant.status = ShareStatus.declined
+        participant.respondedAt = Date()
+        
+        do {
+            try context.save()
+            logger.info("Declined invitation for participant: \(participant.email)")
+        } catch {
+            logger.error("Failed to decline invitation: \(error.localizedDescription)")
+        }
     }
 }

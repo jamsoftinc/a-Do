@@ -52,6 +52,9 @@ struct HomeView: View {
                         // Voice Reminder Section
                         voiceReminderSection
                         
+                        // Features Navigation Section
+                        featuresNavigationSection
+                        
                         // Quick Actions Section
                         quickActionsSection
                         
@@ -159,6 +162,36 @@ struct HomeView: View {
                         .accessibilityLabel("Habits")
                         .accessibilityHint("Track your daily habits and progress")
                         
+                        NavigationLink(destination: TimeTrackingView()) {
+                            Image(systemName: "timer")
+                                .imageScale(.large)
+                                .foregroundStyle(.mint)
+                                .frame(width: 32, height: 32)
+                                .background(.ultraThinMaterial, in: Circle())
+                        }
+                        .accessibilityLabel("Time Tracking")
+                        .accessibilityHint("Track time spent on tasks and projects")
+                        
+                        NavigationLink(destination: TemplatesView()) {
+                            Image(systemName: "doc.text.below.ecg")
+                                .imageScale(.large)
+                                .foregroundStyle(.indigo)
+                                .frame(width: 32, height: 32)
+                                .background(.ultraThinMaterial, in: Circle())
+                        }
+                        .accessibilityLabel("Templates")
+                        .accessibilityHint("Manage reminder templates and recurring reminders")
+                        
+                        NavigationLink(destination: SmartSearchView()) {
+                            Image(systemName: "magnifyingglass.circle")
+                                .imageScale(.large)
+                                .foregroundStyle(.cyan)
+                                .frame(width: 32, height: 32)
+                                .background(.ultraThinMaterial, in: Circle())
+                        }
+                        .accessibilityLabel("Smart Search")
+                        .accessibilityHint("Advanced search with AI-powered capabilities")
+                        
                         Button {
                             showingAppleIntegrations = true
                         } label: {
@@ -170,6 +203,16 @@ struct HomeView: View {
                         }
                         .accessibilityLabel("Sync")
                         .accessibilityHint("Apple integrations and sync settings")
+                        
+                        NavigationLink(destination: CollaborationView()) {
+                            Image(systemName: "person.2.circle")
+                                .imageScale(.large)
+                                .foregroundStyle(.pink)
+                                .frame(width: 32, height: 32)
+                                .background(.ultraThinMaterial, in: Circle())
+                        }
+                        .accessibilityLabel("Collaboration")
+                        .accessibilityHint("Share reminders and collaborate with others")
                         
                         Menu {
                             Button {
@@ -195,7 +238,7 @@ struct HomeView: View {
                             .foregroundColor(.red)
                             #endif
                         } label: {
-                            Image(systemName: "tray.and.arrow.down.fill")
+                            Image(systemName: "ellipsis.circle")
                                 .imageScale(.large)
                                 .foregroundStyle(.white)
                                 .frame(width: 32, height: 32)
@@ -1079,6 +1122,147 @@ extension HomeView {
     
     private func refreshLocation() async {
         _ = await LocationManager.shared.getCurrentLocation()
+    }
+    
+    // MARK: - Features Navigation Section
+    
+    private var featuresNavigationSection: some View {
+        GlassCard {
+            VStack(spacing: 16) {
+                HStack {
+                    Image(systemName: "app.connected.to.app.below.fill")
+                        .font(.title2)
+                        .foregroundColor(AppTheme.Colors.accent)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Features")
+                            .font(AppTheme.Typography.headline)
+                            .foregroundColor(AppTheme.Colors.textPrimary)
+                        
+                        Text("Access all app capabilities")
+                            .font(AppTheme.Typography.caption1)
+                            .foregroundColor(AppTheme.Colors.textSecondary)
+                    }
+                    
+                    Spacer()
+                }
+                
+                // Features Grid
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: 12) {
+                    
+                    // Time Tracking
+                    NavigationLink(destination: TimeTrackingView()) {
+                        FeatureCard(
+                            icon: "timer",
+                            title: "Time Tracking",
+                            color: .mint
+                        )
+                    }
+                    
+                    // Habits
+                    NavigationLink(destination: HabitsView()) {
+                        FeatureCard(
+                            icon: "chart.line.uptrend.xyaxis",
+                            title: "Habits",
+                            color: .orange
+                        )
+                    }
+                    
+                    // Templates
+                    NavigationLink(destination: TemplatesView()) {
+                        FeatureCard(
+                            icon: "doc.text.below.ecg",
+                            title: "Templates",
+                            color: .indigo
+                        )
+                    }
+                    
+                    // Smart Search
+                    NavigationLink(destination: SmartSearchView()) {
+                        FeatureCard(
+                            icon: "magnifyingglass.circle",
+                            title: "Smart Search",
+                            color: .cyan
+                        )
+                    }
+                    
+                    // Collaboration
+                    NavigationLink(destination: CollaborationView()) {
+                        FeatureCard(
+                            icon: "person.2.circle",
+                            title: "Collaboration",
+                            color: .pink
+                        )
+                    }
+                    
+                    // Lists
+                    NavigationLink(destination: ListsView()) {
+                        FeatureCard(
+                            icon: "folder.fill",
+                            title: "Lists",
+                            color: .blue
+                        )
+                    }
+                    
+                    // Completed Reminders
+                    NavigationLink(destination: CompletedRemindersView()) {
+                        FeatureCard(
+                            icon: "checkmark.circle.fill",
+                            title: "Completed",
+                            color: .green
+                        )
+                    }
+                    
+                    // Analytics (Future Feature)
+                    Button(action: {
+                        // TODO: Implement analytics view
+                    }) {
+                        FeatureCard(
+                            icon: "chart.bar.fill",
+                            title: "Analytics",
+                            color: .purple
+                        )
+                    }
+                    .disabled(true)
+                    .opacity(0.6)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+    }
+}
+
+// MARK: - Feature Card Component
+
+struct FeatureCard: View {
+    let icon: String
+    let title: String
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(color)
+                .frame(width: 40, height: 40)
+                .background(color.opacity(0.1))
+                .clipShape(Circle())
+            
+            Text(title)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(AppTheme.Colors.textPrimary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(AppTheme.Colors.surfaceLight.opacity(0.5))
+        .cornerRadius(12)
     }
 }
 

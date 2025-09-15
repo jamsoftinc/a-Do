@@ -8,12 +8,13 @@
 import Foundation
 import SwiftData
 import Observation
+import Combine
 import os
 import NaturalLanguage
 
 @MainActor
 @Observable
-final class AdvancedSearchManager {
+final class AdvancedSearchManager: ObservableObject {
     static let shared = AdvancedSearchManager()
     
     private let logger = Logger(subsystem: "a-do", category: "AdvancedSearch")
@@ -248,7 +249,7 @@ final class AdvancedSearchManager {
             
             let result = SearchResult(
                 queryId: UUID(),
-                itemType: .reminder,
+                itemType: SearchResultType.reminder,
                 itemId: reminder.uuid.uuidString,
                 title: reminder.title,
                 snippet: snippet,
@@ -285,14 +286,18 @@ final class AdvancedSearchManager {
                 maxLength: 150
             )
             
-            return SearchResult(
+            let result = SearchResult(
                 queryId: UUID(),
-                itemType: .habit,
+                itemType: SearchResultType.habit,
                 itemId: habit.id.uuidString,
                 title: habit.title,
                 snippet: snippet,
                 relevanceScore: relevanceScore
             )
+            
+            result.matchType = determineMatchType(query: query, text: habit.title)
+            
+            return result
         }
     }
     
@@ -312,14 +317,18 @@ final class AdvancedSearchManager {
                 content: ""
             )
             
-            return SearchResult(
+            let result = SearchResult(
                 queryId: UUID(),
-                itemType: .tag,
+                itemType: SearchResultType.tag,
                 itemId: UUID().uuidString, // Tags don't have persistent IDs in the current model
                 title: tag.name,
                 snippet: "Tag with \(tag.reminders?.count ?? 0) reminders",
                 relevanceScore: relevanceScore
             )
+            
+            result.matchType = determineMatchType(query: query, text: tag.name)
+            
+            return result
         }
     }
     
@@ -339,14 +348,18 @@ final class AdvancedSearchManager {
                 content: ""
             )
             
-            return SearchResult(
+            let result = SearchResult(
                 queryId: UUID(),
-                itemType: .list,
+                itemType: SearchResultType.list,
                 itemId: UUID().uuidString, // Lists don't have persistent IDs in the current model
                 title: list.name,
                 snippet: "List with \(list.reminders?.count ?? 0) reminders",
                 relevanceScore: relevanceScore
             )
+            
+            result.matchType = determineMatchType(query: query, text: list.name)
+            
+            return result
         }
     }
     
@@ -402,13 +415,13 @@ final class AdvancedSearchManager {
                 if similarity > 0.3 { // Threshold for semantic relevance
                     let result = SearchResult(
                         queryId: UUID(),
-                        itemType: .reminder,
+                        itemType: SearchResultType.reminder,
                         itemId: reminder.uuid.uuidString,
                         title: reminder.title,
                         snippet: createSnippet(query: query, content: reminder.details ?? "", maxLength: 150),
                         relevanceScore: similarity
                     )
-                    result.matchType = .semantic
+                    result.matchType = SearchMatchType.semantic
                     results.append(result)
                 }
             }
@@ -562,7 +575,7 @@ final class AdvancedSearchManager {
         for reminder in reminders {
             let content = reminder.title + " " + (reminder.details ?? "")
             let index = SearchIndex(
-                itemType: .reminder,
+                itemType: SearchResultType.reminder,
                 itemId: reminder.uuid.uuidString,
                 content: content
             )
@@ -576,7 +589,7 @@ final class AdvancedSearchManager {
         for habit in habits {
             let content = habit.title + " " + habit.habitDescription
             let index = SearchIndex(
-                itemType: .habit,
+                itemType: SearchResultType.habit,
                 itemId: habit.id.uuidString,
                 content: content
             )
