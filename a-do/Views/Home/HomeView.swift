@@ -103,6 +103,8 @@ struct HomeView: View {
             }
             .navigationTitle("a-do")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.light, for: .navigationBar)
             .onAppear {
                 cloudKitManager.loadSyncSetting(context: context)
             }
@@ -113,17 +115,17 @@ struct HomeView: View {
                     } label: {
                         HStack(spacing: 8) {
                             Image(systemName: cloudKitManager.syncStatusIcon)
-                                .foregroundColor(Color(hex: cloudKitManager.syncStatusColor) ?? .gray)
+                                .foregroundColor(Color(hex: cloudKitManager.syncStatusColor) ?? .purple)
                                 .font(.caption)
                             
                             if cloudKitManager.isSignedIn && cloudKitManager.isSyncEnabled {
                                 Text("iCloud")
                                     .font(.caption2)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(.purple)
                             } else {
                                 Text("Offline")
                                     .font(.caption2)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(.purple)
                             }
                         }
                     }
@@ -131,120 +133,73 @@ struct HomeView: View {
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 12) {
+                    Menu {
                         NavigationLink(destination: ListsView()) {
-                            Image(systemName: "folder.fill")
-                                .imageScale(.large)
-                                .foregroundStyle(.blue)
-                                .frame(width: 32, height: 32)
-                                .background(.ultraThinMaterial, in: Circle())
+                            Label("Lists", systemImage: "folder.fill")
                         }
-                        .accessibilityLabel("Lists")
-                        .accessibilityHint("View and manage your reminder lists")
                         
                         NavigationLink(destination: CompletedRemindersView()) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .imageScale(.large)
-                                .foregroundStyle(.green)
-                                .frame(width: 32, height: 32)
-                                .background(.ultraThinMaterial, in: Circle())
+                            Label("Completed", systemImage: "checkmark.circle.fill")
                         }
-                        .accessibilityLabel("Completed")
-                        .accessibilityHint("View completed reminders")
                         
                         NavigationLink(destination: HabitsView()) {
-                            Image(systemName: "chart.line.uptrend.xyaxis")
-                                .imageScale(.large)
-                                .foregroundStyle(.orange)
-                                .frame(width: 32, height: 32)
-                                .background(.ultraThinMaterial, in: Circle())
+                            Label("Habits", systemImage: "chart.line.uptrend.xyaxis")
                         }
-                        .accessibilityLabel("Habits")
-                        .accessibilityHint("Track your daily habits and progress")
                         
                         NavigationLink(destination: TimeTrackingView()) {
-                            Image(systemName: "timer")
-                                .imageScale(.large)
-                                .foregroundStyle(.mint)
-                                .frame(width: 32, height: 32)
-                                .background(.ultraThinMaterial, in: Circle())
+                            Label("Time Tracking", systemImage: "timer")
                         }
-                        .accessibilityLabel("Time Tracking")
-                        .accessibilityHint("Track time spent on tasks and projects")
                         
                         NavigationLink(destination: TemplatesView()) {
-                            Image(systemName: "doc.text.below.ecg")
-                                .imageScale(.large)
-                                .foregroundStyle(.indigo)
-                                .frame(width: 32, height: 32)
-                                .background(.ultraThinMaterial, in: Circle())
+                            Label("Templates", systemImage: "doc.text.below.ecg")
                         }
-                        .accessibilityLabel("Templates")
-                        .accessibilityHint("Manage reminder templates and recurring reminders")
                         
                         NavigationLink(destination: SmartSearchView()) {
-                            Image(systemName: "magnifyingglass.circle")
-                                .imageScale(.large)
-                                .foregroundStyle(.cyan)
-                                .frame(width: 32, height: 32)
-                                .background(.ultraThinMaterial, in: Circle())
+                            Label("Smart Search", systemImage: "magnifyingglass.circle")
                         }
-                        .accessibilityLabel("Smart Search")
-                        .accessibilityHint("Advanced search with AI-powered capabilities")
                         
                         Button {
                             showingAppleIntegrations = true
                         } label: {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                                .imageScale(.large)
-                                .foregroundStyle(.purple)
-                                .frame(width: 32, height: 32)
-                                .background(.ultraThinMaterial, in: Circle())
+                            Label("Sync Settings", systemImage: "arrow.triangle.2.circlepath")
                         }
-                        .accessibilityLabel("Sync")
-                        .accessibilityHint("Apple integrations and sync settings")
                         
                         NavigationLink(destination: CollaborationView()) {
-                            Image(systemName: "person.2.circle")
-                                .imageScale(.large)
-                                .foregroundStyle(.pink)
-                                .frame(width: 32, height: 32)
-                                .background(.ultraThinMaterial, in: Circle())
+                            Label("Collaboration", systemImage: "person.2.circle")
                         }
-                        .accessibilityLabel("Collaboration")
-                        .accessibilityHint("Share reminders and collaborate with others")
                         
-                        Menu {
-                            Button {
-                                showingImportReminders = true
-                            } label: {
-                                Label("Import from Reminders", systemImage: "square.and.arrow.down")
-                            }
-                            
-                            Button {
-                                Task {
-                                    await ReminderCleanupManager.shared.cleanupOldReminders(in: context)
-                                }
-                            } label: {
-                                Label("Clean Up Old Reminders", systemImage: "trash.circle")
-                            }
-                            
-                            #if DEBUG
-                            Button {
-                                AppContainer.clearAllDemoData(context: context)
-                            } label: {
-                                Label("Clear All Demo Data", systemImage: "trash")
-                            }
-                            .foregroundColor(.red)
-                            #endif
+                        Divider()
+                        
+                        Button {
+                            showingImportReminders = true
                         } label: {
-                            Image(systemName: "ellipsis.circle")
-                                .imageScale(.large)
-                                .foregroundStyle(.white)
-                                .frame(width: 32, height: 32)
-                                .background(.ultraThinMaterial, in: Circle())
+                            Label("Import from Reminders", systemImage: "square.and.arrow.down")
                         }
+                        
+                        Button {
+                            Task {
+                                await ReminderCleanupManager.shared.cleanupOldReminders(in: context)
+                            }
+                        } label: {
+                            Label("Clean Up Old Reminders", systemImage: "trash.circle")
+                        }
+                        
+                        #if DEBUG
+                        Button {
+                            AppContainer.clearAllDemoData(context: context)
+                        } label: {
+                            Label("Clear All Demo Data", systemImage: "trash")
+                        }
+                        .foregroundColor(.red)
+                        #endif
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .imageScale(.large)
+                            .foregroundStyle(.purple)
+                            .font(.title2)
                     }
+                    .accessibilityLabel("More Options")
+                    .accessibilityHint("Additional app settings and actions")
                 }
             }
         }
