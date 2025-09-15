@@ -5,9 +5,9 @@ import os
 struct ListsView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Query(sort: \ListSection.order) private var sections: [ListSection]
-    @Query private var lists: [ReminderList]
-    @Query private var allReminders: [Reminder]
+    @State private var sections: [ListSection] = []
+    @State private var lists: [ReminderList] = []
+    @State private var allReminders: [Reminder] = []
     @State private var newListName: String = ""
     @State private var selectedSection: ListSection?
     @State private var showingSectionSheet = false
@@ -15,23 +15,28 @@ struct ListsView: View {
     @State private var selectedList: ReminderList?
 
     var body: some View {
-        if horizontalSizeClass == .regular {
-            // iPad layout - use sidebar
-            NavigationSplitView {
-                masterView
-            } detail: {
-                if let selectedList = selectedList {
-                    ListDetailView(list: selectedList, allReminders: allReminders)
-                } else {
-                    Text("Select a list")
-                        .foregroundColor(.secondary)
+        Group {
+            if horizontalSizeClass == .regular {
+                // iPad layout - use sidebar
+                NavigationSplitView {
+                    masterView
+                } detail: {
+                    if let selectedList = selectedList {
+                        ListDetailView(list: selectedList, allReminders: allReminders)
+                    } else {
+                        Text("Select a list")
+                            .foregroundColor(.secondary)
+                    }
+                }
+            } else {
+                // iPhone layout - use navigation
+                NavigationStack {
+                    masterView
                 }
             }
-        } else {
-            // iPhone layout - use navigation
-            NavigationStack {
-                masterView
-            }
+        }
+        .task {
+            await loadListData()
         }
     }
     
@@ -223,6 +228,40 @@ struct ListsView: View {
             newSectionName = ""
         } catch {
             print("Failed to save new section: \(error.localizedDescription)")
+        }
+    }
+    
+    // MARK: - Data Loading
+    
+    private func loadListData() async {
+        // Load data on background thread
+        let (loadedSections, loadedLists, loadedReminders) = await Task.detached {
+            let backgroundContext = ModelContext(self.context.container)
+            
+            // Load sections
+            let sectionsDescriptor = FetchDescriptor<ListSection>(
+                sortBy: [SortDescriptor(\.order)]
+            )
+            let sections = (try? backgroundContext.fetch(sectionsDescriptor)) ?? []
+            
+            // Load lists
+            let listsDescriptor = FetchDescriptor<ReminderList>()
+            let lists = (try? backgroundContext.fetch(listsDescriptor)) ?? []
+            
+            // Load only incomplete reminders
+            var remindersDescriptor = FetchDescriptor<Reminder>(
+                predicate: #Predicate<Reminder> { !$0.isCompleted }
+            )
+            remindersDescriptor.fetchLimit = 300
+            let reminders = (try? backgroundContext.fetch(remindersDescriptor)) ?? []
+            
+            return (sections, lists, reminders)
+        }.value
+        
+        await MainActor.run {
+            self.sections = loadedSections
+            self.lists = loadedLists
+            self.allReminders = loadedReminders
         }
     }
 }

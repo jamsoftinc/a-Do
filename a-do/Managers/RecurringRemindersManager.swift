@@ -21,17 +21,31 @@ final class RecurringRemindersManager {
     var isProcessing: Bool = false
     var lastProcessingDate: Date?
     
+    // Timer management
+    private var processingTimer: Timer?
+    
     private init() {
         setupPeriodicProcessing()
+    }
+    
+    deinit {
+        // Note: Cannot access @MainActor properties in deinit
+        // Timer cleanup will happen automatically when the object is deallocated
+        // For explicit cleanup, call stopPeriodicProcessing() before deallocation
+    }
+    
+    func stopPeriodicProcessing() {
+        processingTimer?.invalidate()
+        processingTimer = nil
     }
     
     // MARK: - Periodic Processing
     
     private func setupPeriodicProcessing() {
         // Set up timer to process recurring reminders
-        Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { _ in
+        processingTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                await self.processRecurringReminders()
+                await self?.processRecurringReminders()
             }
         }
     }

@@ -242,7 +242,9 @@ final class AIManager {
         }
         
         // Analyze workload distribution
-        let workloadAnalysis = analyzeWorkloadDistribution(reminders: (try? context.fetch(FetchDescriptor<Reminder>())) ?? [])
+        var descriptor = FetchDescriptor<Reminder>()
+        descriptor.fetchLimit = 500
+        let workloadAnalysis = analyzeWorkloadDistribution(reminders: (try? context.fetch(descriptor)) ?? [])
         
         if workloadAnalysis.isOverloaded {
             let suggestion = AISuggestion(

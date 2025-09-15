@@ -12,8 +12,8 @@ struct TemplatesView: View {
     @Environment(\.modelContext) private var context
     @State private var recurringManager = RecurringRemindersManager.shared
     
-    @Query private var templates: [ReminderTemplate]
-    @Query private var recurringReminders: [RecurringReminder]
+    @State private var templates: [ReminderTemplate] = []
+    @State private var recurringReminders: [RecurringReminder] = []
     
     @State private var selectedTab = 0
     @State private var showingCreateTemplate = false

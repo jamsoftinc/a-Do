@@ -121,6 +121,19 @@ final class SettingsManager {
         logger.info("Sync interval set to \(interval) seconds")
     }
     
+    func markFirstSyncCompleted(context: ModelContext) {
+        let settings = getSettings(context: context)
+        settings.isFirstSyncCompleted = true
+        
+        saveSettings(context: context)
+        logger.info("First sync marked as completed")
+    }
+    
+    func isFirstSync(context: ModelContext) -> Bool {
+        let settings = getSettings(context: context)
+        return !settings.isFirstSyncCompleted
+    }
+    
     // MARK: - Notification Settings
     
     func setNotificationsEnabled(_ enabled: Bool, context: ModelContext) {
@@ -263,6 +276,7 @@ final class SettingsManager {
         settings.iCloudSyncEnabled = true
         settings.autoSyncEnabled = true
         settings.syncInterval = 300
+        settings.isFirstSyncCompleted = false
         settings.notificationsEnabled = true
         settings.soundEnabled = true
         settings.badgeEnabled = true

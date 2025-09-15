@@ -12,6 +12,7 @@ final class AppSettings {
     // Sync Settings
     var autoSyncEnabled: Bool = true
     var syncInterval: TimeInterval = 300 // 5 minutes
+    var isFirstSyncCompleted: Bool = false
     
     // Notification Settings
     var notificationsEnabled: Bool = true

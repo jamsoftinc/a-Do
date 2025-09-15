@@ -182,7 +182,7 @@ final class AdvancedSmartListManager {
         _ smartList: EnhancedSmartList,
         context: ModelContext,
         useCache: Bool = true
-    ) -> [Reminder] {
+    ) async -> [Reminder] {
         // Check cache first
         if useCache,
            let cached = cachedResults[smartList.id],
@@ -191,36 +191,53 @@ final class AdvancedSmartListManager {
             return cached
         }
         
-        isProcessing = true
-        defer { isProcessing = false }
+        await MainActor.run {
+            isProcessing = true
+        }
         
-        // Fetch all reminders
-        let reminderDescriptor = FetchDescriptor<Reminder>()
-        let allReminders = (try? context.fetch(reminderDescriptor)) ?? []
+        defer {
+            Task { @MainActor in
+                isProcessing = false
+            }
+        }
         
-        // Fetch time entries for time-based conditions
-        let timeDescriptor = FetchDescriptor<TimeEntry>()
-        let timeEntries = (try? context.fetch(timeDescriptor)) ?? []
-        
-        // Fetch shared reminders for collaboration conditions
-        let sharedDescriptor = FetchDescriptor<SharedReminder>()
-        let sharedReminders = (try? context.fetch(sharedDescriptor)) ?? []
-        
-        // Evaluate the smart list
-        let results = smartList.evaluate(
-            reminders: allReminders,
-            timeEntries: timeEntries,
-            sharedReminders: sharedReminders
-        )
-        
-        // Cache results
-        cachedResults[smartList.id] = results
-        cacheTimestamps[smartList.id] = Date()
-        
-        lastRefreshDate = Date()
-        
-        logger.info("Evaluated smart list '\(smartList.name)': \(results.count) results")
-        return results
+        // Perform heavy database operations on background thread
+        return await Task.detached {
+            // Create background context for database operations
+            let backgroundContext = ModelContext(context.container)
+            
+            // Fetch all reminders with pagination to avoid memory issues
+            var reminderDescriptor = FetchDescriptor<Reminder>()
+            reminderDescriptor.fetchLimit = 1000 // Limit to prevent memory issues
+            let allReminders = (try? backgroundContext.fetch(reminderDescriptor)) ?? []
+            
+            // Fetch time entries with limit
+            var timeDescriptor = FetchDescriptor<TimeEntry>()
+            timeDescriptor.fetchLimit = 1000
+            let timeEntries = (try? backgroundContext.fetch(timeDescriptor)) ?? []
+            
+            // Fetch shared reminders with limit
+            var sharedDescriptor = FetchDescriptor<SharedReminder>()
+            sharedDescriptor.fetchLimit = 1000
+            let sharedReminders = (try? backgroundContext.fetch(sharedDescriptor)) ?? []
+            
+            // Evaluate the smart list
+            let results = smartList.evaluate(
+                reminders: allReminders,
+                timeEntries: timeEntries,
+                sharedReminders: sharedReminders
+            )
+            
+            // Update cache and state on main actor
+            await MainActor.run {
+                self.cachedResults[smartList.id] = results
+                self.cacheTimestamps[smartList.id] = Date()
+                self.lastRefreshDate = Date()
+                self.logger.info("Evaluated smart list '\(smartList.name)': \(results.count) results")
+            }
+            
+            return results
+        }.value
     }
     
     func refreshAllSmartLists(context: ModelContext) async {
@@ -237,7 +254,7 @@ final class AdvancedSmartListManager {
                 continue
             }
             
-            let _ = evaluateSmartList(smartList, context: context, useCache: false)
+            let _ = await evaluateSmartList(smartList, context: context, useCache: false)
         }
         
         logger.info("Refreshed \(smartLists.count) smart lists")

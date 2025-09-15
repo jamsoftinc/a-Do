@@ -17,17 +17,9 @@ final class ReminderCleanupManager {
     // MARK: - Setup
     
     func setupPeriodicCleanup() {
-        // Run cleanup every hour
-        cleanupTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                await self?.performCleanup()
-            }
-        }
-        
-        // Also run cleanup immediately when app starts
-        Task {
-            await performCleanup()
-        }
+        // Disable automatic cleanup to prevent SwiftData errors
+        // Cleanup should be triggered manually from views with proper context
+        logger.info("Periodic cleanup disabled - use manual cleanup from views")
     }
     
     // MARK: - Cleanup Logic
@@ -35,9 +27,18 @@ final class ReminderCleanupManager {
     func performCleanup() async {
         logger.info("Starting reminder cleanup")
         
-        // Don't create a new context - this should be called from the main app context
-        // to avoid CloudKit conflicts
-        logger.info("Cleanup requires main app context - skipping automatic cleanup")
+        // Get the main app context from AppContainer
+        guard let context = await getMainAppContext() else {
+            logger.info("Main app context not available - skipping automatic cleanup")
+            return
+        }
+        
+        await cleanupOldReminders(in: context)
+    }
+    
+    private func getMainAppContext() async -> ModelContext? {
+        // Don't try to create a context here - it should be passed from the calling view
+        return nil
     }
     
     // MARK: - Manual Cleanup

@@ -14,23 +14,14 @@ extension Calendar {
 struct HomeView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Query(sort: \Reminder.createdAt, order: .reverse) private var allReminders: [Reminder]
     @StateObject private var cloudKitManager = CloudKitManager.shared
     
-    // Filter reminders for different sections
-    private var inboxReminders: [Reminder] {
-        allReminders.filter { reminder in
-            !reminder.isCompleted && (reminder.dueDate == nil || !Calendar.current.isDateInToday(reminder.dueDate!))
-        }
-    }
-    
-    private var todayReminders: [Reminder] {
-        allReminders.filter { reminder in
-            !reminder.isCompleted && 
-            reminder.dueDate != nil && 
-            Calendar.current.isDateInToday(reminder.dueDate!)
-        }
-    }
+    // Cached filtered reminders to prevent expensive recomputation
+    @State private var inboxReminders: [Reminder] = []
+    @State private var todayReminders: [Reminder] = []
+    @State private var allReminders: [Reminder] = []
+    @State private var lastUpdateDate: Date = Date()
+    @State private var isLoadingReminders: Bool = false
     
 
 
@@ -107,6 +98,11 @@ struct HomeView: View {
             .toolbarColorScheme(.light, for: .navigationBar)
             .onAppear {
                 cloudKitManager.loadSyncSetting(context: context)
+                loadRemindersAsync()
+            }
+            .task {
+                // Load reminders on background thread
+                await loadRemindersInBackground()
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -743,6 +739,89 @@ struct HomeView: View {
             Logger(subsystem: "a-do", category: "Reminders").info("Reminder deleted from context menu: '\(reminder.title)'")
         } catch {
             Logger(subsystem: "a-do", category: "Reminders").error("Failed to delete reminder: \(error.localizedDescription)")
+        }
+    }
+    
+    // MARK: - Performance Optimization
+    
+    private func updateFilteredReminders() {
+        // Only update if data has changed or it's been more than 1 minute
+        let now = Date()
+        guard now.timeIntervalSince(lastUpdateDate) > 60 || 
+              inboxReminders.isEmpty || 
+              todayReminders.isEmpty else { return }
+        
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        // Filter reminders efficiently with single pass
+        var newInboxReminders: [Reminder] = []
+        var newTodayReminders: [Reminder] = []
+        
+        for reminder in allReminders {
+            guard !reminder.isCompleted else { continue }
+            
+            if let dueDate = reminder.dueDate {
+                if calendar.isDate(dueDate, inSameDayAs: today) {
+                    newTodayReminders.append(reminder)
+                } else {
+                    newInboxReminders.append(reminder)
+                }
+            } else {
+                newInboxReminders.append(reminder)
+            }
+        }
+        
+        // Update state
+        self.inboxReminders = newInboxReminders
+        self.todayReminders = newTodayReminders
+        self.lastUpdateDate = now
+    }
+    
+    // MARK: - Background Data Loading
+    
+    private func loadRemindersAsync() {
+        guard !isLoadingReminders else { return }
+        
+        Task {
+            await loadRemindersInBackground()
+        }
+    }
+    
+    private func loadRemindersInBackground() async {
+        guard !isLoadingReminders else { return }
+        
+        await MainActor.run {
+            isLoadingReminders = true
+        }
+        
+        defer {
+            Task { @MainActor in
+                isLoadingReminders = false
+            }
+        }
+        
+        // Perform database operations on background thread
+        let reminders = await Task.detached {
+            // Create background context for database operations
+            let backgroundContext = ModelContext(self.context.container)
+            
+            // Fetch only incomplete reminders with pagination
+            var descriptor = FetchDescriptor<Reminder>(
+                predicate: #Predicate<Reminder> { reminder in
+                    !reminder.isCompleted
+                },
+                sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+            )
+            descriptor.fetchLimit = 500 // Limit to prevent memory issues
+            
+            return (try? backgroundContext.fetch(descriptor)) ?? []
+        }.value
+        
+        // Update UI on main thread
+        await MainActor.run {
+            self.allReminders = reminders
+            self.updateFilteredReminders()
         }
     }
 }

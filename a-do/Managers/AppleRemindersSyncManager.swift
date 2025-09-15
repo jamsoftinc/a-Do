@@ -17,7 +17,7 @@ final class AppleRemindersSyncManager {
     
     // MARK: - Main Sync Methods
     
-    func performFullSync(context: ModelContext) async {
+    func performFullSync(context: ModelContext, isInitialSync: Bool = false) async {
         guard !isSyncing else {
             Logger(subsystem: "a-do", category: "Sync").info("Sync already in progress, skipping")
             return
@@ -38,15 +38,34 @@ final class AppleRemindersSyncManager {
         do {
             try await requestAccess()
             
+            // Update progress
+            await MainActor.run {
+                SyncProgressManager.shared.updateProgress(operation: "Importing from Apple Reminders...")
+            }
+            
             // Perform bidirectional sync
-            await syncFromAppleReminders(context: context)
-            await syncToAppleReminders(context: context)
+            let importedCount = await syncFromAppleReminders(context: context, isInitialSync: isInitialSync)
+            
+            await MainActor.run {
+                SyncProgressManager.shared.updateProgress(operation: "Exporting to Apple Reminders...")
+            }
+            
+            let exportedCount = await syncToAppleReminders(context: context)
+            
+            // Update final progress
+            await MainActor.run {
+                SyncProgressManager.shared.updateAppleRemindersProgress(imported: importedCount, exported: exportedCount)
+            }
             
             lastSyncDate = Date()
             Logger(subsystem: "a-do", category: "Sync").info("Full sync completed successfully")
             
         } catch {
             syncError = "Sync failed: \(error.localizedDescription)"
+            
+            await MainActor.run {
+                SyncProgressManager.shared.reportError("Apple Reminders sync failed: \(error.localizedDescription)")
+            }
             Logger(subsystem: "a-do", category: "Sync").error("Sync failed: \(String(describing: error))")
         }
         
@@ -55,32 +74,34 @@ final class AppleRemindersSyncManager {
     
     // MARK: - Sync from Apple Reminders
     
-    private func syncFromAppleReminders(context: ModelContext) async {
+    private func syncFromAppleReminders(context: ModelContext, isInitialSync: Bool = false) async -> Int {
         Logger(subsystem: "a-do", category: "Sync").info("Syncing from Apple Reminders")
         
-        await withCheckedContinuation { continuation in
+        return await withCheckedContinuation { continuation in
             let predicate = self.store.predicateForReminders(in: nil)
             self.store.fetchReminders(matching: predicate) { reminders in
                 Task { @MainActor in
                     guard let reminders = reminders else {
                         Logger(subsystem: "a-do", category: "Sync").error("Failed to fetch Apple Reminders")
-                        continuation.resume()
+                        continuation.resume(returning: 0)
                         return
                     }
                     
-                    let importedCount = await self.importNewReminders(reminders, into: context)
+                    let importedCount = await self.importNewReminders(reminders, into: context, isInitialSync: isInitialSync)
                     Logger(subsystem: "a-do", category: "Sync").info("Imported \(importedCount) new reminders from Apple Reminders")
-                    continuation.resume()
+                    continuation.resume(returning: importedCount)
                 }
             }
         }
     }
     
-    private func importNewReminders(_ ekReminders: [EKReminder], into context: ModelContext) async -> Int {
+    private func importNewReminders(_ ekReminders: [EKReminder], into context: ModelContext, isInitialSync: Bool = false) async -> Int {
         var importedCount = 0
         
         // Get existing reminders to avoid duplicates
-        let existingReminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+        var descriptor = FetchDescriptor<Reminder>()
+        descriptor.fetchLimit = 1000
+        let existingReminders = (try? context.fetch(descriptor)) ?? []
         let existingTitles = Set(existingReminders.map { $0.title })
         
         for ekReminder in ekReminders {
@@ -88,6 +109,12 @@ final class AppleRemindersSyncManager {
             
             // Skip if already exists
             if existingTitles.contains(title) { continue }
+            
+            // Skip completed items during initial sync
+            if isInitialSync && ekReminder.isCompleted {
+                Logger(subsystem: "a-do", category: "Sync").debug("Skipping completed reminder '\(title)' during initial sync")
+                continue
+            }
             
             let dueDate = ekReminder.dueDateComponents?.date
             let priority = convertPriority(from: ekReminder.priority)
@@ -117,10 +144,12 @@ final class AppleRemindersSyncManager {
     
     // MARK: - Sync to Apple Reminders
     
-    private func syncToAppleReminders(context: ModelContext) async {
+    private func syncToAppleReminders(context: ModelContext) async -> Int {
         Logger(subsystem: "a-do", category: "Sync").info("Syncing to Apple Reminders")
         
-        let reminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+        var descriptor = FetchDescriptor<Reminder>()
+        descriptor.fetchLimit = 500
+        let reminders = (try? context.fetch(descriptor)) ?? []
         var exportedCount = 0
         
         for reminder in reminders {
@@ -159,6 +188,7 @@ final class AppleRemindersSyncManager {
         }
         
         Logger(subsystem: "a-do", category: "Sync").info("Exported \(exportedCount) reminders to Apple Reminders")
+        return exportedCount
     }
     
     // MARK: - Update Existing Reminders

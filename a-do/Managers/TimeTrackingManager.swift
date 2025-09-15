@@ -234,8 +234,10 @@ final class TimeTrackingManager: ObservableObject {
         let calendar = Calendar.current
         var streak = 0
         var currentDate = calendar.startOfDay(for: Date())
+        let maxIterations = 365 // Prevent infinite loops - max 1 year streak calculation
+        var iterations = 0
         
-        while true {
+        while iterations < maxIterations {
             let nextDay = calendar.date(byAdding: .day, value: 1, to: currentDate)!
             let dayEntries = entries.filter { entry in
                 entry.startTime >= currentDate && entry.startTime < nextDay
@@ -247,6 +249,7 @@ final class TimeTrackingManager: ObservableObject {
             
             streak += 1
             currentDate = calendar.date(byAdding: .day, value: -1, to: currentDate)!
+            iterations += 1
         }
         
         return streak

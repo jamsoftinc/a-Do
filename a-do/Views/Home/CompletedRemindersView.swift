@@ -6,17 +6,16 @@ import AVFoundation
 struct CompletedRemindersView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    @Query(sort: \Reminder.completedAt, order: .reverse) private var allReminders: [Reminder]
     
     @State private var searchText = ""
     @State private var showingDeleteConfirmation = false
     @State private var reminderToDelete: Reminder?
     @State private var showingCleanupConfirmation = false
+    @State private var completedReminders: [Reminder] = []
+    @State private var isLoading = false
     
-    private var completedReminders: [Reminder] {
-        let filtered = allReminders.filter { reminder in
-            reminder.isCompleted && reminder.completedAt != nil
-        }
+    private var filteredCompletedReminders: [Reminder] {
+        let filtered = completedReminders
         
         if searchText.isEmpty {
             return filtered
@@ -56,7 +55,7 @@ struct CompletedRemindersView: View {
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 12) {
-                            ForEach(completedReminders) { reminder in
+                            ForEach(filteredCompletedReminders) { reminder in
                                 CompletedReminderCard(reminder: reminder) {
                                     // Uncomplete action
                                     uncompleteReminder(reminder)
@@ -76,6 +75,9 @@ struct CompletedRemindersView: View {
             .navigationTitle("Completed")
             .navigationBarTitleDisplayMode(.large)
             .searchable(text: $searchText, prompt: "Search completed reminders...")
+            .task {
+                await loadCompletedReminders()
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Done") {
@@ -172,9 +174,35 @@ struct CompletedRemindersView: View {
         }
     }
     
+    private func loadCompletedReminders() async {
+        guard !isLoading else { return }
+        
+        isLoading = true
+        defer { isLoading = false }
+        
+        // Load completed reminders on background thread
+        let reminders = await Task.detached {
+            let backgroundContext = ModelContext(self.context.container)
+            
+            var descriptor = FetchDescriptor<Reminder>(
+                predicate: #Predicate<Reminder> { reminder in
+                    reminder.isCompleted && reminder.completedAt != nil
+                },
+                sortBy: [SortDescriptor(\.completedAt, order: .reverse)]
+            )
+            descriptor.fetchLimit = 200 // Limit to prevent memory issues
+            
+            return (try? backgroundContext.fetch(descriptor)) ?? []
+        }.value
+        
+        await MainActor.run {
+            self.completedReminders = reminders
+        }
+    }
+    
     private func exportCompletedReminders() {
         // Create a text representation of completed reminders
-        let exportText = completedReminders.map { reminder in
+        let exportText = filteredCompletedReminders.map { reminder in
             let completionDate = reminder.completedAt?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown"
             let dueDate = reminder.dueDate?.formatted(date: .abbreviated, time: .shortened) ?? "No due date"
             return """

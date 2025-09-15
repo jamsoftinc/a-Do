@@ -12,9 +12,9 @@ import Charts
 struct TimeTrackingView: View {
     @Environment(\.modelContext) private var context
     @StateObject private var timeManager = TimeTrackingManager.shared
-    @Query private var timeEntries: [TimeEntry]
-    @Query private var timeGoals: [TimeGoal]
-    @Query private var categories: [TimeCategory]
+    @State private var timeEntries: [TimeEntry] = []
+    @State private var timeGoals: [TimeGoal] = []
+    @State private var categories: [TimeCategory] = []
     
     @State private var selectedCategory = "Work"
     @State private var showingCategoryPicker = false

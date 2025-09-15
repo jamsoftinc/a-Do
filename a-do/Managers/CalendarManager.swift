@@ -21,9 +21,11 @@ final class CalendarManager {
             store.requestFullAccessToEvents { granted, error in
                 Task { @MainActor in
                     if let error = error {
-                        Logger(subsystem: "a-do", category: "Calendar").error("Access error: \(error.localizedDescription)")
+                        Logger(subsystem: "a-do", category: "Calendar").error("Calendar access error: \(error.localizedDescription)")
+                    } else if granted {
+                        Logger(subsystem: "a-do", category: "Calendar").info("Calendar access granted successfully")
                     } else {
-                        Logger(subsystem: "a-do", category: "Calendar").error("Access error: Unknown error")
+                        Logger(subsystem: "a-do", category: "Calendar").warning("Calendar access denied by user")
                     }
                     self.accessGranted = granted
                     continuation.resume(returning: ())

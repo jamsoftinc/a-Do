@@ -18,7 +18,7 @@ final class CollaborationManager: ObservableObject {
     static let shared = CollaborationManager()
     
     private let logger = Logger(subsystem: "a-do", category: "Collaboration")
-    private let container = CKContainer.default()
+    private let container = CKContainer(identifier: "iCloud.JAMSoft.a-do")
     
     // Current user info - Secure user identification
     var currentUserID: String?

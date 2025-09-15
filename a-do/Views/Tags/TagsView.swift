@@ -4,7 +4,7 @@ import os
 
 struct TagsView: View {
     @Environment(\.modelContext) private var context
-    @Query(sort: \Tag.name) private var tags: [Tag]
+    @State private var tags: [Tag] = []
     @State private var newName: String = ""
     @State private var selectedColor: String = Tag.defaultColors.first ?? "#7C4DFF"
 

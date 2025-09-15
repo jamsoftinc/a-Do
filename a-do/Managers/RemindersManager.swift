@@ -71,7 +71,9 @@ final class RemindersManager {
                         }
                         
                         // Filter out reminders that already exist
-                        let existingReminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+                        var descriptor = FetchDescriptor<Reminder>()
+                        descriptor.fetchLimit = 1000
+                        let existingReminders = (try? context.fetch(descriptor)) ?? []
                         let existingTitles = Set(existingReminders.map { $0.title })
                         let newReminders = reminders.filter { reminder in
                             guard let title = reminder.title, !title.isEmpty else { return false }
@@ -124,7 +126,9 @@ final class RemindersManager {
                         Logger(subsystem: "a-do", category: "Import").info("Found \(reminders.count) reminders to import")
                         
                         // Filter out reminders that already exist
-                        let existingReminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+                        var descriptor = FetchDescriptor<Reminder>()
+                        descriptor.fetchLimit = 1000
+                        let existingReminders = (try? context.fetch(descriptor)) ?? []
                         let existingTitles = Set(existingReminders.map { $0.title })
                         let newReminders = reminders.filter { reminder in
                             guard let title = reminder.title, !title.isEmpty else { return false }

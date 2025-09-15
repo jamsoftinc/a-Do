@@ -19,9 +19,16 @@ final class HabitViewModel {
     var selectedHabit: Habit?
     var showingCreateHabit = false
     var showingHabitDetail = false
-    var searchText = ""
-    var selectedFilter: HabitFilter = .all
+    var searchText = "" {
+        didSet { updateFilteredHabits() }
+    }
+    var selectedFilter: HabitFilter = .all {
+        didSet { updateFilteredHabits() }
+    }
     var statistics = HabitStatistics.empty
+    
+    // Cached filtered habits to prevent expensive recomputation
+    var filteredHabits: [Habit] = []
     
     private var modelContext: ModelContext?
     
@@ -44,6 +51,7 @@ final class HabitViewModel {
             )
             habits = try context.fetch(descriptor)
             updateStatistics()
+            updateFilteredHabits()
             logger.info("Loaded \(self.habits.count) habits")
         } catch {
             logger.error("Failed to load habits: \(error.localizedDescription)")
@@ -190,7 +198,7 @@ final class HabitViewModel {
     
     // MARK: - Filtering and Search
     
-    var filteredHabits: [Habit] {
+    private func updateFilteredHabits() {
         var filtered = habits
         
         // Apply search filter
@@ -213,7 +221,7 @@ final class HabitViewModel {
             filtered = filtered.filter { !$0.isCompletedToday && $0.isActive }
         }
         
-        return filtered
+        self.filteredHabits = filtered
     }
     
     // MARK: - Navigation

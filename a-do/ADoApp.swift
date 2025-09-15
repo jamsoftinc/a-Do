@@ -69,23 +69,116 @@ struct ADoApp: App {
 struct RootView: View {
     @State private var router = AppRouter()
     @State private var container: ModelContainer?
+    @State private var syncManager = SyncProgressManager.shared
+    @State private var isInitialSyncComplete = false
     
     var body: some View {
         LaunchScreenWrapper {
             if let container = container {
-                ContentView()
-                    .modelContainer(container)
-                    .environment(router)
-                    .onOpenURL { url in router.handle(url: url) }
-                    .task { router.checkGroupDeeplinkFlag() }
+                if syncManager.isInitialSyncInProgress && !isInitialSyncComplete {
+                    // Show sync progress during initial sync
+                    SyncProgressView()
+                        .modelContainer(container)
+                        .task {
+                            await performInitialSync(container: container)
+                        }
+                } else {
+                    // Show main app content
+                    ContentView()
+                        .modelContainer(container)
+                        .environment(router)
+                        .onOpenURL { url in router.handle(url: url) }
+                        .task { router.checkGroupDeeplinkFlag() }
+                }
             } else {
                 // Show loading state while container initializes
-                ProgressView("Loading...")
+                ProgressView("Initializing...")
                     .task {
                         // Initialize container on background thread
                         container = AppContainer.shared.getContainer()
                     }
             }
+        }
+        .onChange(of: syncManager.isInitialSyncInProgress) { _, inProgress in
+            if !inProgress {
+                isInitialSyncComplete = true
+            }
+        }
+    }
+    
+    private func performInitialSync(container: ModelContainer) async {
+        let context = ModelContext(container)
+        
+        // Start the sync process
+        await MainActor.run {
+            syncManager.startInitialSync()
+        }
+        
+        // Stage 1: Data Loading
+        await MainActor.run {
+            syncManager.startDataLoading()
+        }
+        
+        // Simulate data loading time
+        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+        
+        await MainActor.run {
+            syncManager.finishDataLoading()
+        }
+        
+        // Stage 2: Apple Reminders Sync
+        await MainActor.run {
+            syncManager.startAppleRemindersSync()
+        }
+        
+        // Check if this is the first sync
+        let isFirstSync = SettingsManager.shared.isFirstSync(context: context)
+        
+        // Perform Apple Reminders sync
+        await AppleRemindersSyncManager.shared.performFullSync(context: context, isInitialSync: isFirstSync)
+        
+        await MainActor.run {
+            syncManager.finishAppleRemindersSync()
+        }
+        
+        // Stage 3: CloudKit Sync
+        await MainActor.run {
+            syncManager.startCloudKitSync()
+        }
+        
+        // CloudKit operations
+        CloudKitManager.shared.loadSyncSetting(context: context)
+        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+        
+        await MainActor.run {
+            syncManager.finishCloudKitSync()
+        }
+        
+        // Stage 4: Calendar Sync
+        await MainActor.run {
+            syncManager.startCalendarSync()
+        }
+        
+        // Calendar operations
+        await CalendarManager.shared.requestAccess()
+        
+        await MainActor.run {
+            syncManager.finishCalendarSync()
+        }
+        
+        // Stage 5: Cleanup
+        await MainActor.run {
+            syncManager.finishCleanup()
+        }
+        
+        // Mark first sync as completed if this was the initial sync
+        if isFirstSync {
+            SettingsManager.shared.markFirstSyncCompleted(context: context)
+        }
+        
+        // Complete the sync
+        await MainActor.run {
+            syncManager.finishSync()
         }
     }
 }
