@@ -21,7 +21,7 @@ final class CloudKitManager: ObservableObject {
     @Published var syncError: String?
     @Published var isSyncEnabled: Bool = true
     
-    private let container = CKContainer(identifier: "iCloud.JAMSoft.a-do")
+    private let container = CKContainer.default()
     private let logger = Logger(subsystem: "a-do", category: "CloudKit")
     
     private init() {

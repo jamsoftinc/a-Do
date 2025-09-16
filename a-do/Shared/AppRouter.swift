@@ -70,14 +70,14 @@ final class AppRouter {
         
         // Force use standard UserDefaults in problematic environments
         if appDefaults.forceStandardDefaults {
-            print("⚠️ App group access force disabled - deep linking may not work")
+            // App group access disabled
         }
         
         // Check for deep link flags
         if appDefaults.bool(forKey: "deeplink_open_today") == true {
             appDefaults.set(false, forKey: "deeplink_open_today")
             destination = .smartToday
-            print("🔗 Deep link: Opening smart today view")
+            // Opening smart today view
         }
         
         // Check for send text reminder deep link
@@ -85,14 +85,14 @@ final class AppRouter {
            let reminderId = UUID(uuidString: reminderIdString) {
             appDefaults.removeObject(forKey: "deeplink_send_text_reminder_id")
             destination = .sendText(reminderId: reminderId)
-            print("🔗 Deep link: Opening send text for reminder \(reminderId)")
+            // Opening send text for reminder
         }
         
         // Check for habits deep link
         if appDefaults.bool(forKey: "deeplink_open_habits") == true {
             appDefaults.set(false, forKey: "deeplink_open_habits")
             destination = .habits
-            print("🔗 Deep link: Opening habits view")
+            // Opening habits view
         }
     }
 }

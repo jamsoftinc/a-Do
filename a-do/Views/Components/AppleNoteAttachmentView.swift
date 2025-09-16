@@ -45,7 +45,7 @@ struct AppleNoteAttachmentView: View {
         noteAttachment: AppleNoteAttachment(
             noteIdentifier: "preview-123",
             noteTitle: "Preview Note",
-            noteContent: "Preview content for development testing.",
+            noteContent: "Sample note content for preview.",
             lastModified: Date()
         )
     )

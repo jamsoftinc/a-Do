@@ -56,7 +56,10 @@ final class RecurringRemindersManager {
         let existingTemplates = try? context.fetch(FetchDescriptor<ReminderTemplate>())
         
         if existingTemplates?.isEmpty ?? true {
+            logger.info("No templates found, creating default templates")
             createDefaultTemplates(context: context)
+        } else {
+            logger.info("Found \(existingTemplates?.count ?? 0) existing templates")
         }
     }
     
@@ -95,7 +98,12 @@ final class RecurringRemindersManager {
             context.insert(template)
         }
         
-        try? context.save()
+        do {
+            try context.save()
+            logger.info("Successfully created \(defaultTemplates.count) default templates")
+        } catch {
+            logger.error("Failed to save default templates: \(error.localizedDescription)")
+        }
     }
     
     func getPopularTemplates(context: ModelContext, limit: Int = 10) -> [ReminderTemplate] {
@@ -130,7 +138,13 @@ final class RecurringRemindersManager {
         template.lastUsed = Date()
         
         context.insert(reminder)
-        try? context.save()
+        
+        do {
+            try context.save()
+            logger.info("Successfully created reminder from template: '\(template.name)' -> '\(reminder.title)'")
+        } catch {
+            logger.error("Failed to save reminder from template: \(error.localizedDescription)")
+        }
         
         return reminder
     }
@@ -182,9 +196,17 @@ final class RecurringRemindersManager {
     ) {
         let recurringCount = (try? context.fetchCount(FetchDescriptor<RecurringReminder>())) ?? 0
         
-        // This is a simplified calculation
-        let generatedCount = recurringCount * 5 // Placeholder
-        let upcomingCount = recurringCount / 2 // Placeholder
+        // Calculate actual generated reminders count
+        let allRecurring = (try? context.fetch(FetchDescriptor<RecurringReminder>())) ?? []
+        let generatedCount = allRecurring.reduce(0) { $0 + $1.generatedReminders.count }
+        
+        // Calculate upcoming recurring reminders (next 7 days)
+        let calendar = Calendar.current
+        let nextWeek = calendar.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+        let upcomingCount = allRecurring.filter { recurring in
+            guard let nextDue = recurring.nextDue else { return false }
+            return nextDue <= nextWeek && recurring.isActive
+        }.count
         
         return (recurringCount, generatedCount, upcomingCount)
     }

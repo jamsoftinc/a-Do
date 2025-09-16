@@ -138,7 +138,7 @@ final class AdvancedSearchManager: ObservableObject {
         case .voice:
             results = await performVoiceSearch(query: sanitizedQuery, scope: scope, filters: filters, context: context)
         case .regex:
-            results = await performTextSearch(query: sanitizedQuery, scope: scope, filters: filters, context: context) // Regex search not implemented yet
+            results = await performRegexSearch(query: sanitizedQuery, scope: scope, filters: filters, context: context)
         case .advanced:
             results = await performAdvancedSearch(query: sanitizedQuery, scope: scope, filters: filters, context: context)
         }
@@ -467,6 +467,64 @@ final class AdvancedSearchManager: ObservableObject {
             result.matchType = .phonetic
             return result
         }
+    }
+    
+    // MARK: - Regex Search
+    
+    private func performRegexSearch(query: String, scope: SearchScope, filters: [SearchFilter], context: ModelContext) async -> [SearchResult] {
+        // Regex search implementation
+        var results: [SearchResult] = []
+        
+        do {
+            let regex = try NSRegularExpression(pattern: query, options: [.caseInsensitive])
+            
+            // Search in reminders
+            if scope == .reminders || scope == .all {
+                let reminders = try context.fetch(FetchDescriptor<Reminder>())
+                for reminder in reminders {
+                    if matchesRegex(regex, in: reminder.title) ||
+                       matchesRegex(regex, in: reminder.details ?? "") {
+                        results.append(SearchResult(
+                            queryId: UUID(),
+                            itemType: .reminder,
+                            itemId: reminder.uuid.uuidString,
+                            title: reminder.title,
+                            snippet: reminder.details ?? "",
+                            relevanceScore: 0.8
+                        ))
+                    }
+                }
+            }
+            
+            // Search in habits
+            if scope == .habits || scope == .all {
+                let habits = try context.fetch(FetchDescriptor<Habit>())
+                for habit in habits {
+                    if matchesRegex(regex, in: habit.title) ||
+                       matchesRegex(regex, in: habit.habitDescription) {
+                        results.append(SearchResult(
+                            queryId: UUID(),
+                            itemType: .habit,
+                            itemId: habit.id.uuidString,
+                            title: habit.title,
+                            snippet: habit.habitDescription,
+                            relevanceScore: 0.8
+                        ))
+                    }
+                }
+            }
+            
+        } catch {
+            // If regex is invalid, fall back to text search
+            return await performTextSearch(query: query, scope: scope, filters: filters, context: context)
+        }
+        
+        return results
+    }
+    
+    private func matchesRegex(_ regex: NSRegularExpression, in text: String) -> Bool {
+        let range = NSRange(location: 0, length: text.utf16.count)
+        return regex.firstMatch(in: text, options: [], range: range) != nil
     }
     
     // MARK: - Advanced Search

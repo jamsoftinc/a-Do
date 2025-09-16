@@ -488,12 +488,32 @@ final class SmartNotificationManager: NSObject {
     
     private func applyActivityContext(notification: SmartNotification) async {
         // This would integrate with motion sensors or HealthKit to determine activity
-        notification.activityContext = "Stationary" // Placeholder
+        // For now, use time-based context
+        let hour = Calendar.current.component(.hour, from: Date())
+        let activityContext: String
+        
+        switch hour {
+        case 6..<9:
+            activityContext = "Starting"
+        case 9..<12:
+            activityContext = "Focused"
+        case 12..<14:
+            activityContext = "Break"
+        case 14..<17:
+            activityContext = "Active"
+        case 17..<19:
+            activityContext = "Winding Down"
+        default:
+            activityContext = "Relaxed"
+        }
+        
+        notification.activityContext = activityContext
     }
     
     private func applyDeviceContext(notification: SmartNotification) async {
         // Determine device state (charging, battery level, do not disturb, etc.)
-        notification.deviceContext = "Active" // Placeholder
+        // For now, assume active state
+        notification.deviceContext = "Active"
     }
     
     private func calculateAdaptiveScore(notification: SmartNotification, context: ModelContext) async -> Double {

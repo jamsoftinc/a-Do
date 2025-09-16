@@ -23,6 +23,7 @@ struct CollaborationView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                
                 // Tab Picker
                 Picker("View", selection: $selectedTab) {
                     Text("Workspaces").tag(0)
@@ -64,7 +65,11 @@ struct CollaborationView: View {
             CreateWorkspaceView()
         }
         .sheet(isPresented: $showingInviteUser) {
-            InviteUserView()
+            if let firstWorkspace = workspaces.first {
+                InviteUserView(workspace: firstWorkspace)
+            } else {
+                Text("No workspaces available")
+            }
         }
     }
     
@@ -79,7 +84,10 @@ struct CollaborationView: View {
                     }
                 } else {
                     ForEach(workspaces) { workspace in
-                        WorkspaceCard(workspace: workspace)
+                        NavigationLink(destination: WorkspaceDetailView(workspace: workspace)) {
+                            WorkspaceCard(workspace: workspace)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
             }
@@ -188,7 +196,7 @@ struct WorkspaceCard: View {
                     Spacer()
                     
                     VStack(alignment: .trailing, spacing: 4) {
-                        Text("\(workspace.members.count)")
+                        Text("\(workspace.members?.count ?? 0)")
                             .font(AppTheme.Typography.headline)
                             .foregroundColor(AppTheme.Colors.accent)
                         
@@ -443,46 +451,170 @@ struct EmptyInvitationsView: View {
 
 struct CreateWorkspaceView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
+    @State private var collaborationManager = CollaborationManager.shared
+    
+    @State private var workspaceName = ""
+    @State private var workspaceDescription = ""
+    @State private var isPrivate = false
     
     var body: some View {
         NavigationStack {
-            VStack {
-                Text("Create Workspace - Coming Soon")
-                    .font(AppTheme.Typography.headline)
-                // TODO: Implement workspace creation form
+            Form {
+                Section("Workspace Details") {
+                    TextField("Workspace Name", text: $workspaceName)
+                    TextField("Description (Optional)", text: $workspaceDescription, axis: .vertical)
+                        .lineLimit(3...6)
+                }
+                
+                Section("Settings") {
+                    Toggle("Private Workspace", isOn: $isPrivate)
+                }
+                
+                Section("Preview") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(workspaceName.isEmpty ? "Workspace Name" : workspaceName)
+                            .font(.headline)
+                        
+                        Text(workspaceDescription.isEmpty ? "No description" : workspaceDescription)
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                        
+                        HStack {
+                            Image(systemName: isPrivate ? "lock.fill" : "globe")
+                            Text(isPrivate ? "Private" : "Public")
+                        }
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(8)
+                }
             }
             .navigationTitle("Create Workspace")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
                         dismiss()
                     }
                 }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Create") {
+                        createWorkspace()
+                    }
+                    .disabled(workspaceName.isEmpty)
+                }
             }
+        }
+    }
+    
+    private func createWorkspace() {
+        Task {
+            let workspace = collaborationManager.createWorkspace(
+                name: workspaceName,
+                description: workspaceDescription.isEmpty ? "" : workspaceDescription,
+                context: context
+            )
+            
+                if workspace != nil {
+                    dismiss()
+                }
         }
     }
 }
 
 struct InviteUserView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
+    @State private var collaborationManager = CollaborationManager.shared
+    
+    let workspace: Workspace
+    
+    @State private var userName = ""
+    @State private var userEmail = ""
+    @State private var selectedPermission = SharingPermission.view
+    @State private var inviteMessage = ""
     
     var body: some View {
         NavigationStack {
-            VStack {
-                Text("Invite User - Coming Soon")
-                    .font(AppTheme.Typography.headline)
-                // TODO: Implement user invitation form
+            Form {
+                Section("User Details") {
+                    TextField("Name", text: $userName)
+                    TextField("Email", text: $userEmail)
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+                }
+                
+                Section("Permissions") {
+                    Picker("Permission Level", selection: $selectedPermission) {
+                        ForEach(SharingPermission.allCases, id: \.self) { permission in
+                            HStack {
+                                Image(systemName: permission.icon)
+                                Text(permission.displayName)
+                            }.tag(permission)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+                
+                Section("Message (Optional)") {
+                    TextField("Invitation message", text: $inviteMessage, axis: .vertical)
+                        .lineLimit(3...6)
+                }
+                
+                Section("Preview") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Inviting: \(userName.isEmpty ? "User Name" : userName)")
+                            .font(.headline)
+                        
+                        Text("Email: \(userEmail.isEmpty ? "user@example.com" : userEmail)")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                        
+                        HStack {
+                            Image(systemName: selectedPermission.icon)
+                            Text("Permission: \(selectedPermission.displayName)")
+                        }
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(8)
+                }
             }
             .navigationTitle("Invite User")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
                         dismiss()
                     }
                 }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Send Invite") {
+                        sendInvite()
+                    }
+                    .disabled(userName.isEmpty || userEmail.isEmpty)
+                }
             }
+        }
+    }
+    
+    private func sendInvite() {
+        Task {
+            let role: WorkspaceRole = selectedPermission == .edit ? .member : .guest
+            collaborationManager.inviteToWorkspace(
+                workspace,
+                email: userEmail,
+                role: role,
+                context: context
+            )
+            dismiss()
         }
     }
 }

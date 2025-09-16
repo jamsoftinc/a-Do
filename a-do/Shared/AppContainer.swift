@@ -171,7 +171,7 @@ final class AppContainer {
     @MainActor
     static func clearAllDemoData(context: ModelContext) {
         #if DEBUG
-        print("🧹 Clearing all demo data from database...")
+        // Clearing demo data
         #endif
         
         // Clear all reminders
@@ -189,11 +189,11 @@ final class AppContainer {
         do {
             try context.save()
             #if DEBUG
-            print("✅ All demo data cleared successfully")
+            // Demo data cleared successfully
             #endif
         } catch {
             #if DEBUG
-            print("❌ Failed to save after clearing data: \(error)")
+            // Failed to save after clearing data
             #endif
         }
     }
@@ -208,12 +208,12 @@ final class AppContainer {
                     context.delete(item)
                 }
                 #if DEBUG
-                print("🗑️ Deleted \(items.count) \(entityName)")
+                // Deleted items
                 #endif
             }
         } catch {
             #if DEBUG
-            print("⚠️ Failed to clear \(entityName): \(error)")
+            // Failed to clear entity
             #endif
         }
     }
@@ -222,7 +222,7 @@ final class AppContainer {
     @MainActor
     static func optimizeDatabase(context: ModelContext) {
         #if DEBUG
-        print("🔧 Optimizing database...")
+        // Optimizing database
         #endif
         
         // Perform any necessary database optimization tasks
@@ -234,11 +234,11 @@ final class AppContainer {
         do {
             try context.save()
             #if DEBUG
-            print("✅ Database optimization completed")
+            // Database optimization completed
             #endif
         } catch {
             #if DEBUG
-            print("⚠️ Database optimization failed: \(error)")
+            // Database optimization failed
             #endif
         }
     }

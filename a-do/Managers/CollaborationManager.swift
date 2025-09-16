@@ -18,7 +18,7 @@ final class CollaborationManager: ObservableObject {
     static let shared = CollaborationManager()
     
     private let logger = Logger(subsystem: "a-do", category: "Collaboration")
-    private let container = CKContainer(identifier: "iCloud.JAMSoft.a-do")
+    private let container = CKContainer.default()
     
     // Current user info - Secure user identification
     var currentUserID: String?
@@ -53,6 +53,11 @@ final class CollaborationManager: ObservableObject {
         } catch {
             logger.error("Failed to fetch user info: \(error.localizedDescription)")
             shareError = "Failed to get user information"
+            
+            // Set fallback values for production
+            currentUserID = "user-\(UUID().uuidString)"
+            currentUserName = "User"
+            currentUserEmail = ""
         }
     }
     
@@ -146,7 +151,7 @@ final class CollaborationManager: ObservableObject {
         }
         
         // Notify participants
-        for participant in sharedReminder.participants {
+        for participant in sharedReminder.participants ?? [] {
             await notifyParticipant(participant, about: .participantRemoved, sharedReminder: sharedReminder)
         }
         
@@ -201,7 +206,7 @@ final class CollaborationManager: ObservableObject {
                 // Clear the reminder relationship since this is for list sharing
                 participant.sharedReminder = nil
                 
-                sharedList.participants.append(participant)
+                sharedList.participants?.append(participant)
                 context.insert(participant)
             }
             
@@ -457,9 +462,9 @@ final class CollaborationManager: ObservableObject {
         let acceptedStatus = ShareStatus.accepted
         let descriptor = FetchDescriptor<SharedReminder>(
             predicate: #Predicate { sharedReminder in
-                sharedReminder.isActive && sharedReminder.participants.contains { participant in
+                sharedReminder.isActive && (sharedReminder.participants?.contains { participant in
                     participant.userID == userID && participant.status == acceptedStatus
-                }
+                } ?? false)
             },
             sortBy: [SortDescriptor(\.lastModified, order: .reverse)]
         )
@@ -477,7 +482,7 @@ final class CollaborationManager: ObservableObject {
             }
             
             // Check participant permissions
-            if let participant = sharedReminder.participants.first(where: { $0.userID == userID }) {
+            if let participant = sharedReminder.participants?.first(where: { $0.userID == userID }) {
                 return participant.permission.canEdit && participant.status.isActive
             }
         }

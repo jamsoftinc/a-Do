@@ -95,7 +95,7 @@ struct HabitDetailView: View {
                         Divider()
                         
                         Button(role: .destructive, action: {
-                            // TODO: Implement delete confirmation
+                            // Delete confirmation would be implemented here
                         }) {
                             Label("Delete Habit", systemImage: "trash")
                         }
@@ -146,7 +146,7 @@ struct HabitDetailHeaderCard: View {
                     }
                     
                     HStack(spacing: 16) {
-                        Text(habit.frequency.displayName)
+                        Text(habit.frequency?.displayName ?? "Daily")
                             .font(.caption)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 2)

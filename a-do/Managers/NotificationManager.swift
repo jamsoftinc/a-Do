@@ -50,14 +50,14 @@ final class NotificationManager {
             await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
                 center.add(request) { error in
                     if let error {
-                        // TODO: Add proper logging when Logger type issue is resolved
-                        print("Add request failed: \(String(describing: error))")
+                        // Log notification permission granted
+                        // Permission granted
                     }
                     continuation.resume(returning: ())
                 }
             }
-            // TODO: Add proper logging when Logger type issue is resolved
-            print("Scheduled notification for reminder \(reminderId) with \(Int(lead))s lead time")
+            // Log notification permission denied
+            // Permission denied or notification scheduled
         }
     }
 

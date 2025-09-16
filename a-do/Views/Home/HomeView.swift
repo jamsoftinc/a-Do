@@ -180,14 +180,6 @@ struct HomeView: View {
                             Label("Clean Up Old Reminders", systemImage: "trash.circle")
                         }
                         
-                        #if DEBUG
-                        Button {
-                            AppContainer.clearAllDemoData(context: context)
-                        } label: {
-                            Label("Clear All Demo Data", systemImage: "trash")
-                        }
-                        .foregroundColor(.red)
-                        #endif
                     } label: {
                         Image(systemName: "ellipsis.circle")
                             .imageScale(.large)
@@ -507,7 +499,7 @@ struct HomeView: View {
                             .secondaryText()
                     }
                     Spacer()
-                    NavigationLink("View All", destination: ListsView())
+                    NavigationLink("View All", destination: InboxView())
                         .font(AppTheme.Typography.caption1)
                         .foregroundColor(AppTheme.Colors.primary)
                 }
@@ -1256,18 +1248,14 @@ extension HomeView {
                         )
                     }
                     
-                    // Analytics (Future Feature)
-                    Button(action: {
-                        // TODO: Implement analytics view
-                    }) {
+                    // Analytics
+                    NavigationLink(destination: TimeAnalyticsView()) {
                         FeatureCard(
                             icon: "chart.bar.fill",
                             title: "Analytics",
                             color: .purple
                         )
                     }
-                    .disabled(true)
-                    .opacity(0.6)
                 }
             }
         }

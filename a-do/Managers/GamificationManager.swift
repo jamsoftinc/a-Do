@@ -206,7 +206,20 @@ final class GamificationManager {
     
     private func calculateSocialProgress(_ achievement: Achievement, profile: UserProfile, context: ModelContext) async -> Double {
         // This would calculate social achievements based on collaboration features
-        return 0.0 // Placeholder
+        let workspaces = (try? context.fetch(FetchDescriptor<Workspace>())) ?? []
+        let sharedReminders = (try? context.fetch(FetchDescriptor<SharedReminder>())) ?? []
+        
+        switch achievement.name {
+        case "Team Player":
+            return min(Double(workspaces.count) / 3.0, 1.0)
+        case "Sharing Champion":
+            return min(Double(sharedReminders.count) / 10.0, 1.0)
+        case "Collaboration Master":
+            let totalCollaborations = workspaces.count + sharedReminders.count
+            return min(Double(totalCollaborations) / 15.0, 1.0)
+        default:
+            return 0.0
+        }
     }
     
     private func calculateSpecialProgress(_ achievement: Achievement, profile: UserProfile) async -> Double {

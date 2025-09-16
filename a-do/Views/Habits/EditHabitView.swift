@@ -29,7 +29,7 @@ struct EditHabitView: View {
         self._description = State(initialValue: habit.habitDescription)
         self._selectedIcon = State(initialValue: habit.icon)
         self._selectedColor = State(initialValue: habit.color)
-        self._selectedFrequency = State(initialValue: habit.frequency)
+        self._selectedFrequency = State(initialValue: habit.frequency ?? .daily)
         self._targetCount = State(initialValue: habit.targetCount)
         self._unit = State(initialValue: habit.unit)
         self._isActive = State(initialValue: habit.isActive)

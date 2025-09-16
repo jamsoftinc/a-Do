@@ -64,6 +64,7 @@ final class Tag {
     var name: String = ""
     var colorHex: String = "#7C4DFF"
     @Relationship var reminders: [Reminder]? = []
+    @Relationship var habits: [Habit]? = []
 
     init(name: String, colorHex: String = "#7C4DFF") {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -166,6 +167,7 @@ final class ReminderList {
 
     @Relationship(deleteRule: .cascade) var reminders: [Reminder]? = []
     @Relationship var section: ListSection?
+    @Relationship(deleteRule: .cascade) var sharedLists: [SharedList]? = []
 
     init(name: String, isSmart: Bool = false, rules: [SmartListRule]? = nil, reminders: [Reminder] = []) {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -217,6 +219,8 @@ final class Reminder {
     @Relationship(deleteRule: .cascade) var appleNote: AppleNoteAttachment?
     @Relationship(deleteRule: .cascade) var voiceReminder: VoiceReminder?
     @Relationship(deleteRule: .nullify) var list: ReminderList?
+    @Relationship(deleteRule: .cascade) var timeEntries: [TimeEntry]? = []
+    @Relationship(deleteRule: .cascade) var sharedReminders: [SharedReminder]? = []
 
     // Required parameterless initializer for SwiftData
     init() {

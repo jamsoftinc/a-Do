@@ -16,7 +16,7 @@ final class Habit {
     var habitDescription: String = ""
     var icon: String = "star.fill"
     var color: String = "#007AFF"
-    var frequency: HabitFrequency
+    var frequency: HabitFrequency?
     var targetCount: Int = 1
     var unit: String = "times"
     var isActive: Bool = true
@@ -24,10 +24,11 @@ final class Habit {
     var updatedAt: Date = Date()
     
     // Relationships
-    @Relationship(deleteRule: .cascade) var entries: [HabitEntry] = []
-    @Relationship(deleteRule: .cascade) var tags: [Tag] = []
+    @Relationship(deleteRule: .cascade) var entries: [HabitEntry]? = []
+    @Relationship var tags: [Tag]? = []
+    @Relationship(deleteRule: .cascade) var timeEntries: [TimeEntry]? = []
     
-    init(title: String, description: String = "", icon: String = "star.fill", color: String = "#007AFF", frequency: HabitFrequency = .daily, targetCount: Int = 1, unit: String = "times") {
+    init(title: String, description: String = "", icon: String = "star.fill", color: String = "#007AFF", frequency: HabitFrequency? = .daily, targetCount: Int = 1, unit: String = "times") {
         self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         self.habitDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
         self.icon = icon
@@ -48,7 +49,7 @@ final class Habit {
         var currentDate = today
         
         // Sort entries by date (most recent first)
-        let sortedEntries = entries.sorted { $0.date > $1.date }
+        let sortedEntries = (entries ?? []).sorted { $0.date > $1.date }
         
         for entry in sortedEntries {
             let entryDate = calendar.startOfDay(for: entry.date)
@@ -78,7 +79,7 @@ final class Habit {
     
     var longestStreak: Int {
         let calendar = Calendar.current
-        let sortedEntries = entries.sorted { $0.date < $1.date }
+        let sortedEntries = (entries ?? []).sorted { $0.date < $1.date }
         var maxStreak = 0
         var currentStreak = 0
         var lastDate: Date?
@@ -114,7 +115,7 @@ final class Habit {
     }
     
     var completionRate: Double {
-        guard !entries.isEmpty else { return 0.0 }
+        guard let entries = entries, !entries.isEmpty else { return 0.0 }
         
         let completedDays = entries.filter { $0.count >= targetCount }.count
         return Double(completedDays) / Double(entries.count)
@@ -123,7 +124,7 @@ final class Habit {
     var todayEntry: HabitEntry? {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        return entries.first { calendar.isDate($0.date, inSameDayAs: today) }
+        return entries?.first { calendar.isDate($0.date, inSameDayAs: today) }
     }
     
     var isCompletedToday: Bool {
@@ -205,13 +206,13 @@ extension Habit {
         let entryDate = calendar.startOfDay(for: date)
         
         // Check if entry already exists for this date
-        if let existingEntry = entries.first(where: { calendar.isDate($0.date, inSameDayAs: entryDate) }) {
+        if let existingEntry = entries?.first(where: { calendar.isDate($0.date, inSameDayAs: entryDate) }) {
             existingEntry.count = max(0, count)
             existingEntry.notes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
             existingEntry.createdAt = Date()
         } else {
             let newEntry = HabitEntry(date: entryDate, count: max(0, count), notes: notes, habit: self)
-            entries.append(newEntry)
+            entries?.append(newEntry)
         }
         
         updatedAt = Date()
@@ -234,7 +235,7 @@ extension Habit {
         guard let startOfWeek = weekInterval?.start,
               let endOfWeek = weekInterval?.end else { return [] }
         
-        return entries.filter { entry in
+        return (entries ?? []).filter { entry in
             entry.date >= startOfWeek && entry.date < endOfWeek
         }.sorted { $0.date < $1.date }
     }
@@ -246,7 +247,7 @@ extension Habit {
         guard let startOfMonth = monthInterval?.start,
               let endOfMonth = monthInterval?.end else { return [] }
         
-        return entries.filter { entry in
+        return (entries ?? []).filter { entry in
             entry.date >= startOfMonth && entry.date < endOfMonth
         }.sorted { $0.date < $1.date }
     }

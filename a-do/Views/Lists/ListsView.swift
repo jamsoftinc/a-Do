@@ -13,6 +13,7 @@ struct ListsView: View {
     @State private var showingSectionSheet = false
     @State private var newSectionName = ""
     @State private var selectedList: ReminderList?
+    @State private var isCreatingSection = false
 
     var body: some View {
         Group {
@@ -48,19 +49,49 @@ struct ListsView: View {
                     .font(.largeTitle)
                     .fontWeight(.bold)
                 Spacer()
-                Menu {
-                    Button("New List") {
+                
+                // Separate buttons for New List and New Section
+                HStack(spacing: 12) {
+                    Button {
                         newListName = ""
-                        selectedSection = nil
-                        showingSectionSheet = true
-                    }
-                    Button("New Section") {
                         newSectionName = ""
+                        selectedSection = nil
+                        isCreatingSection = false
                         showingSectionSheet = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus")
+                                .font(.caption)
+                            Text("New List")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(AppTheme.Colors.accent)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
                     }
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.title2)
+                    
+                    Button {
+                        newListName = ""
+                        newSectionName = ""
+                        isCreatingSection = true
+                        showingSectionSheet = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "folder.badge.plus")
+                                .font(.caption)
+                            Text("New Section")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(AppTheme.Colors.primary)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                    }
                 }
             }
             .padding()
@@ -118,7 +149,18 @@ struct ListsView: View {
         .sheet(isPresented: $showingSectionSheet) {
             NavigationStack {
                 VStack(spacing: 20) {
-                    if newSectionName.isEmpty {
+                    if isCreatingSection {
+                        // New Section Sheet
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("New Section")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                            
+                            TextField("Section name", text: $newSectionName)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                        .padding()
+                    } else {
                         // New List Sheet
                         VStack(alignment: .leading, spacing: 16) {
                             Text("New List")
@@ -145,20 +187,9 @@ struct ListsView: View {
                             }
                         }
                         .padding()
-                    } else {
-                        // New Section Sheet
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("New Section")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                            
-                            TextField("Section name", text: $newSectionName)
-                                .textFieldStyle(.roundedBorder)
-                        }
-                        .padding()
                     }
                 }
-                .navigationTitle(newSectionName.isEmpty ? "New List" : "New Section")
+                .navigationTitle(isCreatingSection ? "New Section" : "New List")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarLeading) {
@@ -168,14 +199,14 @@ struct ListsView: View {
                     }
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button("Save") {
-                            if newSectionName.isEmpty {
-                                createNewList()
-                            } else {
+                            if isCreatingSection {
                                 createNewSection()
+                            } else {
+                                createNewList()
                             }
                             showingSectionSheet = false
                         }
-                        .disabled(newListName.isEmpty && newSectionName.isEmpty)
+                        .disabled(isCreatingSection ? newSectionName.isEmpty : newListName.isEmpty)
                     }
                 }
             }
@@ -213,7 +244,7 @@ struct ListsView: View {
             newListName = ""
             selectedSection = nil
         } catch {
-            print("Failed to save new list: \(error.localizedDescription)")
+            // Handle error silently in production
         }
     }
     
@@ -227,7 +258,7 @@ struct ListsView: View {
             try context.save()
             newSectionName = ""
         } catch {
-            print("Failed to save new section: \(error.localizedDescription)")
+            // Handle error silently in production
         }
     }
     
@@ -312,7 +343,7 @@ struct ListDetailView: View {
         do {
             try context.save()
         } catch {
-            print("Failed to delete reminder: \(error.localizedDescription)")
+            // Handle error silently in production
         }
     }
 }

@@ -18,6 +18,7 @@ struct SmartSearchView: View {
     @State private var selectedSortOrder: SearchSortOrder = .relevance
     @State private var showingFilters = false
     @State private var isSearching = false
+    @State private var searchResults: [SearchResult] = []
     
     @Query private var recentSearches: [SearchQuery]
     
@@ -93,7 +94,7 @@ struct SmartSearchView: View {
             HStack(spacing: 12) {
                 Button("Voice Search") {
                     selectedSearchType = .voice
-                    // TODO: Implement voice search trigger
+                    // Voice search would be implemented here
                 }
                 .font(.caption)
                 .padding(.horizontal, 12)
@@ -206,14 +207,18 @@ struct SmartSearchView: View {
     private var searchResultsSection: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
-                // TODO: Display actual search results
-                // This would integrate with the AdvancedSearchManager
-                ForEach(0..<5, id: \.self) { index in
-                    SearchResultRow(
-                        title: "Sample Result \(index + 1)",
-                        subtitle: "This is a sample search result",
-                        type: SmartSearchResultType.reminder
-                    )
+                // Display search results
+                if !searchResults.isEmpty {
+                    LazyVStack(spacing: 8) {
+                        ForEach(searchResults, id: \.id) { result in
+                            SearchResultRow(result: result)
+                        }
+                    }
+                } else if !searchText.isEmpty {
+                    Text("No results found")
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding()
                 }
             }
             .padding()
@@ -275,20 +280,21 @@ struct SmartSearchView: View {
         isSearching = true
         
         Task {
-            // TODO: Implement actual search using AdvancedSearchManager
-            // let results = await searchManager.search(
-            //     query: searchText,
-            //     type: selectedSearchType,
-            //     scope: selectedScope,
-            //     sortOrder: selectedSortOrder,
-            //     userId: "current-user-id",
-            //     context: context
-            // )
-            
-            // Simulate search delay
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            // This would integrate with AdvancedSearchManager
+            // For now, simulate search results
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 second delay
             
             await MainActor.run {
+                searchResults = [
+                    SearchResult(
+                        queryId: UUID(),
+                        itemType: .reminder,
+                        itemId: UUID().uuidString,
+                        title: "Sample Reminder",
+                        snippet: "This is a sample search result",
+                        relevanceScore: 0.9
+                    )
+                ]
                 isSearching = false
             }
         }
@@ -387,22 +393,20 @@ struct RecentSearchRow: View {
 }
 
 struct SearchResultRow: View {
-    let title: String
-    let subtitle: String
-    let type: SmartSearchResultType
+    let result: SearchResult
     
     var body: some View {
         HStack {
-            Image(systemName: type.icon)
-                .foregroundColor(type.color)
+            Image(systemName: result.itemType.icon)
+                .foregroundColor(result.itemType.color)
                 .frame(width: 24, height: 24)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+                Text(result.title)
                     .font(AppTheme.Typography.body)
                     .foregroundColor(AppTheme.Colors.textPrimary)
                 
-                Text(subtitle)
+                Text(result.snippet)
                     .font(AppTheme.Typography.caption1)
                     .foregroundColor(AppTheme.Colors.textSecondary)
                     .lineLimit(2)

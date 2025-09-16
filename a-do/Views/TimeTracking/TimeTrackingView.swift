@@ -59,18 +59,10 @@ struct TimeTrackingView: View {
             }
         }
         .sheet(isPresented: $showingAnalytics) {
-            Text("Analytics View")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(AppTheme.Colors.surfaceLight)
-                .cornerRadius(12)
-                // TODO: Implement TimeAnalyticsView
+            TimeAnalyticsView()
         }
         .sheet(isPresented: $showingGoals) {
-            Text("Goals View")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(AppTheme.Colors.surfaceLight)
-                .cornerRadius(12)
-                // TODO: Implement TimeGoalsView
+            TimeGoalsView()
         }
         .sheet(isPresented: $showingCategoryPicker) {
             CategoryPickerView(selectedCategory: $selectedCategory)
@@ -254,11 +246,7 @@ struct TimeTrackingView: View {
                 Spacer()
                 
                 NavigationLink("View All") {
-                    Text("History View")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(AppTheme.Colors.surfaceLight)
-                        .cornerRadius(12)
-                        // TODO: Implement TimeHistoryView
+                    TimeHistoryView()
                 }
                 .font(AppTheme.Typography.caption1)
                 .foregroundColor(AppTheme.Colors.primary)

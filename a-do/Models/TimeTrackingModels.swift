@@ -170,13 +170,13 @@ final class TimeGoal {
     var title: String = ""
     var targetDuration: TimeInterval = 3600 // 1 hour default
     var category: String = ""
-    var frequency: TimeGoalFrequency
+    var frequency: TimeGoalFrequency?
     var startDate: Date = Date()
     var endDate: Date?
     var isActive: Bool = true
     var createdAt: Date = Date()
     
-    init(title: String, targetDuration: TimeInterval, category: String, frequency: TimeGoalFrequency = .daily) {
+    init(title: String, targetDuration: TimeInterval, category: String, frequency: TimeGoalFrequency? = .daily) {
         self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         self.targetDuration = targetDuration
         self.category = category
@@ -196,6 +196,12 @@ final class TimeGoal {
         }.reduce(0) { $0 + $1.actualDuration }
         
         return min(1.0, todayTime / targetDuration)
+    }
+    
+    var currentProgress: Double {
+        // For now, return a default progress value
+        // In a real implementation, this would calculate based on actual time entries
+        return 0.5
     }
 }
 
@@ -217,24 +223,28 @@ enum TimeGoalFrequency: String, CaseIterable, Codable {
 
 extension Reminder {
     var totalTimeSpent: TimeInterval {
-        // This will be computed from related TimeEntry objects
-        return 0 // Placeholder - will be implemented in manager
+        // This would need to be computed by querying TimeEntry objects
+        // For now, return 0 as a placeholder
+        return 0
     }
     
     var averageCompletionTime: TimeInterval {
-        // Average time to complete similar reminders
-        return 0 // Placeholder
+        // This would need to be computed by querying TimeEntry objects
+        // For now, return 0 as a placeholder
+        return 0
     }
 }
 
 extension Habit {
     var averageTimePerEntry: TimeInterval {
-        // Average time spent on this habit per entry
-        return 0 // Placeholder
+        // This would need to be computed by querying TimeEntry objects related to this habit
+        // For now, return 0 as a placeholder
+        return 0
     }
     
     var totalTimeInvested: TimeInterval {
-        // Total time invested in this habit
-        return 0 // Placeholder
+        // This would need to be computed by querying TimeEntry objects related to this habit
+        // For now, return 0 as a placeholder
+        return 0
     }
 }

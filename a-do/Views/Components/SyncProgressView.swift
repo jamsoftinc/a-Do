@@ -201,3 +201,4 @@ struct SyncStageIndicator: View {
     SyncProgressView()
 }
 
+

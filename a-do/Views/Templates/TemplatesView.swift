@@ -58,16 +58,10 @@ struct TemplatesView: View {
             }
         }
         .sheet(isPresented: $showingCreateTemplate) {
-            // TODO: Implement CreateTemplateView
-            Text("Create Template View - Coming Soon")
-                .navigationTitle("Create Template")
-                .navigationBarTitleDisplayMode(.inline)
+            CreateTemplateView()
         }
         .sheet(isPresented: $showingCreateRecurring) {
-            // TODO: Implement CreateRecurringReminderView
-            Text("Create Recurring Reminder View - Coming Soon")
-                .navigationTitle("Create Recurring")
-                .navigationBarTitleDisplayMode(.inline)
+            CreateRecurringReminderView()
         }
         .onAppear {
             recurringManager.ensureDefaultTemplates(context: context)
@@ -173,9 +167,9 @@ struct TemplatesView: View {
                 let stats = recurringManager.getRecurringReminderStats(context: context)
                 
                 HStack(spacing: 20) {
-                    StatItem(title: "Active", value: "\(stats.totalRecurringReminders)")
-                    StatItem(title: "Generated", value: "\(stats.totalGeneratedReminders)")
-                    StatItem(title: "Upcoming", value: "\(stats.upcomingRecurring)")
+                    RecurringStatItem(title: "Active", value: "\(stats.totalRecurringReminders)", icon: "arrow.clockwise")
+                    RecurringStatItem(title: "Generated", value: "\(stats.totalGeneratedReminders)", icon: "plus.circle")
+                    RecurringStatItem(title: "Upcoming", value: "\(stats.upcomingRecurring)", icon: "calendar")
                 }
             }
         }
@@ -254,15 +248,25 @@ struct QuickTemplateCard: View {
     let template: ReminderTemplate
     @Environment(\.modelContext) private var context
     @State private var recurringManager = RecurringRemindersManager.shared
+    @State private var isCreating = false
+    @State private var showSuccess = false
     
     var body: some View {
         Button {
-            let _ = recurringManager.createReminderFromTemplate(template, context: context)
+            createReminderFromTemplate()
         } label: {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Image(systemName: template.icon)
-                        .foregroundColor(Color(hex: template.colorHex) ?? .blue)
+                    if isCreating {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    } else if showSuccess {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                    } else {
+                        Image(systemName: template.icon)
+                            .foregroundColor(Color(hex: template.colorHex) ?? .blue)
+                    }
                     
                     Spacer()
                     
@@ -284,7 +288,35 @@ struct QuickTemplateCard: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
-            .background(AppTheme.Colors.surfaceLight, in: RoundedRectangle(cornerRadius: 12))
+            .background(
+                showSuccess ? AppTheme.Colors.success.opacity(0.1) : AppTheme.Colors.surfaceLight,
+                in: RoundedRectangle(cornerRadius: 12)
+            )
+            .scaleEffect(showSuccess ? 1.05 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: showSuccess)
+        }
+        .disabled(isCreating)
+    }
+    
+    private func createReminderFromTemplate() {
+        guard !isCreating else { return }
+        
+        isCreating = true
+        
+        // Add haptic feedback
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+        
+        // Create the reminder
+        let reminder = recurringManager.createReminderFromTemplate(template, context: context)
+        
+        // Show success feedback
+        showSuccess = true
+        
+        // Reset after a short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            showSuccess = false
+            isCreating = false
         }
     }
 }
@@ -368,23 +400,7 @@ struct TemplateRow: View {
             .background(AppTheme.Colors.surfaceLight, in: RoundedRectangle(cornerRadius: 8))
         }
         .sheet(isPresented: $showingDetails) {
-            // TODO: Implement TemplateDetailView
-            NavigationStack {
-                VStack {
-                    Text("Template Details - Coming Soon")
-                    Text("Template: \(template.name)")
-                        .font(.headline)
-                }
-                .navigationTitle("Template Details")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Done") {
-                            showingDetails = false
-                        }
-                    }
-                }
-            }
+            TemplateDetailView(template: template)
         }
     }
 }
@@ -436,23 +452,7 @@ struct RecurringReminderRow: View {
             .background(AppTheme.Colors.surfaceLight, in: RoundedRectangle(cornerRadius: 8))
         }
         .sheet(isPresented: $showingDetails) {
-            // TODO: Implement RecurringReminderDetailView
-            NavigationStack {
-                VStack {
-                    Text("Recurring Reminder Details - Coming Soon")
-                    Text("Reminder: \(recurringReminder.templateTitle)")
-                        .font(.headline)
-                }
-                .navigationTitle("Recurring Details")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Done") {
-                            showingDetails = false
-                        }
-                    }
-                }
-            }
+            RecurringReminderDetailView(recurringReminder: recurringReminder)
         }
     }
 }
@@ -487,12 +487,17 @@ struct UpcomingRecurringRow: View {
     }
 }
 
-struct StatItem: View {
+struct RecurringStatItem: View {
     let title: String
     let value: String
+    let icon: String
     
     var body: some View {
         VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(AppTheme.Colors.accent)
+            
             Text(value)
                 .font(AppTheme.Typography.title2)
                 .fontWeight(.bold)

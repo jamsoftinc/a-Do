@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftData
+import SwiftUI
 
 // MARK: - Search Configuration
 @Model
@@ -267,6 +268,21 @@ enum SearchResultType: String, CaseIterable, Codable {
         case .template: return "doc.text"
         case .focusSession: return "target"
         case .timeEntry: return "stopwatch"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .reminder: return .blue
+        case .habit: return .orange
+        case .tag: return .green
+        case .list: return .purple
+        case .note: return .yellow
+        case .voiceNote: return .red
+        case .contact: return .cyan
+        case .template: return .indigo
+        case .focusSession: return .mint
+        case .timeEntry: return .pink
         }
     }
 }

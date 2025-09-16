@@ -643,10 +643,29 @@ final class AIManager {
     
     private func analyzeHabitTiming(habit: Habit) -> HabitTimingAnalysis {
         // Analyze when habit is most successfully completed
-        // This would require more detailed entry timing data
+        let entries = habit.entries ?? []
+        guard !entries.isEmpty else {
+            return HabitTimingAnalysis(optimalTime: "9:00 AM", confidence: 0.0)
+        }
+        
+        // Group entries by hour of day
+        var hourCounts: [Int: Int] = [:]
+        for entry in entries {
+            let hour = Calendar.current.component(.hour, from: entry.date)
+            hourCounts[hour, default: 0] += 1
+        }
+        
+        // Find the hour with most completions
+        let bestHour = hourCounts.max(by: { $0.value < $1.value })?.key ?? 9
+        let confidence = Double(hourCounts[bestHour] ?? 0) / Double(entries.count)
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        let optimalTime = formatter.string(from: Calendar.current.date(bySettingHour: bestHour, minute: 0, second: 0, of: Date()) ?? Date())
+        
         return HabitTimingAnalysis(
-            optimalTime: "9:00 AM", // Placeholder
-            confidence: 0.6
+            optimalTime: optimalTime,
+            confidence: min(confidence, 1.0)
         )
     }
     

@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftData
+import SwiftUI
 import CloudKit
 
 // MARK: - Sharing Permissions
@@ -79,9 +80,10 @@ final class SharedReminder {
     var cloudKitRecordID: String?
     
     // Relationships
-    @Relationship(deleteRule: .cascade) var participants: [ShareParticipant] = []
-    @Relationship(deleteRule: .cascade) var activities: [ShareActivity] = []
+    @Relationship(deleteRule: .cascade) var participants: [ShareParticipant]? = []
+    @Relationship(deleteRule: .cascade) var activities: [ShareActivity]? = []
     @Relationship(deleteRule: .nullify) var reminder: Reminder?
+    @Relationship(deleteRule: .nullify) var workspace: Workspace?
     
     init(reminder: Reminder, ownerID: String, ownerName: String, ownerEmail: String) {
         self.reminderID = reminder.uuid
@@ -98,11 +100,11 @@ final class SharedReminder {
     // MARK: - Computed Properties
     
     var activeParticipants: [ShareParticipant] {
-        return participants.filter { $0.status.isActive }
+        return participants?.filter { $0.status.isActive } ?? []
     }
     
     var pendingParticipants: [ShareParticipant] {
-        return participants.filter { $0.status == .pending }
+        return participants?.filter { $0.status == .pending } ?? []
     }
     
     var isExpired: Bool {
@@ -125,7 +127,7 @@ final class SharedReminder {
             sharedReminder: self
         )
         
-        participants.append(participant)
+        participants?.append(participant)
         
         // Log activity
         logActivity(
@@ -139,8 +141,8 @@ final class SharedReminder {
     }
     
     func removeParticipant(_ participant: ShareParticipant) {
-        if let index = participants.firstIndex(of: participant) {
-            participants.remove(at: index)
+        if let index = participants?.firstIndex(of: participant) {
+            participants?.remove(at: index)
             
             logActivity(
                 type: .participantRemoved,
@@ -175,7 +177,7 @@ final class SharedReminder {
             sharedReminder: self
         )
         
-        activities.append(activity)
+        activities?.append(activity)
         lastModified = Date()
         lastModifiedBy = userID
     }
@@ -352,8 +354,9 @@ final class SharedList {
     var allowDeleteReminders: Bool = false
     var allowManageParticipants: Bool = false
     
-    @Relationship(deleteRule: .cascade) var participants: [ShareParticipant] = []
+    @Relationship(deleteRule: .cascade) var participants: [ShareParticipant]? = []
     @Relationship(deleteRule: .nullify) var list: ReminderList?
+    @Relationship(deleteRule: .nullify) var workspace: Workspace?
     
     init(list: ReminderList, ownerID: String, ownerName: String) {
         self.listID = UUID() // Lists don't have UUIDs by default, might need to add
@@ -464,9 +467,9 @@ final class Workspace {
     var colorScheme: String = "default"
     var customDomain: String?
     
-    @Relationship(deleteRule: .cascade) var members: [WorkspaceMember] = []
-    @Relationship(deleteRule: .cascade) var sharedLists: [SharedList] = []
-    @Relationship(deleteRule: .cascade) var sharedReminders: [SharedReminder] = []
+    @Relationship(deleteRule: .cascade) var members: [WorkspaceMember]? = []
+    @Relationship(deleteRule: .cascade) var sharedLists: [SharedList]? = []
+    @Relationship(deleteRule: .cascade) var sharedReminders: [SharedReminder]? = []
     
     init(name: String, ownerID: String, ownerName: String) {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -487,21 +490,21 @@ final class Workspace {
             workspace: self
         )
         
-        members.append(member)
+        members?.append(member)
         updatedAt = Date()
         
         return member
     }
     
     func removeMember(_ member: WorkspaceMember) {
-        if let index = members.firstIndex(of: member) {
-            members.remove(at: index)
+        if let index = members?.firstIndex(of: member) {
+            members?.remove(at: index)
             updatedAt = Date()
         }
     }
     
     var activeMembers: [WorkspaceMember] {
-        return members.filter { $0.status == .active }
+        return members?.filter { $0.status == .active } ?? []
     }
     
     var canAddMembers: Bool {
@@ -583,6 +586,15 @@ enum WorkspaceRole: String, CaseIterable, Codable {
         case .guest: return "Guest"
         }
     }
+    
+    var color: Color {
+        switch self {
+        case .owner: return .purple
+        case .admin: return .blue
+        case .member: return .green
+        case .guest: return .gray
+        }
+    }
 }
 
 enum WorkspaceMemberStatus: String, CaseIterable, Codable {
@@ -597,6 +609,15 @@ enum WorkspaceMemberStatus: String, CaseIterable, Codable {
         case .active: return "Active"
         case .suspended: return "Suspended"
         case .left: return "Left"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .pending: return .orange
+        case .active: return .green
+        case .suspended: return .red
+        case .left: return .gray
         }
     }
 }

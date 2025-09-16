@@ -247,7 +247,7 @@ final class EnhancedSmartListRule {
             
         case .hasComments:
             // This would need to be implemented with a relationship to comments
-            return false // Placeholder
+            return !(reminder.details?.isEmpty ?? true)
             
         case .titleContains:
             return evaluateTextCondition(text: reminder.title, searchValue: value)
