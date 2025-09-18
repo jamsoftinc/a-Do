@@ -14,7 +14,12 @@ final class BackupConfiguration {
     var id: UUID = UUID()
     var userId: String = ""
     var isEnabled: Bool = true
-    var frequency: BackupFrequency = BackupFrequency.weekly
+    var frequencyRaw: String = BackupFrequency.weekly.rawValue
+    
+    var frequency: BackupFrequency {
+        get { BackupFrequency(rawValue: frequencyRaw) ?? .weekly }
+        set { frequencyRaw = newValue.rawValue }
+    }
     var includeCompletedReminders: Bool = false
     var includeHabits: Bool = true
     var includeTimeTracking: Bool = true
@@ -86,14 +91,29 @@ final class BackupRecord {
     var filePath: String = ""
     var fileSize: Int64 = 0
     var createdAt: Date = Date()
-    var backupType: BackupType = BackupType.full
-    var format: BackupFormat = BackupFormat.json
+    var backupTypeRaw: String = BackupType.full.rawValue
+    var formatRaw: String = BackupFormat.json.rawValue
+    
+    var backupType: BackupType {
+        get { BackupType(rawValue: backupTypeRaw) ?? .full }
+        set { backupTypeRaw = newValue.rawValue }
+    }
+    
+    var format: BackupFormat {
+        get { BackupFormat(rawValue: formatRaw) ?? .json }
+        set { formatRaw = newValue.rawValue }
+    }
     var isCompressed: Bool = false
     var isEncrypted: Bool = false
     var isCloudBacked: Bool = false
     var checksum: String = ""
     var version: String = "1.0"
-    var status: BackupStatus = BackupStatus.inProgress
+    var statusRaw: String = BackupStatus.inProgress.rawValue
+    
+    var status: BackupStatus {
+        get { BackupStatus(rawValue: statusRaw) ?? .inProgress }
+        set { statusRaw = newValue.rawValue }
+    }
     var errorMessage: String?
     
     // Metadata
@@ -217,7 +237,12 @@ final class ExportTemplate {
     var id: UUID = UUID()
     var name: String = ""
     var backupDescription: String = ""
-    var format: BackupFormat = BackupFormat.json
+    var formatRaw: String = BackupFormat.json.rawValue
+    
+    var format: BackupFormat {
+        get { BackupFormat(rawValue: formatRaw) ?? .json }
+        set { formatRaw = newValue.rawValue }
+    }
     var includeReminders: Bool = true
     var includeHabits: Bool = true
     var includeTimeTracking: Bool = true
@@ -225,12 +250,17 @@ final class ExportTemplate {
     var includeCollaboration: Bool = false
     var includeAIData: Bool = false
     var includeCompletedItems: Bool = false
-    var dateRange: ExportDateRange = ExportDateRange.all
+    var dateRangeRaw: String = ExportDateRange.all.rawValue
+    
+    var dateRange: ExportDateRange {
+        get { ExportDateRange(rawValue: dateRangeRaw) ?? .all }
+        set { dateRangeRaw = newValue.rawValue }
+    }
     var customStartDate: Date?
     var customEndDate: Date?
-    var filterByTags: [String] = []
-    var filterByLists: [String] = []
-    var filterByPriority: [Priority] = []
+    var filterByTags: Data? // JSON encoded [String]
+    var filterByLists: Data? // JSON encoded [String]
+    var filterByPriority: Data? // JSON encoded [Priority]
     var isActive: Bool = true
     var usageCount: Int = 0
     var lastUsed: Date?
@@ -295,12 +325,32 @@ final class ImportRecord {
     var fileName: String = ""
     var originalFileName: String = ""
     var fileSize: Int64 = 0
-    var format: BackupFormat = BackupFormat.json
-    var source: ImportSource = ImportSource.file
+    var formatRaw: String = BackupFormat.json.rawValue
+    
+    var format: BackupFormat {
+        get { BackupFormat(rawValue: formatRaw) ?? .json }
+        set { formatRaw = newValue.rawValue }
+    }
+    var sourceRaw: String = ImportSource.file.rawValue
     var importedAt: Date = Date()
-    var status: ImportStatus = ImportStatus.inProgress
+    var statusRaw: String = ImportStatus.inProgress.rawValue
+    
+    var source: ImportSource {
+        get { ImportSource(rawValue: sourceRaw) ?? .file }
+        set { sourceRaw = newValue.rawValue }
+    }
+    
+    var status: ImportStatus {
+        get { ImportStatus(rawValue: statusRaw) ?? .inProgress }
+        set { statusRaw = newValue.rawValue }
+    }
     var errorMessage: String?
-    var conflictResolution: ConflictResolution = ConflictResolution.skip
+    var conflictResolutionRaw: String = ConflictResolution.skip.rawValue
+    
+    var conflictResolution: ConflictResolution {
+        get { ConflictResolution(rawValue: conflictResolutionRaw) ?? .skip }
+        set { conflictResolutionRaw = newValue.rawValue }
+    }
     
     // Import statistics
     var totalItems: Int = 0
@@ -419,10 +469,20 @@ final class SyncConfiguration {
     var id: UUID = UUID()
     var userId: String = ""
     var isEnabled: Bool = true
-    var syncProvider: SyncProvider = SyncProvider.icloud
+    var syncProviderRaw: String = SyncProvider.icloud.rawValue
+    
+    var syncProvider: SyncProvider {
+        get { SyncProvider(rawValue: syncProviderRaw) ?? .icloud }
+        set { syncProviderRaw = newValue.rawValue }
+    }
     var autoSyncEnabled: Bool = true
     var syncInterval: TimeInterval = 300 // 5 minutes
-    var conflictResolution: ConflictResolution = ConflictResolution.merge
+    var conflictResolutionRaw: String = ConflictResolution.merge.rawValue
+    
+    var conflictResolution: ConflictResolution {
+        get { ConflictResolution(rawValue: conflictResolutionRaw) ?? .merge }
+        set { conflictResolutionRaw = newValue.rawValue }
+    }
     var lastSyncDate: Date?
     var nextSyncDate: Date?
     var syncOnlyOnWiFi: Bool = false
@@ -492,12 +552,32 @@ enum SyncProvider: String, CaseIterable, Codable {
 final class SyncRecord {
     var id: UUID = UUID()
     var userId: String = ""
-    var provider: SyncProvider = SyncProvider.icloud
-    var syncType: SyncType = SyncType.full
+    var providerRaw: String = SyncProvider.icloud.rawValue
+    var syncTypeRaw: String = SyncType.full.rawValue
     var startedAt: Date = Date()
     var completedAt: Date?
-    var status: SyncStatus = SyncStatus.inProgress
-    var direction: SyncDirection = SyncDirection.bidirectional
+    var statusRaw: String = SyncStatus.inProgress.rawValue
+    var directionRaw: String = SyncDirection.bidirectional.rawValue
+    
+    var provider: SyncProvider {
+        get { SyncProvider(rawValue: providerRaw) ?? .icloud }
+        set { providerRaw = newValue.rawValue }
+    }
+    
+    var syncType: SyncType {
+        get { SyncType(rawValue: syncTypeRaw) ?? .full }
+        set { syncTypeRaw = newValue.rawValue }
+    }
+    
+    var status: SyncStatus {
+        get { SyncStatus(rawValue: statusRaw) ?? .inProgress }
+        set { statusRaw = newValue.rawValue }
+    }
+    
+    var direction: SyncDirection {
+        get { SyncDirection(rawValue: directionRaw) ?? .bidirectional }
+        set { directionRaw = newValue.rawValue }
+    }
     var itemsSynced: Int = 0
     var itemsSkipped: Int = 0
     var itemsConflicted: Int = 0

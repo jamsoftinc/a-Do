@@ -82,8 +82,9 @@ final class SharedReminder {
     // Relationships
     @Relationship(deleteRule: .cascade) var participants: [ShareParticipant]? = []
     @Relationship(deleteRule: .cascade) var activities: [ShareActivity]? = []
-    @Relationship(deleteRule: .nullify) var reminder: Reminder?
+    @Relationship(deleteRule: .nullify, inverse: \Reminder.sharedReminders) var reminder: Reminder?
     @Relationship(deleteRule: .nullify) var workspace: Workspace?
+    
     
     init(reminder: Reminder, ownerID: String, ownerName: String, ownerEmail: String) {
         self.reminderID = reminder.uuid
@@ -190,8 +191,18 @@ final class ShareParticipant {
     var userID: String = ""
     var email: String = ""
     var name: String = ""
-    var permission: SharingPermission = SharingPermission.view
-    var status: ShareStatus = ShareStatus.pending
+    var permissionRaw: String = SharingPermission.view.rawValue
+    var statusRaw: String = ShareStatus.pending.rawValue
+    
+    var permission: SharingPermission {
+        get { SharingPermission(rawValue: permissionRaw) ?? .view }
+        set { permissionRaw = newValue.rawValue }
+    }
+    
+    var status: ShareStatus {
+        get { ShareStatus(rawValue: statusRaw) ?? .pending }
+        set { statusRaw = newValue.rawValue }
+    }
     var invitedAt: Date = Date()
     var respondedAt: Date?
     var lastActive: Date?
@@ -206,7 +217,8 @@ final class ShareParticipant {
     var cloudKitUserID: String?
     var avatarURL: String?
     
-    @Relationship(deleteRule: .nullify) var sharedReminder: SharedReminder?
+    @Relationship(deleteRule: .nullify, inverse: \SharedReminder.participants) var sharedReminder: SharedReminder?
+    
     
     init(userID: String, email: String, name: String, permission: SharingPermission, sharedReminder: SharedReminder) {
         self.userID = userID
@@ -254,17 +266,23 @@ final class ShareParticipant {
 @Model
 final class ShareActivity {
     var id: UUID = UUID()
-    var type: ShareActivityType = ShareActivityType.reminderCreated
+    var typeRaw: String = ShareActivityType.reminderCreated.rawValue
+    
+    var type: ShareActivityType {
+        get { ShareActivityType(rawValue: typeRaw) ?? .reminderCreated }
+        set { typeRaw = newValue.rawValue }
+    }
     var userID: String = ""
     var userName: String = ""
     var details: String = ""
     var timestamp: Date = Date()
     var metadata: Data? // JSON data for additional context
     
-    @Relationship(deleteRule: .nullify) var sharedReminder: SharedReminder?
+    @Relationship(deleteRule: .nullify, inverse: \SharedReminder.activities) var sharedReminder: SharedReminder?
+    
     
     init(type: ShareActivityType, userID: String, userName: String, details: String, sharedReminder: SharedReminder) {
-        self.type = type
+        self.typeRaw = type.rawValue
         self.userID = userID
         self.userName = userName
         self.details = details
@@ -355,8 +373,9 @@ final class SharedList {
     var allowManageParticipants: Bool = false
     
     @Relationship(deleteRule: .cascade) var participants: [ShareParticipant]? = []
-    @Relationship(deleteRule: .nullify) var list: ReminderList?
-    @Relationship(deleteRule: .nullify) var workspace: Workspace?
+    @Relationship(deleteRule: .nullify, inverse: \ReminderList.sharedLists) var list: ReminderList?
+    @Relationship(deleteRule: .nullify, inverse: \Workspace.sharedLists) var workspace: Workspace?
+    
     
     init(list: ReminderList, ownerID: String, ownerName: String) {
         self.listID = UUID() // Lists don't have UUIDs by default, might need to add
@@ -381,12 +400,13 @@ final class ReminderComment {
     var isDeleted: Bool = false
     
     // Mentions and reactions
-    var mentions: [String] = [] // User IDs mentioned in comment
+    var mentions: Data? // JSON encoded [String] - User IDs mentioned in comment
     var reactions: Data? // JSON data for emoji reactions
     
-    @Relationship(deleteRule: .nullify) var reminder: Reminder?
-    @Relationship(deleteRule: .cascade) var replies: [ReminderComment] = []
+    @Relationship(deleteRule: .nullify, inverse: \Reminder.reminderComments) var reminder: Reminder?
+    @Relationship(deleteRule: .cascade) var replies: [ReminderComment]? = []
     @Relationship(deleteRule: .nullify) var parentComment: ReminderComment?
+    
     
     init(content: String, authorID: String, authorName: String, reminder: Reminder) {
         self.content = content.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -413,7 +433,7 @@ final class ReminderComment {
     func addReply(content: String, authorID: String, authorName: String) -> ReminderComment {
         let reply = ReminderComment(content: content, authorID: authorID, authorName: authorName, reminder: reminder!)
         reply.parentComment = self
-        replies.append(reply)
+        replies?.append(reply)
         return reply
     }
     
@@ -471,6 +491,7 @@ final class Workspace {
     @Relationship(deleteRule: .cascade) var sharedLists: [SharedList]? = []
     @Relationship(deleteRule: .cascade) var sharedReminders: [SharedReminder]? = []
     
+    
     init(name: String, ownerID: String, ownerName: String) {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         self.ownerID = ownerID
@@ -519,8 +540,18 @@ final class WorkspaceMember {
     var userID: String = ""
     var email: String = ""
     var name: String = ""
-    var role: WorkspaceRole = WorkspaceRole.member
-    var status: WorkspaceMemberStatus = WorkspaceMemberStatus.pending
+    var roleRaw: String = WorkspaceRole.member.rawValue
+    var statusRaw: String = WorkspaceMemberStatus.pending.rawValue
+    
+    var role: WorkspaceRole {
+        get { WorkspaceRole(rawValue: roleRaw) ?? .member }
+        set { roleRaw = newValue.rawValue }
+    }
+    
+    var status: WorkspaceMemberStatus {
+        get { WorkspaceMemberStatus(rawValue: statusRaw) ?? .pending }
+        set { statusRaw = newValue.rawValue }
+    }
     var joinedAt: Date = Date()
     var lastActive: Date?
     var invitedBy: String = ""
@@ -532,6 +563,7 @@ final class WorkspaceMember {
     var canManageWorkspace: Bool = false
     
     @Relationship(deleteRule: .nullify) var workspace: Workspace?
+    
     
     init(userID: String, email: String, name: String, role: WorkspaceRole, workspace: Workspace) {
         self.userID = userID

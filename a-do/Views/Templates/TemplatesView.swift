@@ -437,7 +437,7 @@ struct RecurringReminderRow: View {
                 Spacer()
                 
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text("\(recurringReminder.generatedReminders.count)")
+                    Text("\(recurringReminder.generatedReminders?.count ?? 0)")
                         .font(AppTheme.Typography.title3)
                         .fontWeight(.semibold)
                         .primaryText()

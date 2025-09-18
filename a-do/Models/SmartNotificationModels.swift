@@ -24,7 +24,12 @@ final class SmartNotificationConfiguration {
     var weekendQuietHours: Bool = false
     var locationBasedEnabled: Bool = true
     var activityBasedEnabled: Bool = true
-    var priorityFiltering: NotificationPriorityLevel = NotificationPriorityLevel.medium
+    var priorityFilteringRaw: String = NotificationPriorityLevel.medium.rawValue
+    
+    var priorityFiltering: NotificationPriorityLevel {
+        get { NotificationPriorityLevel(rawValue: priorityFilteringRaw) ?? .medium }
+        set { priorityFilteringRaw = newValue.rawValue }
+    }
     var maxNotificationsPerHour: Int = 5
     var batchSimilarNotifications: Bool = true
     var learningEnabled: Bool = true
@@ -101,17 +106,47 @@ enum NotificationPriorityLevel: String, CaseIterable, Codable {
 final class SmartNotification {
     var id: UUID = UUID()
     var userId: String = ""
-    var type: SmartNotificationType = SmartNotificationType.reminder
+    var typeRaw: String = SmartNotificationType.reminder.rawValue
+    
+    var type: SmartNotificationType {
+        get { SmartNotificationType(rawValue: typeRaw) ?? .reminder }
+        set { typeRaw = newValue.rawValue }
+    }
     var title: String = ""
     var body: String = ""
     var scheduledDate: Date = Date()
     var actualDeliveryDate: Date?
-    var priority: NotificationPriorityLevel = NotificationPriorityLevel.medium
-    var context: NotificationContext = NotificationContext.general
-    var status: NotificationStatus = NotificationStatus.scheduled
+    var priorityRaw: String = NotificationPriorityLevel.medium.rawValue
+    var contextRaw: String = NotificationContext.general.rawValue
+    var statusRaw: String = NotificationStatus.scheduled.rawValue
+    
+    var priority: NotificationPriorityLevel {
+        get { NotificationPriorityLevel(rawValue: priorityRaw) ?? .medium }
+        set { priorityRaw = newValue.rawValue }
+    }
+    
+    var context: NotificationContext {
+        get { NotificationContext(rawValue: contextRaw) ?? .general }
+        set { contextRaw = newValue.rawValue }
+    }
+    
+    var status: NotificationStatus {
+        get { NotificationStatus(rawValue: statusRaw) ?? .scheduled }
+        set { statusRaw = newValue.rawValue }
+    }
     var adaptiveScore: Double = 0.0
-    var userEngagement: NotificationEngagement = NotificationEngagement.none
-    var deliveryMethod: NotificationDeliveryMethod = NotificationDeliveryMethod.push
+    var userEngagementRaw: String = NotificationEngagement.none.rawValue
+    var deliveryMethodRaw: String = NotificationDeliveryMethod.push.rawValue
+    
+    var userEngagement: NotificationEngagement {
+        get { NotificationEngagement(rawValue: userEngagementRaw) ?? .none }
+        set { userEngagementRaw = newValue.rawValue }
+    }
+    
+    var deliveryMethod: NotificationDeliveryMethod {
+        get { NotificationDeliveryMethod(rawValue: deliveryMethodRaw) ?? .push }
+        set { deliveryMethodRaw = newValue.rawValue }
+    }
     var groupId: String?
     var batchId: String?
     var retryCount: Int = 0
@@ -130,6 +165,7 @@ final class SmartNotification {
     @Relationship(deleteRule: .nullify) var reminder: Reminder?
     @Relationship(deleteRule: .nullify) var habit: Habit?
     @Relationship(deleteRule: .nullify) var focusSession: FocusSession?
+    @Relationship(deleteRule: .nullify) var notificationBatch: NotificationBatch?
     
     init(
         userId: String,
@@ -140,11 +176,11 @@ final class SmartNotification {
         priority: NotificationPriorityLevel = .medium
     ) {
         self.userId = userId
-        self.type = type
+        self.typeRaw = type.rawValue
         self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         self.body = body.trimmingCharacters(in: .whitespacesAndNewlines)
         self.scheduledDate = scheduledDate
-        self.priority = priority
+        self.priorityRaw = priority.rawValue
         self.createdAt = Date()
         self.updatedAt = Date()
     }
@@ -376,7 +412,12 @@ enum NotificationDeliveryMethod: String, CaseIterable, Codable {
 final class NotificationPattern {
     var id: UUID = UUID()
     var userId: String = ""
-    var patternType: NotificationPatternType = NotificationPatternType.timeOfDay
+    var patternTypeRaw: String = NotificationPatternType.timeOfDay.rawValue
+    
+    var patternType: NotificationPatternType {
+        get { NotificationPatternType(rawValue: patternTypeRaw) ?? .timeOfDay }
+        set { patternTypeRaw = newValue.rawValue }
+    }
     var contextValue: String = ""
     var engagementRate: Double = 0.0
     var deliverySuccessRate: Double = 0.0
@@ -445,18 +486,33 @@ enum NotificationPatternType: String, CaseIterable, Codable {
 final class NotificationBatch {
     var id: UUID = UUID()
     var userId: String = ""
-    var batchType: NotificationBatchType = NotificationBatchType.similar
+    var batchTypeRaw: String = NotificationBatchType.similar.rawValue
+    
+    var batchType: NotificationBatchType {
+        get { NotificationBatchType(rawValue: batchTypeRaw) ?? .similar }
+        set { batchTypeRaw = newValue.rawValue }
+    }
     var title: String = ""
     var summary: String = ""
     var scheduledDate: Date = Date()
     var deliveredDate: Date?
     var notificationCount: Int = 0
-    var priority: NotificationPriorityLevel = NotificationPriorityLevel.medium
-    var status: NotificationStatus = NotificationStatus.scheduled
+    var priorityRaw: String = NotificationPriorityLevel.medium.rawValue
+    var statusRaw: String = NotificationStatus.scheduled.rawValue
+    
+    var priority: NotificationPriorityLevel {
+        get { NotificationPriorityLevel(rawValue: priorityRaw) ?? .medium }
+        set { priorityRaw = newValue.rawValue }
+    }
+    
+    var status: NotificationStatus {
+        get { NotificationStatus(rawValue: statusRaw) ?? .scheduled }
+        set { statusRaw = newValue.rawValue }
+    }
     var engagementRate: Double = 0.0
     var createdAt: Date = Date()
     
-    @Relationship(deleteRule: .cascade) var notifications: [SmartNotification] = []
+    @Relationship(deleteRule: .cascade) var notifications: [SmartNotification]? = []
     
     init(userId: String, batchType: NotificationBatchType, title: String) {
         self.userId = userId
@@ -466,9 +522,9 @@ final class NotificationBatch {
     }
     
     func addNotification(_ notification: SmartNotification) {
-        notifications.append(notification)
+        notifications?.append(notification)
         notification.batchId = id.uuidString
-        notificationCount = notifications.count
+        notificationCount = notifications?.count ?? 0
         
         // Update priority to highest in batch
         if notification.priority.urgencyScore > priority.urgencyScore {
@@ -495,7 +551,7 @@ final class NotificationBatch {
         status = .delivered
         deliveredDate = Date()
         
-        for notification in notifications {
+        for notification in notifications ?? [] {
             notification.markAsDelivered()
         }
     }
@@ -571,7 +627,12 @@ final class NotificationRule {
     var userId: String = ""
     var name: String = ""
     var ruleDescription: String = ""
-    var ruleType: NotificationRuleType = NotificationRuleType.suppress
+    var ruleTypeRaw: String = NotificationRuleType.suppress.rawValue
+    
+    var ruleType: NotificationRuleType {
+        get { NotificationRuleType(rawValue: ruleTypeRaw) ?? .suppress }
+        set { ruleTypeRaw = newValue.rawValue }
+    }
     var isActive: Bool = true
     var priority: Int = 0 // Higher number = higher priority
     var conditions: Data? // JSON encoded conditions

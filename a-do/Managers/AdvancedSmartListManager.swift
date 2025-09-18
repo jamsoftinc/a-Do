@@ -68,7 +68,7 @@ final class AdvancedSmartListManager {
         duplicate.refreshInterval = smartList.refreshInterval
         
         // Duplicate rules
-        for rule in smartList.rules {
+        for rule in smartList.rules ?? [] {
             let duplicateRule = EnhancedSmartListRule(
                 condition: rule.condition,
                 operator: rule.listOperator,
@@ -81,7 +81,7 @@ final class AdvancedSmartListManager {
             duplicateRule.invertCondition = rule.invertCondition
             duplicateRule.smartList = duplicate
             
-            duplicate.rules.append(duplicateRule)
+            duplicate.rules?.append(duplicateRule)
         }
         
         context.insert(duplicate)
@@ -303,12 +303,12 @@ final class AdvancedSmartListManager {
         // High priority AND due today
         let highPriorityRule = EnhancedSmartListRule(condition: .highPriorityOverdue)
         highPriorityRule.order = 0
-        smartList.rules.append(highPriorityRule)
+        smartList.rules?.append(highPriorityRule)
         
         // Due today
         let dueTodayRule = EnhancedSmartListRule(condition: .dueInNextWeek)
         dueTodayRule.order = 1
-        smartList.rules.append(dueTodayRule)
+        smartList.rules?.append(dueTodayRule)
         
         return smartList
     }
@@ -323,7 +323,7 @@ final class AdvancedSmartListManager {
         smartList.showCompletedItems = true
         
         let timeTrackingRule = EnhancedSmartListRule(condition: .hasTimeTracking)
-        smartList.rules.append(timeTrackingRule)
+        smartList.rules?.append(timeTrackingRule)
         
         return smartList
     }
@@ -338,7 +338,7 @@ final class AdvancedSmartListManager {
         smartList.sortBy = .dueDate
         
         let overdueRule = EnhancedSmartListRule(condition: .overdueBeyondWeek)
-        smartList.rules.append(overdueRule)
+        smartList.rules?.append(overdueRule)
         
         return smartList
     }
@@ -355,7 +355,7 @@ final class AdvancedSmartListManager {
         smartList.sortOrder = .descending
         
         let completedRule = EnhancedSmartListRule(condition: .completedThisWeek)
-        smartList.rules.append(completedRule)
+        smartList.rules?.append(completedRule)
         
         return smartList
     }
@@ -370,7 +370,7 @@ final class AdvancedSmartListManager {
         smartList.sortBy = .dueDate
         
         let highPriorityRule = EnhancedSmartListRule(condition: .highPriorityOverdue)
-        smartList.rules.append(highPriorityRule)
+        smartList.rules?.append(highPriorityRule)
         
         return smartList
     }
@@ -385,7 +385,7 @@ final class AdvancedSmartListManager {
         smartList.sortBy = .createdAt
         
         let longRunningRule = EnhancedSmartListRule(condition: .longRunningTasks)
-        smartList.rules.append(longRunningRule)
+        smartList.rules?.append(longRunningRule)
         
         return smartList
     }
@@ -401,11 +401,11 @@ final class AdvancedSmartListManager {
         
         let sharedWithRule = EnhancedSmartListRule(condition: .sharedWithOthers)
         sharedWithRule.order = 0
-        smartList.rules.append(sharedWithRule)
+        smartList.rules?.append(sharedWithRule)
         
         let sharedByRule = EnhancedSmartListRule(condition: .sharedByOthers)
         sharedByRule.order = 1
-        smartList.rules.append(sharedByRule)
+        smartList.rules?.append(sharedByRule)
         
         return smartList
     }
@@ -422,7 +422,7 @@ final class AdvancedSmartListManager {
         smartList.sortOrder = .descending
         
         let timeTrackedRule = EnhancedSmartListRule(condition: .hasTimeTracking)
-        smartList.rules.append(timeTrackedRule)
+        smartList.rules?.append(timeTrackedRule)
         
         return smartList
     }

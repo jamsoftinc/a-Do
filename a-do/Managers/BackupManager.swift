@@ -389,9 +389,9 @@ final class BackupManager {
         template.dateRange = configuration.dateRange
         template.customStartDate = configuration.customStartDate
         template.customEndDate = configuration.customEndDate
-        template.filterByTags = configuration.filterByTags
-        template.filterByLists = configuration.filterByLists
-        template.filterByPriority = configuration.filterByPriority
+        template.filterByTags = try? JSONEncoder().encode(configuration.filterByTags)
+        template.filterByLists = try? JSONEncoder().encode(configuration.filterByLists)
+        template.filterByPriority = try? JSONEncoder().encode(configuration.filterByPriority)
         
         context.insert(template)
         

@@ -427,7 +427,7 @@ final class AIManager {
         
         insight.detailedAnalysis = productivityTrend.detailedAnalysis
         insight.visualizationType = .lineChart
-        insight.actionableRecommendations = productivityTrend.recommendations
+        insight.actionableRecommendations = try? JSONEncoder().encode(productivityTrend.recommendations)
         insight.setMetrics(productivityTrend.metrics)
         
         context.insert(insight)
@@ -453,7 +453,7 @@ final class AIManager {
         
         insight.detailedAnalysis = habitProgress.detailedAnalysis
         insight.visualizationType = .barChart
-        insight.actionableRecommendations = habitProgress.recommendations
+        insight.actionableRecommendations = try? JSONEncoder().encode(habitProgress.recommendations)
         
         context.insert(insight)
     }
@@ -475,7 +475,7 @@ final class AIManager {
         
         insight.detailedAnalysis = timeAnalysis.detailedAnalysis
         insight.visualizationType = .pieChart
-        insight.actionableRecommendations = timeAnalysis.recommendations
+        insight.actionableRecommendations = try? JSONEncoder().encode(timeAnalysis.recommendations)
         
         context.insert(insight)
     }
@@ -500,7 +500,7 @@ final class AIManager {
         
         insight.detailedAnalysis = goalAnalysis.detailedAnalysis
         insight.visualizationType = .gauge
-        insight.actionableRecommendations = goalAnalysis.recommendations
+        insight.actionableRecommendations = try? JSONEncoder().encode(goalAnalysis.recommendations)
         
         context.insert(insight)
     }

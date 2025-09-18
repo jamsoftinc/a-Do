@@ -23,6 +23,7 @@ final class TimeEntry {
     // Relationships
     @Relationship(deleteRule: .nullify) var reminder: Reminder?
     @Relationship(deleteRule: .nullify) var habit: Habit?
+    @Relationship(deleteRule: .nullify) var timeCategory: TimeCategory?
     
     init(startTime: Date = Date(), category: String = "Work", reminder: Reminder? = nil, habit: Habit? = nil) {
         self.startTime = startTime
@@ -94,7 +95,8 @@ final class TimeCategory {
     var isActive: Bool = true
     var createdAt: Date = Date()
     
-    @Relationship(deleteRule: .cascade) var entries: [TimeEntry] = []
+    @Relationship(deleteRule: .cascade) var entries: [TimeEntry]? = []
+    
     
     init(name: String, colorHex: String = "#007AFF", icon: String = "clock.fill") {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -110,7 +112,7 @@ final class TimeCategory {
         let today = calendar.startOfDay(for: Date())
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
         
-        return entries.filter { entry in
+        return (entries ?? []).filter { entry in
             entry.startTime >= today && entry.startTime < tomorrow
         }.reduce(0) { $0 + $1.actualDuration }
     }
@@ -122,7 +124,7 @@ final class TimeCategory {
         guard let startOfWeek = weekInterval?.start,
               let endOfWeek = weekInterval?.end else { return 0 }
         
-        return entries.filter { entry in
+        return (entries ?? []).filter { entry in
             entry.startTime >= startOfWeek && entry.startTime < endOfWeek
         }.reduce(0) { $0 + $1.actualDuration }
     }
@@ -132,7 +134,7 @@ final class TimeCategory {
         let endDate = Date()
         let startDate = calendar.date(byAdding: .day, value: -days, to: endDate)!
         
-        let totalTime = entries.filter { entry in
+        let totalTime = (entries ?? []).filter { entry in
             entry.startTime >= startDate && entry.startTime <= endDate
         }.reduce(0) { $0 + $1.actualDuration }
         
@@ -170,17 +172,29 @@ final class TimeGoal {
     var title: String = ""
     var targetDuration: TimeInterval = 3600 // 1 hour default
     var category: String = ""
-    var frequency: TimeGoalFrequency?
+    var frequencyRaw: String?
     var startDate: Date = Date()
     var endDate: Date?
     var isActive: Bool = true
     var createdAt: Date = Date()
     
+    // Computed property for frequency
+    var frequency: TimeGoalFrequency? {
+        get {
+            guard let frequencyRaw = frequencyRaw else { return nil }
+            return TimeGoalFrequency(rawValue: frequencyRaw)
+        }
+        set {
+            frequencyRaw = newValue?.rawValue
+        }
+    }
+    
+    
     init(title: String, targetDuration: TimeInterval, category: String, frequency: TimeGoalFrequency? = .daily) {
         self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         self.targetDuration = targetDuration
         self.category = category
-        self.frequency = frequency
+        self.frequencyRaw = frequency?.rawValue
         self.createdAt = Date()
     }
     

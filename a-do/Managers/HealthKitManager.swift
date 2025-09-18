@@ -623,7 +623,7 @@ final class HealthKitManager {
         // For example, only create one reminder per day
         let calendar = Calendar.current
         
-        if let lastReminder = goal.reminders.last {
+        if let lastReminder = goal.reminders?.last {
             return !calendar.isDateInToday(lastReminder.createdAt)
         }
         
@@ -641,7 +641,7 @@ final class HealthKitManager {
             priority: .medium
         )
         
-        goal.reminders.append(reminder)
+        goal.reminders?.append(reminder)
         context.insert(reminder)
         
         logger.info("Created health goal reminder for: \(goal.metricType.displayName)")

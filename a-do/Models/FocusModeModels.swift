@@ -24,8 +24,13 @@ final class FocusSession {
     var interruptionCount: Int = 0
     
     // Focus settings
-    var focusType: FocusType = FocusType.work
+    var focusTypeRaw: String = FocusType.work.rawValue
     var allowNotifications: Bool = false
+    
+    var focusType: FocusType {
+        get { FocusType(rawValue: focusTypeRaw) ?? .work }
+        set { focusTypeRaw = newValue.rawValue }
+    }
     var allowCalls: Bool = false
     var allowMessages: Bool = false
     var muteAllSounds: Bool = true
@@ -44,14 +49,15 @@ final class FocusSession {
     var longBreakDuration: TimeInterval = 900 // 15 minutes
     var longBreakInterval: Int = 4 // Every 4 sessions
     
-    @Relationship(deleteRule: .cascade) var focusedReminders: [Reminder] = []
-    @Relationship(deleteRule: .cascade) var completedReminders: [Reminder] = []
-    @Relationship(deleteRule: .cascade) var interruptions: [FocusInterruption] = []
-    @Relationship(deleteRule: .cascade) var breaks: [FocusBreak] = []
+    @Relationship(deleteRule: .cascade) var focusedReminders: [Reminder]? = []
+    @Relationship(deleteRule: .cascade) var completedReminders: [Reminder]? = []
+    @Relationship(deleteRule: .cascade) var interruptions: [FocusInterruption]? = []
+    @Relationship(deleteRule: .cascade) var breaks: [FocusBreak]? = []
+    
     
     init(name: String, focusType: FocusType = .work, duration: TimeInterval = 1800) {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.focusType = focusType
+        self.focusTypeRaw = focusType.rawValue
         self.plannedDuration = duration
         self.startTime = Date()
     }
@@ -92,14 +98,14 @@ final class FocusSession {
     
     func interrupt(reason: InterruptionReason) {
         let interruption = FocusInterruption(reason: reason, session: self)
-        interruptions.append(interruption)
+        interruptions?.append(interruption)
         interruptionCount += 1
         wasInterrupted = true
     }
     
     func addBreak(type: BreakType, duration: TimeInterval) {
         let focusBreak = FocusBreak(type: type, duration: duration, session: self)
-        breaks.append(focusBreak)
+        breaks?.append(focusBreak)
     }
     
     // MARK: - Productivity Calculation
@@ -111,7 +117,7 @@ final class FocusSession {
         let timeScore = min(1.0, actualDuration / plannedDuration)
         
         // Task completion bonus
-        let taskScore = tasksCompleted > 0 ? min(1.0, Double(tasksCompleted) / Double(focusedReminders.count)) : 0.0
+        let taskScore = tasksCompleted > 0 ? min(1.0, Double(tasksCompleted) / Double(focusedReminders?.count ?? 0)) : 0.0
         
         // Interruption penalty
         let interruptionPenalty = min(0.5, Double(interruptionCount) * 0.1)
@@ -212,13 +218,19 @@ enum FocusType: String, CaseIterable, Codable {
 @Model
 final class FocusInterruption {
     var id: UUID = UUID()
-    var reason: InterruptionReason = InterruptionReason.notification
+    var reasonRaw: String = InterruptionReason.notification.rawValue
+    
+    var reason: InterruptionReason {
+        get { InterruptionReason(rawValue: reasonRaw) ?? .notification }
+        set { reasonRaw = newValue.rawValue }
+    }
     var timestamp: Date = Date()
     var duration: TimeInterval = 0 // How long the interruption lasted
     var wasHandled: Bool = false
     var notes: String = ""
     
     @Relationship(deleteRule: .nullify) var session: FocusSession?
+    
     
     init(reason: InterruptionReason, session: FocusSession) {
         self.reason = reason
@@ -281,19 +293,30 @@ enum InterruptionReason: String, CaseIterable, Codable {
 @Model
 final class FocusBreak {
     var id: UUID = UUID()
-    var type: BreakType = BreakType.short
+    var typeRaw: String = BreakType.short.rawValue
+    
+    var type: BreakType {
+        get { BreakType(rawValue: typeRaw) ?? .short }
+        set { typeRaw = newValue.rawValue }
+    }
     var startTime: Date = Date()
     var endTime: Date?
     var plannedDuration: TimeInterval = 300
     var actualDuration: TimeInterval = 0
-    var activity: BreakActivity = BreakActivity.rest
+    var activityRaw: String = BreakActivity.rest.rawValue
+    
+    var activity: BreakActivity {
+        get { BreakActivity(rawValue: activityRaw) ?? .rest }
+        set { activityRaw = newValue.rawValue }
+    }
     var notes: String = ""
     var wasSkipped: Bool = false
     
     @Relationship(deleteRule: .nullify) var session: FocusSession?
     
+    
     init(type: BreakType, duration: TimeInterval, session: FocusSession) {
-        self.type = type
+        self.typeRaw = type.rawValue
         self.plannedDuration = duration
         self.session = session
         self.startTime = Date()
@@ -387,7 +410,12 @@ final class FocusTemplate {
     var id: UUID = UUID()
     var name: String = ""
     var templateDescription: String = ""
-    var focusType: FocusType = FocusType.work
+    var focusTypeRaw: String = FocusType.work.rawValue
+    
+    var focusType: FocusType {
+        get { FocusType(rawValue: focusTypeRaw) ?? .work }
+        set { focusTypeRaw = newValue.rawValue }
+    }
     var duration: TimeInterval = 1800
     var includeBreaks: Bool = true
     var breakDuration: TimeInterval = 300
@@ -410,6 +438,10 @@ final class FocusTemplate {
     var includeSpecificTags: [String] = []
     var includeSpecificLists: [String] = []
     var maxReminders: Int = 10
+    
+    // Relationships
+    @Relationship(deleteRule: .nullify) var systemFocusMode: SystemFocusMode?
+    
     
     init(name: String, focusType: FocusType = .work, duration: TimeInterval = 1800) {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -472,7 +504,7 @@ final class SystemFocusMode {
     var systemIdentifier: String = "" // iOS Focus mode identifier
     var name: String = ""
     var isLinked: Bool = false
-    var linkedTemplate: FocusTemplate?
+    @Relationship(deleteRule: .nullify, inverse: \FocusTemplate.systemFocusMode) var linkedTemplate: FocusTemplate?
     var autoStartSession: Bool = false
     var autoSelectReminders: Bool = true
     var createdAt: Date = Date()
@@ -489,7 +521,12 @@ final class SystemFocusMode {
 final class FocusGoal {
     var id: UUID = UUID()
     var title: String = ""
-    var targetType: FocusGoalType = FocusGoalType.dailyTime
+    var targetTypeRaw: String = FocusGoalType.dailyTime.rawValue
+    
+    var targetType: FocusGoalType {
+        get { FocusGoalType(rawValue: targetTypeRaw) ?? .dailyTime }
+        set { targetTypeRaw = newValue.rawValue }
+    }
     var targetValue: Double = 3600 // 1 hour default
     var currentValue: Double = 0
     var startDate: Date = Date()
@@ -502,6 +539,7 @@ final class FocusGoal {
     var streak: Int = 0
     var bestStreak: Int = 0
     var lastUpdated: Date = Date()
+    
     
     init(title: String, targetType: FocusGoalType, targetValue: Double) {
         self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)

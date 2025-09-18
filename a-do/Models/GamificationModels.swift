@@ -37,10 +37,11 @@ final class UserProfile {
     var perfectDays: Int = 0
     var achievementsUnlocked: Int = 0
     
-    @Relationship(deleteRule: .cascade) var achievements: [UserAchievement] = []
-    @Relationship(deleteRule: .cascade) var badges: [UserBadge] = []
-    @Relationship(deleteRule: .cascade) var challenges: [UserChallenge] = []
-    @Relationship(deleteRule: .cascade) var rewards: [UserReward] = []
+    @Relationship(deleteRule: .cascade) var achievements: [UserAchievement]? = []
+    @Relationship(deleteRule: .cascade) var badges: [UserBadge]? = []
+    @Relationship(deleteRule: .cascade) var challenges: [UserChallenge]? = []
+    @Relationship(deleteRule: .cascade) var rewards: [UserReward]? = []
+    @Relationship(deleteRule: .cascade) var leaderboardEntries: [LeaderboardEntry]? = []
     
     init(userId: String, displayName: String) {
         self.userId = userId
@@ -114,7 +115,7 @@ final class UserProfile {
             gems: gemsAwarded,
             userProfile: self
         )
-        rewards.append(reward)
+        rewards?.append(reward)
     }
     
     private func updateTitle() {
@@ -229,9 +230,24 @@ final class Achievement {
     var id: UUID = UUID()
     var name: String = ""
     var achievementDescription: String = ""
-    var category: AchievementCategory = AchievementCategory.productivity
-    var type: AchievementType = AchievementType.milestone
-    var difficulty: AchievementDifficulty = AchievementDifficulty.easy
+    var categoryRaw: String = AchievementCategory.productivity.rawValue
+    var typeRaw: String = AchievementType.milestone.rawValue
+    var difficultyRaw: String = AchievementDifficulty.easy.rawValue
+    
+    var category: AchievementCategory {
+        get { AchievementCategory(rawValue: categoryRaw) ?? .productivity }
+        set { categoryRaw = newValue.rawValue }
+    }
+    
+    var type: AchievementType {
+        get { AchievementType(rawValue: typeRaw) ?? .milestone }
+        set { typeRaw = newValue.rawValue }
+    }
+    
+    var difficulty: AchievementDifficulty {
+        get { AchievementDifficulty(rawValue: difficultyRaw) ?? .easy }
+        set { difficultyRaw = newValue.rawValue }
+    }
     var icon: String = "trophy"
     var colorHex: String = "#FFD700"
     var experienceReward: Int = 0
@@ -243,6 +259,10 @@ final class Achievement {
     var createdAt: Date = Date()
     var unlockedCount: Int = 0
     
+    // Relationships
+    @Relationship(deleteRule: .cascade) var userAchievements: [UserAchievement]? = []
+    
+    
     init(
         name: String,
         description: String,
@@ -252,9 +272,9 @@ final class Achievement {
     ) {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         self.achievementDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.category = category
-        self.type = type
-        self.difficulty = difficulty
+        self.categoryRaw = category.rawValue
+        self.typeRaw = type.rawValue
+        self.difficultyRaw = difficulty.rawValue
         self.experienceReward = difficulty.baseExperience
         self.coinReward = difficulty.baseCoins
         self.gemReward = difficulty.baseGems
@@ -445,7 +465,8 @@ final class UserAchievement {
     var notificationSent: Bool = false
     
     @Relationship(deleteRule: .nullify) var achievement: Achievement?
-    @Relationship(deleteRule: .nullify) var userProfile: UserProfile?
+    @Relationship(deleteRule: .nullify, inverse: \UserProfile.achievements) var userProfile: UserProfile?
+    
     
     init(achievement: Achievement, userProfile: UserProfile) {
         self.achievementId = achievement.id
@@ -487,18 +508,32 @@ final class Badge {
     var badgeDescription: String = ""
     var icon: String = "shield"
     var colorHex: String = "#007AFF"
-    var category: BadgeCategory = BadgeCategory.achievement
-    var rarity: BadgeRarity = BadgeRarity.common
+    var categoryRaw: String = BadgeCategory.achievement.rawValue
+    var rarityRaw: String = BadgeRarity.common.rawValue
+    
+    var category: BadgeCategory {
+        get { BadgeCategory(rawValue: categoryRaw) ?? .achievement }
+        set { categoryRaw = newValue.rawValue }
+    }
+    
+    var rarity: BadgeRarity {
+        get { BadgeRarity(rawValue: rarityRaw) ?? .common }
+        set { rarityRaw = newValue.rawValue }
+    }
     var isActive: Bool = true
     var requirements: Data? // JSON encoded requirements
     var createdAt: Date = Date()
     var awardedCount: Int = 0
     
+    // Relationships
+    @Relationship(deleteRule: .cascade, inverse: \UserBadge.badge) var userBadges: [UserBadge]? = []
+    
+    
     init(name: String, description: String, category: BadgeCategory, rarity: BadgeRarity = .common) {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         self.badgeDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.category = category
-        self.rarity = rarity
+        self.categoryRaw = category.rawValue
+        self.rarityRaw = rarity.rawValue
         self.createdAt = Date()
     }
     
@@ -555,14 +590,15 @@ final class UserBadge {
     var displayOrder: Int = 0
     
     @Relationship(deleteRule: .nullify) var badge: Badge?
-    @Relationship(deleteRule: .nullify) var userProfile: UserProfile?
+    @Relationship(deleteRule: .nullify, inverse: \UserProfile.badges) var userProfile: UserProfile?
+    
     
     init(badge: Badge, userProfile: UserProfile) {
         self.badgeId = badge.id
         self.badge = badge
         self.userProfile = userProfile
         self.awardedAt = Date()
-        self.displayOrder = userProfile.badges.count
+        self.displayOrder = userProfile.badges?.count ?? 0
     }
 }
 
@@ -572,9 +608,24 @@ final class Challenge {
     var id: UUID = UUID()
     var name: String = ""
     var challengeDescription: String = ""
-    var type: ChallengeType = ChallengeType.daily
-    var category: ChallengeCategory = ChallengeCategory.productivity
-    var difficulty: ChallengeDifficulty = ChallengeDifficulty.easy
+    var typeRaw: String = ChallengeType.daily.rawValue
+    var categoryRaw: String = ChallengeCategory.productivity.rawValue
+    var difficultyRaw: String = ChallengeDifficulty.easy.rawValue
+    
+    var type: ChallengeType {
+        get { ChallengeType(rawValue: typeRaw) ?? .daily }
+        set { typeRaw = newValue.rawValue }
+    }
+    
+    var category: ChallengeCategory {
+        get { ChallengeCategory(rawValue: categoryRaw) ?? .productivity }
+        set { categoryRaw = newValue.rawValue }
+    }
+    
+    var difficulty: ChallengeDifficulty {
+        get { ChallengeDifficulty(rawValue: difficultyRaw) ?? .easy }
+        set { difficultyRaw = newValue.rawValue }
+    }
     var startDate: Date = Date()
     var endDate: Date = Date()
     var isActive: Bool = true
@@ -583,6 +634,10 @@ final class Challenge {
     var requirements: Data? // JSON encoded requirements
     var rewards: Data? // JSON encoded rewards
     var createdAt: Date = Date()
+    
+    // Relationships
+    @Relationship(deleteRule: .cascade, inverse: \UserChallenge.challenge) var userChallenges: [UserChallenge]? = []
+    
     
     init(
         name: String,
@@ -593,9 +648,9 @@ final class Challenge {
     ) {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         self.challengeDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.type = type
-        self.category = category
-        self.difficulty = difficulty
+        self.typeRaw = type.rawValue
+        self.categoryRaw = category.rawValue
+        self.difficultyRaw = difficulty.rawValue
         self.createdAt = Date()
         
         // Set default duration based on type
@@ -712,6 +767,7 @@ final class UserChallenge {
     @Relationship(deleteRule: .nullify) var challenge: Challenge?
     @Relationship(deleteRule: .nullify) var userProfile: UserProfile?
     
+    
     init(challenge: Challenge, userProfile: UserProfile) {
         self.challengeId = challenge.id
         self.challenge = challenge
@@ -752,10 +808,25 @@ final class Reward {
     var id: UUID = UUID()
     var name: String = ""
     var rewardDescription: String = ""
-    var type: RewardType = RewardType.experience
-    var category: RewardCategory = RewardCategory.achievement
+    var typeRaw: String = RewardType.experience.rawValue
+    var categoryRaw: String = RewardCategory.achievement.rawValue
     var cost: Int = 0
-    var currency: RewardCurrency = RewardCurrency.coins
+    var currencyRaw: String = RewardCurrency.coins.rawValue
+    
+    var type: RewardType {
+        get { RewardType(rawValue: typeRaw) ?? .experience }
+        set { typeRaw = newValue.rawValue }
+    }
+    
+    var category: RewardCategory {
+        get { RewardCategory(rawValue: categoryRaw) ?? .achievement }
+        set { categoryRaw = newValue.rawValue }
+    }
+    
+    var currency: RewardCurrency {
+        get { RewardCurrency(rawValue: currencyRaw) ?? .coins }
+        set { currencyRaw = newValue.rawValue }
+    }
     var icon: String = "gift"
     var colorHex: String = "#FFD700"
     var isActive: Bool = true
@@ -775,10 +846,10 @@ final class Reward {
     ) {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         self.rewardDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.type = type
-        self.category = category
+        self.typeRaw = type.rawValue
+        self.categoryRaw = category.rawValue
         self.cost = cost
-        self.currency = currency
+        self.currencyRaw = currency.rawValue
         self.createdAt = Date()
     }
     
@@ -871,7 +942,12 @@ enum RewardCurrency: String, CaseIterable, Codable {
 @Model
 final class UserReward {
     var id: UUID = UUID()
-    var type: RewardType = RewardType.experience
+    var typeRaw: String = RewardType.experience.rawValue
+    
+    var type: RewardType {
+        get { RewardType(rawValue: typeRaw) ?? .experience }
+        set { typeRaw = newValue.rawValue }
+    }
     var title: String = ""
     var rewardDescription: String = ""
     var coins: Int = 0
@@ -884,6 +960,7 @@ final class UserReward {
     
     @Relationship(deleteRule: .nullify) var userProfile: UserProfile?
     
+    
     init(
         type: RewardType,
         title: String,
@@ -893,7 +970,7 @@ final class UserReward {
         experience: Int = 0,
         userProfile: UserProfile
     ) {
-        self.type = type
+        self.typeRaw = type.rawValue
         self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         self.rewardDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
         self.coins = coins
@@ -930,20 +1007,30 @@ final class Leaderboard {
     var id: UUID = UUID()
     var name: String = ""
     var leaderboardDescription: String = ""
-    var type: LeaderboardType = LeaderboardType.experience
-    var period: LeaderboardPeriod = LeaderboardPeriod.weekly
+    var typeRaw: String = LeaderboardType.experience.rawValue
+    var periodRaw: String = LeaderboardPeriod.weekly.rawValue
+    
+    var type: LeaderboardType {
+        get { LeaderboardType(rawValue: typeRaw) ?? .experience }
+        set { typeRaw = newValue.rawValue }
+    }
+    
+    var period: LeaderboardPeriod {
+        get { LeaderboardPeriod(rawValue: periodRaw) ?? .weekly }
+        set { periodRaw = newValue.rawValue }
+    }
     var isActive: Bool = true
     var startDate: Date = Date()
     var endDate: Date = Date()
     var participantCount: Int = 0
     var createdAt: Date = Date()
     
-    @Relationship(deleteRule: .cascade) var entries: [LeaderboardEntry] = []
+    @Relationship(deleteRule: .cascade) var entries: [LeaderboardEntry]? = []
     
     init(name: String, type: LeaderboardType, period: LeaderboardPeriod) {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.type = type
-        self.period = period
+        self.typeRaw = type.rawValue
+        self.periodRaw = period.rawValue
         self.createdAt = Date()
         
         // Set end date based on period
@@ -965,14 +1052,14 @@ final class Leaderboard {
     }
     
     func addEntry(_ entry: LeaderboardEntry) {
-        entries.append(entry)
-        participantCount = entries.count
+        entries?.append(entry)
+        participantCount = entries?.count ?? 0
         
         // Sort entries by score
-        entries.sort { $0.score > $1.score }
+        entries?.sort { $0.score > $1.score }
         
         // Update ranks
-        for (index, entry) in entries.enumerated() {
+        for (index, entry) in (entries ?? []).enumerated() {
             entry.rank = index + 1
         }
     }
@@ -1027,8 +1114,9 @@ final class LeaderboardEntry {
     var previousRank: Int = 0
     var lastUpdated: Date = Date()
     
-    @Relationship(deleteRule: .nullify) var leaderboard: Leaderboard?
+    @Relationship(inverse: \Leaderboard.entries) var leaderboard: Leaderboard?
     @Relationship(deleteRule: .nullify) var userProfile: UserProfile?
+    
     
     init(userId: String, displayName: String, score: Int, leaderboard: Leaderboard) {
         self.userId = userId

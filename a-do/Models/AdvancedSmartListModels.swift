@@ -163,8 +163,18 @@ enum SmartListValueType: String, CaseIterable, Codable {
 @Model
 final class EnhancedSmartListRule {
     var id: UUID = UUID()
-    var condition: SmartListCondition = SmartListCondition.createdInLastWeek
-    var listOperator: SmartListOperator = SmartListOperator.equals
+    var conditionRaw: String = SmartListCondition.createdInLastWeek.rawValue
+    var listOperatorRaw: String = SmartListOperator.equals.rawValue
+    
+    var condition: SmartListCondition {
+        get { SmartListCondition(rawValue: conditionRaw) ?? .createdInLastWeek }
+        set { conditionRaw = newValue.rawValue }
+    }
+    
+    var listOperator: SmartListOperator {
+        get { SmartListOperator(rawValue: listOperatorRaw) ?? .equals }
+        set { listOperatorRaw = newValue.rawValue }
+    }
     var value: String = ""
     var isEnabled: Bool = true
     var order: Int = 0
@@ -174,7 +184,7 @@ final class EnhancedSmartListRule {
     var useRegex: Bool = false
     var invertCondition: Bool = false // NOT condition
     
-    @Relationship(deleteRule: .nullify) var smartList: EnhancedSmartList?
+    @Relationship(inverse: \EnhancedSmartList.rules) var smartList: EnhancedSmartList?
     
     init(condition: SmartListCondition, operator: SmartListOperator = .equals, value: String = "") {
         self.condition = condition
@@ -396,21 +406,41 @@ final class EnhancedSmartList {
     var usageCount: Int = 0
     
     // Logic settings
-    var logicOperator: SmartListLogicOperator = SmartListLogicOperator.and
-    var sortBy: SmartListSortOption = SmartListSortOption.dueDate
-    var sortOrder: SmartListSortOrder = SmartListSortOrder.ascending
+    var logicOperatorRaw: String = SmartListLogicOperator.and.rawValue
+    
+    var logicOperator: SmartListLogicOperator {
+        get { SmartListLogicOperator(rawValue: logicOperatorRaw) ?? .and }
+        set { logicOperatorRaw = newValue.rawValue }
+    }
+    var sortByRaw: String = SmartListSortOption.dueDate.rawValue
+    var sortOrderRaw: String = SmartListSortOrder.ascending.rawValue
+    
+    var sortBy: SmartListSortOption {
+        get { SmartListSortOption(rawValue: sortByRaw) ?? .dueDate }
+        set { sortByRaw = newValue.rawValue }
+    }
+    
+    var sortOrder: SmartListSortOrder {
+        get { SmartListSortOrder(rawValue: sortOrderRaw) ?? .ascending }
+        set { sortOrderRaw = newValue.rawValue }
+    }
     var maxResults: Int = 100
     
     // Display settings
     var showCompletedItems: Bool = false
-    var groupBy: SmartListGroupOption = SmartListGroupOption.none
+    var groupByRaw: String = SmartListGroupOption.none.rawValue
+    
+    var groupBy: SmartListGroupOption {
+        get { SmartListGroupOption(rawValue: groupByRaw) ?? .none }
+        set { groupByRaw = newValue.rawValue }
+    }
     var showSubtasks: Bool = true
     
     // Auto-refresh settings
     var autoRefresh: Bool = true
     var refreshInterval: TimeInterval = 300 // 5 minutes
     
-    @Relationship(deleteRule: .cascade) var rules: [EnhancedSmartListRule] = []
+    @Relationship(deleteRule: .cascade) var rules: [EnhancedSmartListRule]? = []
     
     init(name: String, description: String = "") {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -422,23 +452,24 @@ final class EnhancedSmartList {
     
     func addRule(condition: SmartListCondition, operator: SmartListOperator = .equals, value: String = "") {
         let rule = EnhancedSmartListRule(condition: condition, operator: `operator`, value: value)
-        rule.order = rules.count
+        rule.order = rules?.count ?? 0
         rule.smartList = self
-        rules.append(rule)
+        rules?.append(rule)
     }
     
     func removeRule(_ rule: EnhancedSmartListRule) {
-        if let index = rules.firstIndex(of: rule) {
-            rules.remove(at: index)
+        if let index = rules?.firstIndex(of: rule) {
+            rules?.remove(at: index)
             // Reorder remaining rules
-            for (newIndex, remainingRule) in rules.enumerated() {
+            for (newIndex, remainingRule) in (rules ?? []).enumerated() {
                 remainingRule.order = newIndex
             }
         }
     }
     
     func moveRule(from sourceIndex: Int, to destinationIndex: Int) {
-        guard sourceIndex != destinationIndex,
+        guard var rules = rules,
+              sourceIndex != destinationIndex,
               sourceIndex >= 0, sourceIndex < rules.count,
               destinationIndex >= 0, destinationIndex < rules.count else { return }
         
@@ -454,7 +485,7 @@ final class EnhancedSmartList {
     // MARK: - List Evaluation
     
     func evaluate(reminders: [Reminder], timeEntries: [TimeEntry] = [], sharedReminders: [SharedReminder] = []) -> [Reminder] {
-        guard !rules.isEmpty else { return reminders }
+        guard let rules = rules, !rules.isEmpty else { return reminders }
         
         let enabledRules = rules.filter { $0.isEnabled }.sorted { $0.order < $1.order }
         guard !enabledRules.isEmpty else { return reminders }
@@ -604,6 +635,7 @@ final class SavedSearch {
     var lastUsed: Date?
     var usageCount: Int = 0
     var isGlobal: Bool = false // Available to all users in workspace
+    
     
     init(name: String, query: String) {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)

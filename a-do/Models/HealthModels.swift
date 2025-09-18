@@ -25,7 +25,12 @@ final class HealthIntegrationConfiguration {
     var autoCreateReminders: Bool = true
     var reminderLeadTime: TimeInterval = 1800 // 30 minutes
     var lastSyncDate: Date?
-    var syncFrequency: HealthSyncFrequency = HealthSyncFrequency.hourly
+    var syncFrequencyRaw: String = HealthSyncFrequency.hourly.rawValue
+    
+    var syncFrequency: HealthSyncFrequency {
+        get { HealthSyncFrequency(rawValue: syncFrequencyRaw) ?? .hourly }
+        set { syncFrequencyRaw = newValue.rawValue }
+    }
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
     
@@ -71,7 +76,7 @@ enum HealthSyncFrequency: String, CaseIterable, Codable {
 final class HealthMetric {
     var id: UUID = UUID()
     var userId: String = ""
-    var type: HealthMetricType = HealthMetricType.steps
+    var typeRaw: String = HealthMetricType.steps.rawValue
     var value: Double = 0.0
     var unit: String = ""
     var date: Date = Date()
@@ -79,12 +84,18 @@ final class HealthMetric {
     var isManualEntry: Bool = false
     var syncedAt: Date = Date()
     
+    var type: HealthMetricType {
+        get { HealthMetricType(rawValue: typeRaw) ?? .steps }
+        set { typeRaw = newValue.rawValue }
+    }
+    
     // Relationships
     @Relationship(deleteRule: .nullify) var habit: Habit?
     @Relationship(deleteRule: .nullify) var reminder: Reminder?
     
+    
     init(type: HealthMetricType, value: Double, unit: String, date: Date = Date()) {
-        self.type = type
+        self.typeRaw = type.rawValue
         self.value = value
         self.unit = unit
         self.date = date
@@ -220,11 +231,21 @@ enum HealthMetricType: String, CaseIterable, Codable {
 final class HealthGoal {
     var id: UUID = UUID()
     var userId: String = ""
-    var metricType: HealthMetricType = HealthMetricType.steps
+    var metricTypeRaw: String = HealthMetricType.steps.rawValue
+    
+    var metricType: HealthMetricType {
+        get { HealthMetricType(rawValue: metricTypeRaw) ?? .steps }
+        set { metricTypeRaw = newValue.rawValue }
+    }
     var targetValue: Double = 10000
     var currentValue: Double = 0
     var unit: String = "steps"
-    var frequency: HealthGoalFrequency = HealthGoalFrequency.daily
+    var frequencyRaw: String = HealthGoalFrequency.daily.rawValue
+    
+    var frequency: HealthGoalFrequency {
+        get { HealthGoalFrequency(rawValue: frequencyRaw) ?? .daily }
+        set { frequencyRaw = newValue.rawValue }
+    }
     var startDate: Date = Date()
     var endDate: Date?
     var isActive: Bool = true
@@ -238,8 +259,9 @@ final class HealthGoal {
     var celebrationEnabled: Bool = true
     
     // Relationships
-    @Relationship(deleteRule: .cascade) var reminders: [Reminder] = []
+    @Relationship(deleteRule: .cascade) var reminders: [Reminder]? = []
     @Relationship(deleteRule: .nullify) var linkedHabit: Habit?
+    
     
     init(userId: String, metricType: HealthMetricType, targetValue: Double) {
         self.userId = userId
@@ -311,7 +333,12 @@ enum HealthGoalFrequency: String, CaseIterable, Codable {
 final class WorkoutIntegration {
     var id: UUID = UUID()
     var userId: String = ""
-    var workoutType: WorkoutType = WorkoutType.running
+    var workoutTypeRaw: String = WorkoutType.running.rawValue
+    
+    var workoutType: WorkoutType {
+        get { WorkoutType(rawValue: workoutTypeRaw) ?? .running }
+        set { workoutTypeRaw = newValue.rawValue }
+    }
     var name: String = ""
     var startDate: Date = Date()
     var endDate: Date?
@@ -326,8 +353,9 @@ final class WorkoutIntegration {
     var syncedAt: Date = Date()
     
     // Relationships
-    @Relationship(deleteRule: .cascade) var reminders: [Reminder] = []
+    @Relationship(deleteRule: .cascade) var reminders: [Reminder]? = []
     @Relationship(deleteRule: .nullify) var linkedHabit: Habit?
+    
     
     init(workoutType: WorkoutType, name: String, startDate: Date = Date()) {
         self.workoutType = workoutType
@@ -447,7 +475,12 @@ final class SleepIntegration {
     var bedtime: Date = Date()
     var wakeTime: Date = Date()
     var sleepDuration: TimeInterval = 0
-    var sleepQuality: SleepQuality = SleepQuality.good
+    var sleepQualityRaw: String = SleepQuality.good.rawValue
+    
+    var sleepQuality: SleepQuality {
+        get { SleepQuality(rawValue: sleepQualityRaw) ?? .good }
+        set { sleepQualityRaw = newValue.rawValue }
+    }
     var deepSleepDuration: TimeInterval = 0
     var remSleepDuration: TimeInterval = 0
     var restfulnessScore: Double = 0
@@ -456,8 +489,9 @@ final class SleepIntegration {
     var syncedAt: Date = Date()
     
     // Relationships
-    @Relationship(deleteRule: .cascade) var reminders: [Reminder] = []
+    @Relationship(deleteRule: .cascade) var reminders: [Reminder]? = []
     @Relationship(deleteRule: .nullify) var linkedHabit: Habit?
+    
     
     init(bedtime: Date, wakeTime: Date) {
         self.bedtime = bedtime
@@ -519,21 +553,37 @@ enum SleepQuality: String, CaseIterable, Codable {
 final class MindfulnessIntegration {
     var id: UUID = UUID()
     var userId: String = ""
-    var sessionType: MindfulnessType = MindfulnessType.meditation
+    var sessionTypeRaw: String = MindfulnessType.meditation.rawValue
+    
+    var sessionType: MindfulnessType {
+        get { MindfulnessType(rawValue: sessionTypeRaw) ?? .meditation }
+        set { sessionTypeRaw = newValue.rawValue }
+    }
     var startDate: Date = Date()
     var endDate: Date?
     var duration: TimeInterval = 0
     var isCompleted: Bool = false
     var notes: String = ""
-    var moodBefore: MoodLevel = MoodLevel.neutral
-    var moodAfter: MoodLevel = MoodLevel.neutral
+    var moodBeforeRaw: String = MoodLevel.neutral.rawValue
+    var moodAfterRaw: String = MoodLevel.neutral.rawValue
+    
+    var moodBefore: MoodLevel {
+        get { MoodLevel(rawValue: moodBeforeRaw) ?? .neutral }
+        set { moodBeforeRaw = newValue.rawValue }
+    }
+    
+    var moodAfter: MoodLevel {
+        get { MoodLevel(rawValue: moodAfterRaw) ?? .neutral }
+        set { moodAfterRaw = newValue.rawValue }
+    }
     var source: String = "HealthKit"
     var healthKitUUID: String?
     var syncedAt: Date = Date()
     
     // Relationships
-    @Relationship(deleteRule: .cascade) var reminders: [Reminder] = []
+    @Relationship(deleteRule: .cascade) var reminders: [Reminder]? = []
     @Relationship(deleteRule: .nullify) var linkedHabit: Habit?
+    
     
     init(sessionType: MindfulnessType, startDate: Date = Date()) {
         self.sessionType = sessionType
@@ -649,8 +699,18 @@ final class HealthReminderTemplate {
     var id: UUID = UUID()
     var name: String = ""
     var healthDescription: String = ""
-    var metricType: HealthMetricType = HealthMetricType.steps
-    var triggerCondition: HealthTriggerCondition = HealthTriggerCondition.goalNotMet
+    var metricTypeRaw: String = HealthMetricType.steps.rawValue
+    
+    var metricType: HealthMetricType {
+        get { HealthMetricType(rawValue: metricTypeRaw) ?? .steps }
+        set { metricTypeRaw = newValue.rawValue }
+    }
+    var triggerConditionRaw: String = HealthTriggerCondition.goalNotMet.rawValue
+    
+    var triggerCondition: HealthTriggerCondition {
+        get { HealthTriggerCondition(rawValue: triggerConditionRaw) ?? .goalNotMet }
+        set { triggerConditionRaw = newValue.rawValue }
+    }
     var triggerValue: Double = 0
     var reminderText: String = ""
     var isActive: Bool = true

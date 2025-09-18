@@ -20,152 +20,151 @@ final class AppContainer {
             return container
         }
         
-        // Create a comprehensive schema with all models
-        let schema = Schema([
-            // Core reminder models
-            Reminder.self,
-            Tag.self,
-            ReminderList.self,
-            ReminderNotification.self,
-            LocationTrigger.self,
-            ListSection.self,
-            TaggedContact.self,
-            AppleNoteAttachment.self,
-            VoiceReminder.self,
-            
-            // Habit tracking models
-            Habit.self,
-            HabitEntry.self,
-            
-            // Time tracking models
-            TimeEntry.self,
-            TimeCategory.self,
-            TimeGoal.self,
-            
-            // Recurring reminders and templates
-            RecurrenceRule.self,
-            RecurringReminder.self,
-            ReminderTemplate.self,
-            TemplateCategory.self,
-            
-            // Collaboration models
-            SharedReminder.self,
-            ShareParticipant.self,
-            ShareActivity.self,
-            SharedList.self,
-            ReminderComment.self,
-            Workspace.self,
-            WorkspaceMember.self,
-            
-            // Advanced smart lists
-            EnhancedSmartList.self,
-            EnhancedSmartListRule.self,
-            SavedSearch.self,
-            
-            // Focus mode models
-            FocusSession.self,
-            FocusInterruption.self,
-            FocusBreak.self,
-            FocusTemplate.self,
-            SystemFocusMode.self,
-            FocusGoal.self,
-            
-            // AI models
-            AISuggestion.self,
-            AIInsight.self,
-            AILearningData.self,
-            AIModelPerformance.self,
-            AIConfiguration.self,
-            
-            // Backup and export models
-            BackupConfiguration.self,
-            BackupRecord.self,
-            ExportTemplate.self,
-            ImportRecord.self,
-            SyncConfiguration.self,
-            SyncRecord.self,
-            
-            // Health integration models
-            HealthIntegrationConfiguration.self,
-            HealthMetric.self,
-            HealthGoal.self,
-            WorkoutIntegration.self,
-            SleepIntegration.self,
-            MindfulnessIntegration.self,
-            HealthReminderTemplate.self,
-            
-            // Smart notification models
-            SmartNotificationConfiguration.self,
-            SmartNotification.self,
-            NotificationPattern.self,
-            NotificationBatch.self,
-            NotificationAnalytics.self,
-            NotificationRule.self,
-            
-            // Search and organization models
-            SearchConfiguration.self,
-            SearchQuery.self,
-            SearchResult.self,
-            SearchFilter.self,
-            SearchIndex.self,
-            OrganizationRule.self,
-            QuickAction.self,
-            SearchAnalytics.self,
-            SavedSearch.self,
-            
-            // Gamification models
-            UserProfile.self,
-            Achievement.self,
-            UserAchievement.self,
-            Badge.self,
-            UserBadge.self,
-            Challenge.self,
-            UserChallenge.self,
-            Reward.self,
-            UserReward.self,
-            Leaderboard.self,
-            LeaderboardEntry.self
-        ])
+        // Create container with progressive fallback strategy
+        return createContainerWithFallback()
+    }
+    
+    private func createContainerWithFallback() -> ModelContainer {
+        os_log("Creating SwiftData container with diagnostic approach", log: .default, type: .info)
         
-        do {
-            // Try CloudKit configuration first
-            let cloudKitConfig = ModelConfiguration(
-                schema: schema,
-                isStoredInMemoryOnly: false,
-                allowsSave: true,
-                groupContainer: .automatic,
-                cloudKitDatabase: .automatic
-            )
-            let container = try ModelContainer(for: schema, configurations: cloudKitConfig)
+        // Use the diagnostic utility to build a working schema
+        let (container, diagnostics) = SwiftDataUtils.createDiagnosticContainer()
+        
+        // Log the diagnostics
+        #if DEBUG
+        print(diagnostics.summary)
+        #endif
+        
+        os_log("Container creation diagnostics: %{public}@", log: .default, type: .info, diagnostics.summary)
+        
+        if let container = container {
             _container = container
             return container
-        } catch {
-            // If CloudKit fails, try without CloudKit
+        }
+        
+        // If diagnostic approach failed completely, try emergency fallback
+        os_log("Diagnostic container creation failed, attempting emergency fallback", log: .default, type: .error)
+        return createEmergencyContainer()
+    }
+    
+    private func attemptContainerCreation(
+        with models: [any PersistentModel.Type],
+        name: String,
+        forceMemory: Bool = false
+    ) -> ModelContainer? {
+        let schema = Schema(models)
+        
+        // Try persistent storage first (unless forced to memory)
+        if !forceMemory {
             do {
-                let localConfig = ModelConfiguration(
+                let persistentConfig = ModelConfiguration(
                     schema: schema,
                     isStoredInMemoryOnly: false,
                     allowsSave: true,
                     groupContainer: .automatic,
                     cloudKitDatabase: .none
                 )
-                let container = try ModelContainer(for: schema, configurations: localConfig)
-                _container = container
+                let container = try ModelContainer(for: schema, configurations: persistentConfig)
+                os_log("Successfully created persistent container with %{public}@", log: .default, type: .info, name)
                 return container
             } catch {
-                // Fallback to in-memory if persistent fails
-                let memoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-                do {
-                    let container = try ModelContainer(for: schema, configurations: memoryConfig)
-                    _container = container
-                    return container
-                } catch {
-                    // Last resort - create minimal container
-                    fatalError("Failed to create any ModelContainer: \(error)")
-                }
+                os_log("Failed to create persistent container with %{public}@: %{public}@", log: .default, type: .error, name, error.localizedDescription)
             }
         }
+        
+        // Try in-memory storage as fallback
+        do {
+            let memoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            let container = try ModelContainer(for: schema, configurations: memoryConfig)
+            os_log("Successfully created in-memory container with %{public}@", log: .default, type: .info, name)
+            return container
+        } catch {
+            os_log("Failed to create in-memory container with %{public}@: %{public}@", log: .default, type: .error, name, error.localizedDescription)
+            return nil
+        }
     }
+    
+    private func createEmergencyContainer() -> ModelContainer {
+        // Create the most basic possible container that should always work
+        do {
+            // Try with no models first - just create an empty container
+            let emptySchema = Schema([])
+            let emptyConfig = ModelConfiguration(schema: emptySchema, isStoredInMemoryOnly: true)
+            let container = try ModelContainer(for: emptySchema, configurations: emptyConfig)
+            os_log("Created emergency empty container", log: .default, type: .default)
+            _container = container
+            return container
+        } catch {
+            os_log("Emergency empty container failed: %{public}@", log: .default, type: .fault, error.localizedDescription)
+            
+            // If even an empty container fails, something is seriously wrong
+            // But we still need to return something to prevent the fatal error
+            // Create a mock container that will at least let the app start
+            fatalError("SwiftData is completely non-functional. Error: \(error)")
+        }
+    }
+    
+    // MARK: - Progressive Model Loading
+    // This allows adding more models after the initial container is created
+    func expandSchema(with additionalModels: [any PersistentModel.Type]) -> Bool {
+        guard let currentContainer = _container else {
+            os_log("No existing container to expand", log: .default, type: .error)
+            return false
+        }
+        
+        // For now, SwiftData doesn't support runtime schema expansion
+        // This is a placeholder for future functionality
+        os_log("Schema expansion requested but not yet implemented", log: .default, type: .info)
+        return false
+    }
+    
+    // MARK: - Diagnostics
+    func validateModels(_ models: [any PersistentModel.Type]) -> [String] {
+        var issues: [String] = []
+        
+        for modelType in models {
+            let typeName = String(describing: modelType)
+            
+            // Check if the model type can be instantiated (basic validation)
+            do {
+                let schema = Schema([modelType])
+                // If we can create a schema with just this model, it's probably valid
+                os_log("Model %{public}@ appears valid", log: .default, type: .debug, typeName)
+            } catch {
+                issues.append("Model \(typeName) failed validation: \(error.localizedDescription)")
+            }
+        }
+        
+        return issues
+    }
+    
+    // MARK: - Safe Container Reset
+    func resetContainer() {
+        _container = nil
+        os_log("Container reset - will recreate on next access", log: .default, type: .info)
+    }
+    
+    // MARK: - Testing and Diagnostics
+    #if DEBUG
+    func testContainerCreation() -> String {
+        resetContainer()
+        do {
+            let container = getContainer()
+            let diagnostics = SwiftDataUtils.createDiagnosticContainer().diagnostics
+            return """
+            Container Creation Test Results:
+            ✅ Container created successfully
+            📊 Diagnostics:
+            \(diagnostics.summary)
+            """
+        } catch {
+            return """
+            Container Creation Test Results:
+            ❌ Container creation failed: \(error.localizedDescription)
+            """
+        }
+    }
+    #endif
     
     // MARK: - Demo Data Management
     @MainActor

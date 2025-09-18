@@ -154,7 +154,7 @@ struct RecurringReminderDetailView: View {
                 .primaryText()
             
             HStack(spacing: 20) {
-                StatCard(title: "Generated", value: "\(recurringReminder.generatedReminders.count)", icon: "plus.circle", color: .blue)
+                StatCard(title: "Generated", value: "\(recurringReminder.generatedReminders?.count ?? 0)", icon: "plus.circle", color: .blue)
                 StatCard(title: "Completed", value: "\(completedCount)", icon: "checkmark.circle", color: .green)
                 StatCard(title: "Pending", value: "\(pendingCount)", icon: "clock", color: .orange)
             }
@@ -170,19 +170,21 @@ struct RecurringReminderDetailView: View {
                 .font(.headline)
                 .primaryText()
             
-            if recurringReminder.generatedReminders.isEmpty {
+            let reminders = recurringReminder.generatedReminders ?? []
+            
+            if reminders.isEmpty {
                 Text("No reminders generated yet")
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding()
             } else {
                 LazyVStack(spacing: 8) {
-                    ForEach(recurringReminder.generatedReminders.prefix(5), id: \.id) { reminder in
+                    ForEach(reminders.prefix(5), id: \.id) { reminder in
                         GeneratedReminderRow(reminder: reminder)
                     }
                     
-                    if recurringReminder.generatedReminders.count > 5 {
-                        Text("And \(recurringReminder.generatedReminders.count - 5) more...")
+                    if reminders.count > 5 {
+                        Text("And \(reminders.count - 5) more...")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .frame(maxWidth: .infinity, alignment: .center)
@@ -238,11 +240,11 @@ struct RecurringReminderDetailView: View {
     }
     
     private var completedCount: Int {
-        recurringReminder.generatedReminders.filter { $0.isCompleted }.count
+        (recurringReminder.generatedReminders ?? []).filter { $0.isCompleted }.count
     }
     
     private var pendingCount: Int {
-        recurringReminder.generatedReminders.filter { !$0.isCompleted }.count
+        (recurringReminder.generatedReminders ?? []).filter { !$0.isCompleted }.count
     }
     
     private func toggleActive() {
@@ -252,7 +254,7 @@ struct RecurringReminderDetailView: View {
     
     private func deleteRecurringReminder() {
         // Delete all generated reminders first
-        for reminder in recurringReminder.generatedReminders {
+        for reminder in recurringReminder.generatedReminders ?? [] {
             context.delete(reminder)
         }
         

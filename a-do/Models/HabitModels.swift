@@ -16,24 +16,42 @@ final class Habit {
     var habitDescription: String = ""
     var icon: String = "star.fill"
     var color: String = "#007AFF"
-    var frequency: HabitFrequency?
+    var frequencyRaw: String?
     var targetCount: Int = 1
     var unit: String = "times"
     var isActive: Bool = true
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
     
+    // Computed property for frequency
+    var frequency: HabitFrequency? {
+        get {
+            guard let frequencyRaw = frequencyRaw else { return nil }
+            return HabitFrequency(rawValue: frequencyRaw)
+        }
+        set {
+            frequencyRaw = newValue?.rawValue
+        }
+    }
+    
     // Relationships
     @Relationship(deleteRule: .cascade) var entries: [HabitEntry]? = []
     @Relationship var tags: [Tag]? = []
     @Relationship(deleteRule: .cascade) var timeEntries: [TimeEntry]? = []
+    
+    @Relationship(inverse: \HealthMetric.habit) var healthMetrics: [HealthMetric]? = []
+    @Relationship(inverse: \HealthGoal.linkedHabit) var healthGoals: [HealthGoal]? = []
+    @Relationship(inverse: \WorkoutIntegration.linkedHabit) var workoutIntegrations: [WorkoutIntegration]? = []
+    @Relationship(inverse: \SleepIntegration.linkedHabit) var sleepIntegrations: [SleepIntegration]? = []
+    @Relationship(inverse: \MindfulnessIntegration.linkedHabit) var mindfulnessIntegrations: [MindfulnessIntegration]? = []
+    @Relationship(deleteRule: .nullify) var aiSuggestions: [AISuggestion]? = []
     
     init(title: String, description: String = "", icon: String = "star.fill", color: String = "#007AFF", frequency: HabitFrequency? = .daily, targetCount: Int = 1, unit: String = "times") {
         self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         self.habitDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
         self.icon = icon
         self.color = color
-        self.frequency = frequency
+        self.frequencyRaw = frequency?.rawValue
         self.targetCount = max(1, targetCount)
         self.unit = unit
         self.createdAt = Date()
@@ -149,6 +167,7 @@ final class HabitEntry {
     
     // Relationships
     @Relationship(deleteRule: .nullify) var habit: Habit?
+    
     
     init(date: Date = Date(), count: Int = 0, notes: String = "", habit: Habit? = nil) {
         self.date = date

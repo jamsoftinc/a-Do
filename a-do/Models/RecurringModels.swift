@@ -50,23 +50,33 @@ enum RecurrencePattern: String, CaseIterable, Codable {
 @Model
 final class RecurrenceRule {
     var id: UUID = UUID()
-    var pattern: RecurrencePattern = RecurrencePattern.none
+    var patternRaw: String = RecurrencePattern.none.rawValue
     var interval: Int = 1 // Every X days/weeks/months
     var endDate: Date?
     var maxOccurrences: Int?
-    var daysOfWeek: [Int] = [] // 1-7 for Sunday-Saturday
+    var daysOfWeek: Data? // JSON encoded [Int] - 1-7 for Sunday-Saturday
     var dayOfMonth: Int? // For monthly recurrence
     var monthOfYear: Int? // For yearly recurrence
     var isActive: Bool = true
     var createdAt: Date = Date()
     
     // Custom recurrence settings
-    var customDays: [Int] = [] // Custom days for complex patterns
+    var customDays: Data? // JSON encoded [Int] - Custom days for complex patterns
     var skipWeekends: Bool = false
     var skipHolidays: Bool = false
     
+    // Relationships
+    @Relationship(deleteRule: .nullify) var recurringReminder: RecurringReminder?
+    
+    // Computed property for pattern
+    var pattern: RecurrencePattern {
+        get { RecurrencePattern(rawValue: patternRaw) ?? .none }
+        set { patternRaw = newValue.rawValue }
+    }
+    
+    
     init(pattern: RecurrencePattern = .none, interval: Int = 1) {
-        self.pattern = pattern
+        self.patternRaw = pattern.rawValue
         self.interval = max(1, interval)
         self.createdAt = Date()
     }
@@ -149,14 +159,14 @@ final class RecurrenceRule {
     private func nextCustomOccurrence(after date: Date) -> Date {
         let calendar = Calendar.current
         
-        if !daysOfWeek.isEmpty {
+        if let daysOfWeekData = daysOfWeek, let daysOfWeekArray = try? JSONDecoder().decode([Int].self, from: daysOfWeekData), !daysOfWeekArray.isEmpty {
             // Find next occurrence based on days of week
             var nextDate = calendar.date(byAdding: .day, value: 1, to: date) ?? date
             let maxDays = 14 // Look ahead 2 weeks maximum
             
             for _ in 0..<maxDays {
                 let weekday = calendar.component(.weekday, from: nextDate)
-                if daysOfWeek.contains(weekday) {
+                if daysOfWeekArray.contains(weekday) {
                     return nextDate
                 }
                 nextDate = calendar.date(byAdding: .day, value: 1, to: nextDate) ?? nextDate
@@ -182,7 +192,10 @@ final class RecurrenceRule {
         case .weekdays, .weekends:
             return true
         case .custom:
-            return !daysOfWeek.isEmpty || interval > 0
+            if let daysOfWeekData = daysOfWeek, let daysOfWeekArray = try? JSONDecoder().decode([Int].self, from: daysOfWeekData) {
+                return !daysOfWeekArray.isEmpty || interval > 0
+            }
+            return interval > 0
         }
     }
 }
@@ -194,7 +207,7 @@ final class RecurringReminder {
     var templateTitle: String = ""
     var templateDetails: String?
     var templatePriority: Int = 0
-    var templateTags: [String] = []
+    var templateTags: Data? // JSON encoded [String]
     var templateCategory: String = ""
     var isActive: Bool = true
     var createdAt: Date = Date()
@@ -203,8 +216,8 @@ final class RecurringReminder {
     
     // Relationships
     @Relationship(deleteRule: .cascade) var recurrenceRule: RecurrenceRule?
-    @Relationship(deleteRule: .cascade) var generatedReminders: [Reminder] = []
-    @Relationship(deleteRule: .cascade) var templateNotifications: [ReminderNotification] = []
+    @Relationship(deleteRule: .cascade) var generatedReminders: [Reminder]? = []
+    @Relationship(deleteRule: .cascade) var templateNotifications: [ReminderNotification]? = []
     
     init(title: String, details: String? = nil, priority: Priority = .none, recurrenceRule: RecurrenceRule? = nil) {
         self.templateTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -250,7 +263,7 @@ final class RecurringReminder {
         )
         
         // Copy template notifications
-        for templateNotification in templateNotifications {
+        for templateNotification in templateNotifications ?? [] {
             let notification = ReminderNotification(
                 leadTimeSeconds: templateNotification.leadTimeSeconds,
                 customSoundName: templateNotification.customSoundName
@@ -258,7 +271,7 @@ final class RecurringReminder {
             reminder.notifications?.append(notification)
         }
         
-        generatedReminders.append(reminder)
+        generatedReminders?.append(reminder)
         lastGenerated = Date()
         calculateNextDue()
         
@@ -275,7 +288,7 @@ final class ReminderTemplate {
     var details: String?
     var priority: Int = 0
     var category: String = ""
-    var tags: [String] = []
+    var tags: Data? // JSON encoded [String]
     var estimatedDuration: TimeInterval?
     var defaultDueOffset: TimeInterval? // Default time from now when creating
     var icon: String = "doc.text"
@@ -292,7 +305,8 @@ final class ReminderTemplate {
     var autoTextEnabled: Bool = false
     
     // Relationships
-    @Relationship(deleteRule: .cascade) var templateNotifications: [ReminderNotification] = []
+    @Relationship(deleteRule: .cascade) var templateNotifications: [ReminderNotification]? = []
+    @Relationship(deleteRule: .nullify) var templateCategory: TemplateCategory?
     
     init(name: String, title: String, details: String? = nil, category: String = "", priority: Priority = .none) {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -330,7 +344,7 @@ final class ReminderTemplate {
         )
         
         // Copy template notifications
-        for templateNotification in templateNotifications {
+        for templateNotification in templateNotifications ?? [] {
             let notification = ReminderNotification(
                 leadTimeSeconds: templateNotification.leadTimeSeconds,
                 customSoundName: templateNotification.customSoundName
@@ -401,7 +415,7 @@ final class TemplateCategory {
     var order: Int = 0
     var isActive: Bool = true
     
-    @Relationship(deleteRule: .nullify) var templates: [ReminderTemplate] = []
+    @Relationship(deleteRule: .nullify) var templates: [ReminderTemplate]? = []
     
     init(name: String, icon: String = "folder", colorHex: String = "#007AFF") {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)

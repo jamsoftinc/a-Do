@@ -198,7 +198,7 @@ final class RecurringRemindersManager {
         
         // Calculate actual generated reminders count
         let allRecurring = (try? context.fetch(FetchDescriptor<RecurringReminder>())) ?? []
-        let generatedCount = allRecurring.reduce(0) { $0 + $1.generatedReminders.count }
+        let generatedCount = allRecurring.reduce(0) { $0 + ($1.generatedReminders?.count ?? 0) }
         
         // Calculate upcoming recurring reminders (next 7 days)
         let calendar = Calendar.current
@@ -229,7 +229,7 @@ final class RecurringRemindersManager {
             reminder.dueDate = nextDate
             
             context.insert(reminder)
-            recurring.generatedReminders.append(reminder)
+            recurring.generatedReminders?.append(reminder)
             recurring.lastGenerated = now
             
             try? context.save()

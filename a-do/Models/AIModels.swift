@@ -12,16 +12,31 @@ import SwiftData
 @Model
 final class AISuggestion {
     var id: UUID = UUID()
-    var type: AISuggestionType = AISuggestionType.dueDateOptimization
+    var typeRaw: String = AISuggestionType.dueDateOptimization.rawValue
     var title: String = ""
     var aiDescription: String = ""
     var confidence: Double = 0.0 // 0.0 to 1.0
-    var priority: AISuggestionPriority = AISuggestionPriority.medium
-    var status: AISuggestionStatus = AISuggestionStatus.pending
+    var priorityRaw: String = AISuggestionPriority.medium.rawValue
+    var statusRaw: String = AISuggestionStatus.pending.rawValue
     var createdAt: Date = Date()
     var appliedAt: Date?
     var dismissedAt: Date?
     var expiresAt: Date?
+    
+    var type: AISuggestionType {
+        get { AISuggestionType(rawValue: typeRaw) ?? .dueDateOptimization }
+        set { typeRaw = newValue.rawValue }
+    }
+    
+    var priority: AISuggestionPriority {
+        get { AISuggestionPriority(rawValue: priorityRaw) ?? .medium }
+        set { priorityRaw = newValue.rawValue }
+    }
+    
+    var status: AISuggestionStatus {
+        get { AISuggestionStatus(rawValue: statusRaw) ?? .pending }
+        set { statusRaw = newValue.rawValue }
+    }
     
     // Context data
     var contextData: Data? // JSON encoded context information
@@ -38,7 +53,7 @@ final class AISuggestion {
     @Relationship(deleteRule: .nullify) var targetHabit: Habit?
     
     init(type: AISuggestionType, title: String, description: String, confidence: Double) {
-        self.type = type
+        self.typeRaw = type.rawValue
         self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         self.aiDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
         self.confidence = max(0.0, min(1.0, confidence))
@@ -253,20 +268,35 @@ enum AISuggestionStatus: String, CaseIterable, Codable {
 @Model
 final class AIInsight {
     var id: UUID = UUID()
-    var type: AIInsightType = AIInsightType.productivityTrend
+    var typeRaw: String = AIInsightType.productivityTrend.rawValue
+    
+    var type: AIInsightType {
+        get { AIInsightType(rawValue: typeRaw) ?? .productivityTrend }
+        set { typeRaw = newValue.rawValue }
+    }
     var title: String = ""
     var summary: String = ""
     var detailedAnalysis: String = ""
     var confidence: Double = 0.0
-    var timeframe: AIInsightTimeframe = AIInsightTimeframe.week
+    var timeframeRaw: String = AIInsightTimeframe.week.rawValue
+    
+    var timeframe: AIInsightTimeframe {
+        get { AIInsightTimeframe(rawValue: timeframeRaw) ?? .week }
+        set { timeframeRaw = newValue.rawValue }
+    }
     var createdAt: Date = Date()
     var isRead: Bool = false
     var isBookmarked: Bool = false
     
     // Data and metrics
     var metricsData: Data? // JSON encoded metrics
-    var visualizationType: AIVisualizationType = AIVisualizationType.lineChart
-    var actionableRecommendations: [String] = []
+    var visualizationTypeRaw: String = AIVisualizationType.lineChart.rawValue
+    
+    var visualizationType: AIVisualizationType {
+        get { AIVisualizationType(rawValue: visualizationTypeRaw) ?? .lineChart }
+        set { visualizationTypeRaw = newValue.rawValue }
+    }
+    var actionableRecommendations: Data? // JSON encoded [String]
     
     // User interaction
     var viewCount: Int = 0
@@ -275,7 +305,7 @@ final class AIInsight {
     var userNotes: String = ""
     
     init(type: AIInsightType, title: String, summary: String, confidence: Double) {
-        self.type = type
+        self.typeRaw = type.rawValue
         self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         self.summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
         self.confidence = max(0.0, min(1.0, confidence))
@@ -381,7 +411,12 @@ enum AIVisualizationType: String, CaseIterable, Codable {
 @Model
 final class AILearningData {
     var id: UUID = UUID()
-    var dataType: AILearningDataType = AILearningDataType.userBehavior
+    var dataTypeRaw: String = AILearningDataType.userBehavior.rawValue
+    
+    var dataType: AILearningDataType {
+        get { AILearningDataType(rawValue: dataTypeRaw) ?? .userBehavior }
+        set { dataTypeRaw = newValue.rawValue }
+    }
     var timestamp: Date = Date()
     var userId: String = ""
     var sessionId: String = ""
@@ -481,9 +516,24 @@ final class AIConfiguration {
     var id: UUID = UUID()
     var userId: String = ""
     var isAIEnabled: Bool = true
-    var suggestionFrequency: AISuggestionFrequency = AISuggestionFrequency.daily
-    var insightFrequency: AIInsightFrequency = AIInsightFrequency.weekly
-    var privacyLevel: AIPrivacyLevel = AIPrivacyLevel.balanced
+    var suggestionFrequencyRaw: String = AISuggestionFrequency.daily.rawValue
+    var insightFrequencyRaw: String = AIInsightFrequency.weekly.rawValue
+    var privacyLevelRaw: String = AIPrivacyLevel.balanced.rawValue
+    
+    var suggestionFrequency: AISuggestionFrequency {
+        get { AISuggestionFrequency(rawValue: suggestionFrequencyRaw) ?? .daily }
+        set { suggestionFrequencyRaw = newValue.rawValue }
+    }
+    
+    var insightFrequency: AIInsightFrequency {
+        get { AIInsightFrequency(rawValue: insightFrequencyRaw) ?? .weekly }
+        set { insightFrequencyRaw = newValue.rawValue }
+    }
+    
+    var privacyLevel: AIPrivacyLevel {
+        get { AIPrivacyLevel(rawValue: privacyLevelRaw) ?? .balanced }
+        set { privacyLevelRaw = newValue.rawValue }
+    }
     var learningEnabled: Bool = true
     var personalizedRecommendations: Bool = true
     var proactiveNotifications: Bool = true

@@ -71,7 +71,7 @@ final class GamificationManager {
         
         for achievement in defaultAchievements {
             let userAchievement = UserAchievement(achievement: achievement, userProfile: profile)
-            profile.achievements.append(userAchievement)
+            profile.achievements?.append(userAchievement)
             context.insert(userAchievement)
         }
     }
@@ -84,7 +84,7 @@ final class GamificationManager {
         
         logger.info("Checking achievements for user: \(profile.displayName)")
         
-        let incompleteAchievements = profile.achievements.filter { !$0.isCompleted }
+        let incompleteAchievements = (profile.achievements ?? []).filter { !$0.isCompleted }
         
         for userAchievement in incompleteAchievements {
             guard let achievement = userAchievement.achievement else { continue }
@@ -298,13 +298,13 @@ final class GamificationManager {
     
     func joinChallenge(_ challenge: Challenge, profile: UserProfile, context: ModelContext) -> UserChallenge? {
         // Check if already joined
-        let existingChallenge = profile.challenges.first { $0.challengeId == challenge.id }
+        let existingChallenge = profile.challenges?.first { $0.challengeId == challenge.id }
         if existingChallenge != nil {
             return existingChallenge
         }
         
         let userChallenge = UserChallenge(challenge: challenge, userProfile: profile)
-        profile.challenges.append(userChallenge)
+        profile.challenges?.append(userChallenge)
         context.insert(userChallenge)
         
         challenge.join()
@@ -348,7 +348,7 @@ final class GamificationManager {
             userProfile: profile
         )
         
-        profile.rewards.append(reward)
+        profile.rewards?.append(reward)
         pendingRewards.append(reward)
         context.insert(reward)
     }
@@ -373,7 +373,7 @@ final class GamificationManager {
         let score = calculateLeaderboardScore(leaderboard.type, profile: profile)
         
         // Find existing entry or create new one
-        let existingEntry = leaderboard.entries.first { $0.userId == profile.userId }
+        let existingEntry = leaderboard.entries?.first { $0.userId == profile.userId }
         
         if let entry = existingEntry {
             entry.updateScore(score)
@@ -431,7 +431,7 @@ final class GamificationManager {
             userProfile: profile
         )
         
-        profile.rewards.append(userReward)
+        profile.rewards?.append(userReward)
         pendingRewards.append(userReward)
         context.insert(userReward)
         
@@ -472,7 +472,7 @@ final class GamificationManager {
         
         // Check if user has already received daily reward today
         let today = calendar.startOfDay(for: Date())
-        let hasReceivedToday = profile.rewards.contains { reward in
+        let hasReceivedToday = (profile.rewards ?? []).contains { reward in
             let awardedAt = reward.awardedAt
             return calendar.isDate(awardedAt, inSameDayAs: today) && reward.type == .coins
         }
@@ -486,7 +486,7 @@ final class GamificationManager {
                 userProfile: profile
             )
             
-            profile.rewards.append(dailyReward)
+            profile.rewards?.append(dailyReward)
             pendingRewards.append(dailyReward)
             context.insert(dailyReward)
         }
@@ -496,14 +496,14 @@ final class GamificationManager {
     
     private func awardPerfectDayBadge(for profile: UserProfile, context: ModelContext) async {
         // Check if user already has perfect day badge
-        let hasPerfectDayBadge = profile.badges.contains { badge in
+        let hasPerfectDayBadge = (profile.badges ?? []).contains { badge in
             badge.badge?.name == "Perfect Day"
         }
         
         if !hasPerfectDayBadge {
             if let perfectDayBadge = getPerfectDayBadge(context: context) {
                 let userBadge = UserBadge(badge: perfectDayBadge, userProfile: profile)
-                profile.badges.append(userBadge)
+                profile.badges?.append(userBadge)
                 context.insert(userBadge)
                 
                 perfectDayBadge.award()
@@ -740,11 +740,11 @@ final class GamificationManager {
             streak: profile.streak,
             longestStreak: profile.longestStreak,
             achievementsUnlocked: profile.achievementsUnlocked,
-            totalAchievements: profile.achievements.count,
-            badgesEarned: profile.badges.count,
-            challengesCompleted: profile.challenges.filter { $0.isCompleted }.count,
-            activeChallenges: profile.challenges.filter { !$0.isCompleted }.count,
-            pendingRewards: profile.rewards.filter { !$0.isCollected && !$0.isExpired }.count
+            totalAchievements: profile.achievements?.count ?? 0,
+            badgesEarned: profile.badges?.count ?? 0,
+            challengesCompleted: (profile.challenges ?? []).filter { $0.isCompleted }.count,
+            activeChallenges: (profile.challenges ?? []).filter { !$0.isCompleted }.count,
+            pendingRewards: (profile.rewards ?? []).filter { !$0.isCollected && !$0.isExpired }.count
         )
     }
 }

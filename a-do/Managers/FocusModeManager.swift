@@ -351,7 +351,7 @@ final class FocusModeManager {
         reminder.completedAt = Date()
         
         session.tasksCompleted += 1
-        session.completedReminders.append(reminder)
+        session.completedReminders?.append(reminder)
         
         do {
             try context.save()
@@ -423,7 +423,7 @@ final class FocusModeManager {
         let completionRate = totalSessions > 0 ? Double(completedSessions) / Double(totalSessions) : 0
         let averageProductivityScore = sessions.isEmpty ? 0 : sessions.reduce(0) { $0 + $1.productivityScore } / Double(sessions.count)
         let totalInterruptions = sessions.reduce(0) { $0 + $1.interruptionCount }
-        let totalBreakTime = sessions.flatMap { $0.breaks }.reduce(0) { $0 + $1.actualDuration }
+        let totalBreakTime = sessions.flatMap { $0.breaks ?? [] }.reduce(0) { $0 + $1.actualDuration }
         
         // Calculate most productive time of day
         let mostProductiveHour = calculateMostProductiveHour(sessions: sessions)

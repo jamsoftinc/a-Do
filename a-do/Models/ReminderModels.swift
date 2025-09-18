@@ -47,6 +47,7 @@ final class ListSection {
     
     @Relationship(deleteRule: .nullify) var lists: [ReminderList]? = []
     
+    
     init(name: String, order: Int = 0, colorHex: String = "#7C4DFF") {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         self.order = max(0, order)
@@ -65,6 +66,7 @@ final class Tag {
     var colorHex: String = "#7C4DFF"
     @Relationship var reminders: [Reminder]? = []
     @Relationship var habits: [Habit]? = []
+    
 
     init(name: String, colorHex: String = "#7C4DFF") {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -86,6 +88,7 @@ final class LocationTrigger {
     var typeRaw: String = LocationTriggerType.onArrival.rawValue
 
     @Relationship var reminder: Reminder?
+    
 
     init(label: String, latitude: Double, longitude: Double, radius: Double = 150.0, type: LocationTriggerType) {
         self.label = label.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -111,7 +114,10 @@ final class ReminderNotification {
     var leadTimeSeconds: TimeInterval = 0
     var customSoundName: String?
 
-    @Relationship var reminder: Reminder?
+    @Relationship(inverse: \Reminder.notifications) var reminder: Reminder?
+    @Relationship(deleteRule: .nullify) var recurringReminder: RecurringReminder?
+    @Relationship(deleteRule: .nullify) var reminderTemplate: ReminderTemplate?
+    
 
     init(leadTimeSeconds: TimeInterval, customSoundName: String? = nil) {
         self.leadTimeSeconds = max(0, leadTimeSeconds) // Ensure non-negative
@@ -127,6 +133,7 @@ final class TaggedContact {
     var phoneNumber: String?
 
     @Relationship var reminder: Reminder?
+    
 
     init(identifier: String, givenName: String, familyName: String, phoneNumber: String?) {
         self.identifier = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -150,6 +157,7 @@ final class AppleNoteAttachment {
     
     @Relationship var reminder: Reminder?
     
+    
     init(noteIdentifier: String, noteTitle: String, noteContent: String, lastModified: Date = Date()) {
         self.noteIdentifier = noteIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
         self.noteTitle = noteTitle.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -165,9 +173,10 @@ final class ReminderList {
     var encodedSmartRules: Data?
     var order: Int = 0
 
-    @Relationship(deleteRule: .cascade) var reminders: [Reminder]? = []
-    @Relationship var section: ListSection?
+    @Relationship(deleteRule: .cascade, inverse: \Reminder.list) var reminders: [Reminder]? = []
+    @Relationship(inverse: \ListSection.lists) var section: ListSection?
     @Relationship(deleteRule: .cascade) var sharedLists: [SharedList]? = []
+    
 
     init(name: String, isSmart: Bool = false, rules: [SmartListRule]? = nil, reminders: [Reminder] = []) {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -221,6 +230,18 @@ final class Reminder {
     @Relationship(deleteRule: .nullify) var list: ReminderList?
     @Relationship(deleteRule: .cascade) var timeEntries: [TimeEntry]? = []
     @Relationship(deleteRule: .cascade) var sharedReminders: [SharedReminder]? = []
+    
+    @Relationship(inverse: \FocusSession.focusedReminders) var focusSessions: [FocusSession]? = []
+    @Relationship(inverse: \FocusSession.completedReminders) var completedFocusSessions: [FocusSession]? = []
+    @Relationship(inverse: \HealthMetric.reminder) var healthMetrics: [HealthMetric]? = []
+    @Relationship(inverse: \HealthGoal.reminders) var healthGoals: [HealthGoal]? = []
+    @Relationship(inverse: \WorkoutIntegration.reminders) var workoutIntegrations: [WorkoutIntegration]? = []
+    @Relationship(inverse: \SleepIntegration.reminders) var sleepIntegrations: [SleepIntegration]? = []
+    @Relationship(inverse: \MindfulnessIntegration.reminders) var mindfulnessIntegrations: [MindfulnessIntegration]? = []
+    @Relationship(deleteRule: .nullify) var smartNotifications: [SmartNotification]? = []
+    @Relationship(deleteRule: .nullify) var reminderComments: [ReminderComment]? = []
+    @Relationship(deleteRule: .nullify) var aiSuggestions: [AISuggestion]? = []
+    @Relationship(deleteRule: .nullify) var recurringReminder: RecurringReminder?
 
     // Required parameterless initializer for SwiftData
     init() {
@@ -313,6 +334,8 @@ final class VoiceReminder {
     var recordingDuration: TimeInterval = 0
     var createdAt: Date = Date()
     
+    // Inverse relationships for CloudKit compatibility
+    @Relationship(deleteRule: .nullify) var reminder: Reminder?
     
     init(audioFileName: String, transcribedText: String, recordingDuration: TimeInterval) {
         self.audioFileName = SecurityUtils.sanitizeFileName(audioFileName)

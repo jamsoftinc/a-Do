@@ -24,8 +24,18 @@ final class SearchConfiguration {
     var indexContent: Bool = true
     var indexAttachments: Bool = true
     var indexVoiceNotes: Bool = true
-    var searchScope: SearchScope = SearchScope.all
-    var defaultSortOrder: SearchSortOrder = SearchSortOrder.relevance
+    var searchScopeRaw: String = SearchScope.all.rawValue
+    
+    var searchScope: SearchScope {
+        get { SearchScope(rawValue: searchScopeRaw) ?? .all }
+        set { searchScopeRaw = newValue.rawValue }
+    }
+    var defaultSortOrderRaw: String = SearchSortOrder.relevance.rawValue
+    
+    var defaultSortOrder: SearchSortOrder {
+        get { SearchSortOrder(rawValue: defaultSortOrderRaw) ?? .relevance }
+        set { defaultSortOrderRaw = newValue.rawValue }
+    }
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
     
@@ -110,10 +120,25 @@ final class SearchQuery {
     var id: UUID = UUID()
     var userId: String = ""
     var query: String = ""
-    var searchType: SearchType = SearchType.text
-    var scope: SearchScope = SearchScope.all
+    var searchTypeRaw: String = SearchType.text.rawValue
+    var scopeRaw: String = SearchScope.all.rawValue
+    
+    var searchType: SearchType {
+        get { SearchType(rawValue: searchTypeRaw) ?? .text }
+        set { searchTypeRaw = newValue.rawValue }
+    }
+    
+    var scope: SearchScope {
+        get { SearchScope(rawValue: scopeRaw) ?? .all }
+        set { scopeRaw = newValue.rawValue }
+    }
     var filters: Data? // JSON encoded search filters
-    var sortOrder: SearchSortOrder = SearchSortOrder.relevance
+    var sortOrderRaw: String = SearchSortOrder.relevance.rawValue
+    
+    var sortOrder: SearchSortOrder {
+        get { SearchSortOrder(rawValue: sortOrderRaw) ?? .relevance }
+        set { sortOrderRaw = newValue.rawValue }
+    }
     var resultCount: Int = 0
     var executionTime: TimeInterval = 0
     var timestamp: Date = Date()
@@ -183,15 +208,25 @@ enum SearchType: String, CaseIterable, Codable {
 final class SearchResult {
     var id: UUID = UUID()
     var queryId: UUID = UUID()
-    var itemType: SearchResultType = SearchResultType.reminder
+    var itemTypeRaw: String = SearchResultType.reminder.rawValue
     var itemId: String = ""
     var title: String = ""
     var snippet: String = ""
     var relevanceScore: Double = 0.0
-    var matchType: SearchMatchType = SearchMatchType.exact
-    var matchedFields: [String] = []
+    var matchTypeRaw: String = SearchMatchType.exact.rawValue
+    var matchedFields: Data? // JSON encoded [String]
     var highlightRanges: Data? // JSON encoded highlight ranges
     var timestamp: Date = Date()
+    
+    var itemType: SearchResultType {
+        get { SearchResultType(rawValue: itemTypeRaw) ?? .reminder }
+        set { itemTypeRaw = newValue.rawValue }
+    }
+    
+    var matchType: SearchMatchType {
+        get { SearchMatchType(rawValue: matchTypeRaw) ?? .exact }
+        set { matchTypeRaw = newValue.rawValue }
+    }
     
     init(
         queryId: UUID,
@@ -202,7 +237,7 @@ final class SearchResult {
         relevanceScore: Double = 0.0
     ) {
         self.queryId = queryId
-        self.itemType = itemType
+        self.itemTypeRaw = itemType.rawValue
         self.itemId = itemId
         self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         self.snippet = snippet.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -321,7 +356,12 @@ enum SearchMatchType: String, CaseIterable, Codable {
 final class SearchFilter {
     var id: UUID = UUID()
     var name: String = ""
-    var filterType: SearchFilterType = SearchFilterType.dateRange
+    var filterTypeRaw: String = SearchFilterType.dateRange.rawValue
+    
+    var filterType: SearchFilterType {
+        get { SearchFilterType(rawValue: filterTypeRaw) ?? .dateRange }
+        set { filterTypeRaw = newValue.rawValue }
+    }
     var isActive: Bool = true
     var configuration: Data? // JSON encoded filter configuration
     var createdAt: Date = Date()
@@ -397,10 +437,15 @@ enum SearchFilterType: String, CaseIterable, Codable {
 @Model
 final class SearchIndex {
     var id: UUID = UUID()
-    var itemType: SearchResultType = SearchResultType.reminder
+    var itemTypeRaw: String = SearchResultType.reminder.rawValue
+    
+    var itemType: SearchResultType {
+        get { SearchResultType(rawValue: itemTypeRaw) ?? .reminder }
+        set { itemTypeRaw = newValue.rawValue }
+    }
     var itemId: String = ""
     var content: String = ""
-    var keywords: [String] = []
+    var keywords: Data? // JSON encoded [String]
     var metadata: Data? // JSON encoded metadata
     var lastIndexed: Date = Date()
     var indexVersion: String = "1.0"
@@ -410,7 +455,7 @@ final class SearchIndex {
         self.itemType = itemType
         self.itemId = itemId
         self.content = content.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.keywords = extractKeywords(from: content)
+        self.keywords = try? JSONEncoder().encode(extractKeywords(from: content))
         self.lastIndexed = Date()
     }
     
@@ -425,7 +470,7 @@ final class SearchIndex {
     
     func updateContent(_ newContent: String) {
         content = newContent.trimmingCharacters(in: .whitespacesAndNewlines)
-        keywords = extractKeywords(from: content)
+        keywords = try? JSONEncoder().encode(extractKeywords(from: content))
         lastIndexed = Date()
     }
     
@@ -455,7 +500,12 @@ final class OrganizationRule {
     var userId: String = ""
     var name: String = ""
     var ruleDescription: String = ""
-    var ruleType: OrganizationRuleType = OrganizationRuleType.autoTag
+    var ruleTypeRaw: String = OrganizationRuleType.autoTag.rawValue
+    
+    var ruleType: OrganizationRuleType {
+        get { OrganizationRuleType(rawValue: ruleTypeRaw) ?? .autoTag }
+        set { ruleTypeRaw = newValue.rawValue }
+    }
     var isActive: Bool = true
     var priority: Int = 0
     var conditions: Data? // JSON encoded conditions
@@ -559,7 +609,12 @@ final class QuickAction {
     var userId: String = ""
     var name: String = ""
     var actionDescription: String = ""
-    var actionType: QuickActionType = QuickActionType.createReminder
+    var actionTypeRaw: String = QuickActionType.createReminder.rawValue
+    
+    var actionType: QuickActionType {
+        get { QuickActionType(rawValue: actionTypeRaw) ?? .createReminder }
+        set { actionTypeRaw = newValue.rawValue }
+    }
     var icon: String = "plus"
     var shortcut: String = ""
     var isActive: Bool = true
@@ -652,9 +707,9 @@ final class SearchAnalytics {
     var successfulSearches: Int = 0
     var averageResultCount: Double = 0.0
     var averageExecutionTime: TimeInterval = 0.0
-    var topSearchTerms: [String] = []
-    var topResultTypes: [String] = []
-    var mostUsedFilters: [String] = []
+    var topSearchTerms: Data? // JSON encoded [String]
+    var topResultTypes: Data? // JSON encoded [String]
+    var mostUsedFilters: Data? // JSON encoded [String]
     var searchSuccessRate: Double = 0.0
     var userSatisfactionScore: Double = 0.0
     
@@ -676,9 +731,9 @@ final class SearchAnalytics {
         self.successfulSearches = successfulSearches
         self.averageResultCount = avgResults
         self.averageExecutionTime = avgTime
-        self.topSearchTerms = topTerms
-        self.topResultTypes = topTypes
-        self.mostUsedFilters = topFilters
+        self.topSearchTerms = try? JSONEncoder().encode(topTerms)
+        self.topResultTypes = try? JSONEncoder().encode(topTypes)
+        self.mostUsedFilters = try? JSONEncoder().encode(topFilters)
         
         searchSuccessRate = totalSearches > 0 ? Double(successfulSearches) / Double(totalSearches) : 0.0
     }

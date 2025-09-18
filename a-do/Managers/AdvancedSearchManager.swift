@@ -272,7 +272,7 @@ final class AdvancedSearchManager: ObservableObject {
             )
             
             result.matchType = determineMatchType(query: query, text: reminder.title)
-            result.matchedFields = getMatchedFields(query: query, reminder: reminder)
+            result.matchedFields = try? JSONEncoder().encode(getMatchedFields(query: query, reminder: reminder))
             
             return result
         }
