@@ -37,7 +37,9 @@ enum SmartListEngine {
                 candidates = candidates.filter { $0.priority == p }
             case .tag:
                 if let tagName = rule.tagName {
-                    candidates = candidates.filter { $0.tags?.contains(where: { $0.name == tagName }) == true }
+                    // Temporarily disabled - tags relationship commented out
+                    // candidates = candidates.filter { $0.tags?.contains(where: { $0.name == tagName }) == true }
+                    // For now, return all candidates (no tag filtering)
                 }
             }
         }

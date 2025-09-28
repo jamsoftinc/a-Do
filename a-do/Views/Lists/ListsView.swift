@@ -334,7 +334,10 @@ struct ListDetailView: View {
     }
     
     private var listReminders: [Reminder] {
-        allReminders.filter { $0.list == list }
+        // Temporarily disabled - list relationship commented out
+        // allReminders.filter { $0.list == list }
+        // Return all reminders for now
+        return allReminders
     }
     
     private func deleteReminder(_ reminder: Reminder) {

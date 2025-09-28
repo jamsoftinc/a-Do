@@ -263,13 +263,14 @@ final class RecurringReminder {
         )
         
         // Copy template notifications
-        for templateNotification in templateNotifications ?? [] {
-            let notification = ReminderNotification(
-                leadTimeSeconds: templateNotification.leadTimeSeconds,
-                customSoundName: templateNotification.customSoundName
-            )
-            reminder.notifications?.append(notification)
-        }
+        // TODO: Re-enable when notifications relationship is restored
+        // for templateNotification in templateNotifications ?? [] {
+        //     let notification = ReminderNotification(
+        //         leadTimeSeconds: templateNotification.leadTimeSeconds,
+        //         customSoundName: templateNotification.customSoundName
+        //     )
+        //     reminder.notifications?.append(notification)
+        // }
         
         generatedReminders?.append(reminder)
         lastGenerated = Date()
@@ -344,13 +345,14 @@ final class ReminderTemplate {
         )
         
         // Copy template notifications
-        for templateNotification in templateNotifications ?? [] {
-            let notification = ReminderNotification(
-                leadTimeSeconds: templateNotification.leadTimeSeconds,
-                customSoundName: templateNotification.customSoundName
-            )
-            reminder.notifications?.append(notification)
-        }
+        // TODO: Re-enable when notifications relationship is restored
+        // for templateNotification in templateNotifications ?? [] {
+        //     let notification = ReminderNotification(
+        //         leadTimeSeconds: templateNotification.leadTimeSeconds,
+        //         customSoundName: templateNotification.customSoundName
+        //     )
+        //     reminder.notifications?.append(notification)
+        // }
         
         // Update usage statistics
         usageCount += 1

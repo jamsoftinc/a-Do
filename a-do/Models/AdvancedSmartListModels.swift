@@ -241,19 +241,29 @@ final class EnhancedSmartListRule {
             
         // Content-based conditions
         case .hasAttachments:
-            return reminder.appleNote != nil || reminder.voiceReminder != nil
+            // Temporarily disabled - relationships commented out
+            // return reminder.appleNote != nil || reminder.voiceReminder != nil
+            return false
             
         case .hasVoiceRecording:
-            return reminder.voiceReminder != nil
+            // Temporarily disabled - voiceReminder relationship commented out
+            // return reminder.voiceReminder != nil
+            return false
             
         case .hasLocation:
-            return reminder.locationTrigger != nil
+            // Temporarily disabled - locationTrigger relationship commented out
+            // return reminder.locationTrigger != nil
+            return false
             
         case .hasContacts:
-            return !(reminder.taggedContacts?.isEmpty ?? true)
+            // Temporarily disabled - taggedContacts relationship commented out
+            // return !(reminder.taggedContacts?.isEmpty ?? true)
+            return false
             
         case .hasNotes:
-            return reminder.appleNote != nil
+            // Temporarily disabled - appleNote relationship commented out
+            // return reminder.appleNote != nil
+            return false
             
         case .hasComments:
             // This would need to be implemented with a relationship to comments

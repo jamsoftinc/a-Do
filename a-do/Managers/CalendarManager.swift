@@ -123,10 +123,11 @@ final class CalendarManager {
         if let reminder = reminder {
             if !notes.isEmpty { notes += "\n\n" }
             notes += "Created from Remember reminder"
-            if let tags = reminder.tags, !tags.isEmpty {
-                let tagNames = tags.map { $0.name }.joined(separator: ", ")
-                notes += "\nTags: \(tagNames)"
-            }
+            // Temporarily disabled - tags relationship commented out
+            // if let tags = reminder.tags, !tags.isEmpty {
+            //     let tagNames = tags.map { $0.name }.joined(separator: ", ")
+            //     notes += "\nTags: \(tagNames)"
+            // }
         }
         
         if !notes.isEmpty {
@@ -137,14 +138,15 @@ final class CalendarManager {
         var allAttendees = attendees
         
         // Add attendees from tagged contacts if reminder is provided
-        if let reminder = reminder, let taggedContacts = reminder.taggedContacts {
-            for contact in taggedContacts {
-                // Try to get email from contacts manager
-                if let email = await ContactsManager.shared.getEmailForContact(identifier: contact.identifier) {
-                    allAttendees.append(email)
-                }
-            }
-        }
+        // Temporarily disabled - taggedContacts relationship commented out
+        // if let reminder = reminder, let taggedContacts = reminder.taggedContacts {
+        //     for contact in taggedContacts {
+        //         // Try to get email from contacts manager
+        //         if let email = await ContactsManager.shared.getEmailForContact(identifier: contact.identifier) {
+        //             allAttendees.append(email)
+        //         }
+        //     }
+        // }
         
         // Remove duplicates and add to event
         let uniqueAttendees = Array(Set(allAttendees)).filter { !$0.isEmpty }

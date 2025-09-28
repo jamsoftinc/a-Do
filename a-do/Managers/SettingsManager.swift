@@ -123,10 +123,11 @@ final class SettingsManager {
     
     func markFirstSyncCompleted(context: ModelContext) {
         let settings = getSettings(context: context)
+        let wasFirstSync = !settings.isFirstSyncCompleted
         settings.isFirstSyncCompleted = true
         
         saveSettings(context: context)
-        logger.info("First sync marked as completed")
+        logger.info("First sync marked as completed (was first sync: \(wasFirstSync))")
     }
     
     func isFirstSync(context: ModelContext) -> Bool {
@@ -147,16 +148,20 @@ final class SettingsManager {
         
         // Always perform import on first sync
         if !settings.isFirstSyncCompleted {
+            logger.info("Should import: first sync not completed")
             return true
         }
         
         // Check if enough time has passed since last import (1 hour minimum)
         guard let lastImport = settings.lastAppleRemindersImport else {
+            logger.info("Should import: no previous import timestamp")
             return true
         }
         
         let hoursSinceLastImport = Date().timeIntervalSince(lastImport) / 3600
-        return hoursSinceLastImport >= 1.0
+        let shouldImport = hoursSinceLastImport >= 1.0
+        logger.info("Import check: \(hoursSinceLastImport) hours since last import, should import: \(shouldImport)")
+        return shouldImport
     }
     
     // MARK: - Notification Settings

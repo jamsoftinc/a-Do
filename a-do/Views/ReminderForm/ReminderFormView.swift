@@ -536,7 +536,8 @@ struct ReminderFormView: View {
                         await NotificationManager.shared.scheduleNotifications(
                             for: saved.id,
                             dueDate: saved.dueDate,
-                            leadTimes: saved.notifications?.map { $0.leadTimeSeconds } ?? [],
+                            // Temporarily disabled - notifications relationship commented out
+                            leadTimes: [], // saved.notifications?.map { $0.leadTimeSeconds } ?? [],
                             title: saved.title
                         )
                         
@@ -583,15 +584,17 @@ struct ReminderFormView: View {
         NotificationManager.shared.cancelNotifications(for: existingReminder.id)
         
         // Stop location monitoring if this reminder has location triggers
-        if let locationTrigger = existingReminder.locationTrigger {
-            LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
-        }
+        // Temporarily disabled - locationTrigger relationship commented out
+        // if let locationTrigger = existingReminder.locationTrigger {
+        //     LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
+        // }
         
         // Delete voice recording file if it exists
-        if let voiceReminder = existingReminder.voiceReminder,
-           let audioFileURL = voiceReminder.audioFileURL {
-            try? FileManager.default.removeItem(at: audioFileURL)
-        }
+        // Temporarily disabled - voiceReminder relationship commented out
+        // if let voiceReminder = existingReminder.voiceReminder,
+        //    let audioFileURL = voiceReminder.audioFileURL {
+        //     try? FileManager.default.removeItem(at: audioFileURL)
+        // }
         
         // Remove from context and save
         context.delete(existingReminder)
@@ -612,19 +615,24 @@ struct ReminderFormView: View {
             viewModel.details = existing.details ?? ""
             viewModel.dueDate = existing.dueDate
             viewModel.priority = existing.priority
-            viewModel.selectedTags = existing.tags ?? []
-            viewModel.leadTimes = existing.notifications?.map { $0.leadTimeSeconds } ?? []
+            // Temporarily disabled - tags relationship commented out
+            viewModel.selectedTags = [] // existing.tags ?? []
+            // Temporarily disabled - notifications relationship commented out
+            viewModel.leadTimes = [] // existing.notifications?.map { $0.leadTimeSeconds } ?? []
             viewModel.autoTextTaggedContacts = existing.autoTextTaggedContacts
             viewModel.autoTextMe = existing.autoTextMe
-            viewModel.attachedNote = existing.appleNote
-            viewModel.voiceReminder = existing.voiceReminder
-            if let location = existing.locationTrigger {
-                viewModel.locationLabel = location.label
-                viewModel.locationLatitude = location.latitude
-                viewModel.locationLongitude = location.longitude
-                viewModel.locationRadius = location.radius
-                viewModel.locationType = location.type
-            }
+            // Temporarily disabled - appleNote relationship commented out
+            viewModel.attachedNote = nil // existing.appleNote
+            // Temporarily disabled - voiceReminder relationship commented out
+            viewModel.voiceReminder = nil // existing.voiceReminder
+            // Temporarily disabled - locationTrigger relationship commented out
+            // if let location = existing.locationTrigger {
+            //     viewModel.locationLabel = location.label
+            //     viewModel.locationLatitude = location.latitude
+            //     viewModel.locationLongitude = location.longitude
+            //     viewModel.locationRadius = location.radius
+            //     viewModel.locationType = location.type
+            // }
             
             // For existing reminders, don't create calendar invites by default
             // as they likely already exist

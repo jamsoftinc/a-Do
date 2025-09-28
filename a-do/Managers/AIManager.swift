@@ -336,7 +336,8 @@ final class AIManager {
             }
             
             // Suggest delegation for overdue high-priority tasks
-            if reminder.isOverdue && reminder.priority == .high && !(reminder.taggedContacts?.isEmpty ?? true) {
+            // Temporarily disabled - taggedContacts relationship commented out
+            if reminder.isOverdue && reminder.priority == .high { // && !(reminder.taggedContacts?.isEmpty ?? true) {
                 let suggestion = AISuggestion(
                     type: .delegationSuggestion,
                     title: "Consider Delegation",
@@ -374,7 +375,8 @@ final class AIManager {
         }
         
         // Suggest tags for untagged reminders
-        let untaggedReminders = reminders.filter { $0.tags?.isEmpty ?? true }
+        // Temporarily disabled - tags relationship commented out
+        let untaggedReminders = reminders // .filter { $0.tags?.isEmpty ?? true }
         
         if untaggedReminders.count > 5 {
             let suggestedTags = generateTagSuggestions(for: untaggedReminders)
@@ -385,7 +387,7 @@ final class AIManager {
                 description: "You have \(untaggedReminders.count) untagged reminders. Consider using tags like: \(suggestedTags.joined(separator: ", "))",
                 confidence: 0.6
             )
-            suggestion.priority = .low
+            suggestion.priority = AISuggestionPriority.low
             
             context.insert(suggestion)
         }

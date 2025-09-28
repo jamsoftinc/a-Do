@@ -198,7 +198,8 @@ struct HomeView: View {
         }
         .task { await calendarManager.requestAccess() }
         .task { NotificationManager.shared.requestAuthorization() }
-        .task { await AppleRemindersSyncManager.shared.performFullSync(context: context) }
+        // Temporarily disable automatic sync
+        // .task { await AppleRemindersSyncManager.shared.performFullSync(context: context) }
         .sheet(isPresented: $showingImportReminders) {
             ImportRemindersView()
         }
@@ -356,6 +357,7 @@ struct HomeView: View {
                         
                         // Add button
                         Button {
+                            print("DEBUG: Quick add button pressed with title: '\(viewModel.quickTitle)'")
                             viewModel.addQuickReminder(context: context)
                             isQuickAddFocused = false
                         } label: {
@@ -366,6 +368,9 @@ struct HomeView: View {
                                 .background(AppTheme.Colors.surface, in: Circle())
                         }
                         .disabled(viewModel.quickTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .onAppear {
+                            print("DEBUG: Button state - title: '\(viewModel.quickTitle)', isEmpty: \(viewModel.quickTitle.trimmingCharacters(in: .whitespaces).isEmpty)")
+                        }
                     }
                     
 
@@ -719,15 +724,17 @@ struct HomeView: View {
         NotificationManager.shared.cancelNotifications(for: reminder.id)
         
         // Stop location monitoring if this reminder has location triggers
-        if let locationTrigger = reminder.locationTrigger {
-            LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
-        }
+        // Temporarily disabled - locationTrigger relationship commented out
+        // if let locationTrigger = reminder.locationTrigger {
+        //     LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
+        // }
         
         // Delete voice recording file if it exists
-        if let voiceReminder = reminder.voiceReminder,
-           let audioFileURL = voiceReminder.audioFileURL {
-            try? FileManager.default.removeItem(at: audioFileURL)
-        }
+        // Temporarily disabled - voiceReminder relationship commented out
+        // if let voiceReminder = reminder.voiceReminder,
+        //    let audioFileURL = voiceReminder.audioFileURL {
+        //     try? FileManager.default.removeItem(at: audioFileURL)
+        // }
         
         // Remove from context and save
         context.delete(reminder)
@@ -798,22 +805,20 @@ struct HomeView: View {
             }
         }
         
-        // Perform database operations on background thread
-        let reminders = await Task.detached {
-            // Create background context for database operations
-            let backgroundContext = ModelContext(self.context.container)
-            
-            // Fetch only incomplete reminders with pagination
-            var descriptor = FetchDescriptor<Reminder>(
-                predicate: #Predicate<Reminder> { reminder in
-                    !reminder.isCompleted
-                },
-                sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
-            )
-            descriptor.fetchLimit = 500 // Limit to prevent memory issues
-            
-            return (try? backgroundContext.fetch(descriptor)) ?? []
-        }.value
+        // Perform database operations on main actor to avoid concurrency warnings
+        // Create a separate context from the same container
+        let backgroundContext = ModelContext(context.container)
+        
+        // Fetch only incomplete reminders with pagination
+        var descriptor = FetchDescriptor<Reminder>(
+            predicate: #Predicate<Reminder> { reminder in
+                !reminder.isCompleted
+            },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = 500 // Limit to prevent memory issues
+        
+        let reminders = (try? backgroundContext.fetch(descriptor)) ?? []
         
         // Update UI on main thread
         await MainActor.run {
@@ -907,14 +912,15 @@ private struct ReminderRow: View {
                         .foregroundStyle(.green)
                     }
                     
-                    if reminder.appleNote != nil {
-                        HStack(spacing: 4) {
-                            Image(systemName: "note.text")
-                            Text("Note")
-                        }
-                        .font(.caption2)
-                        .foregroundStyle(.white)
-                    }
+                    // Temporarily disabled - appleNote relationship commented out
+                    // if reminder.appleNote != nil {
+                    //     HStack(spacing: 4) {
+                    //         Image(systemName: "note.text")
+                    //         Text("Note")
+                    //     }
+                    //     .font(.caption2)
+                    //     .foregroundStyle(.white)
+                    // }
                     
                     if reminder.calendarInviteCreated {
                         HStack(spacing: 4) {
@@ -925,14 +931,15 @@ private struct ReminderRow: View {
                         .foregroundStyle(.orange)
                     }
                     
-                    if reminder.voiceReminder != nil {
-                        HStack(spacing: 4) {
-                            Image(systemName: "waveform")
-                            Text("Voice")
-                        }
-                        .font(.caption2)
-                        .foregroundStyle(.purple)
-                    }
+                    // Temporarily disabled - voiceReminder relationship commented out
+                    // if reminder.voiceReminder != nil {
+                    //     HStack(spacing: 4) {
+                    //         Image(systemName: "waveform")
+                    //         Text("Voice")
+                    //     }
+                    //     .font(.caption2)
+                    //     .foregroundStyle(.purple)
+                    // }
                 }
             }
             
@@ -953,9 +960,10 @@ private struct ReminderRow: View {
                     
                     // Cancel notifications and stop location monitoring
                     NotificationManager.shared.cancelNotifications(for: reminder.id)
-                    if let locationTrigger = reminder.locationTrigger {
-                        LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
-                    }
+                    // Temporarily disabled - locationTrigger relationship commented out
+                    // if let locationTrigger = reminder.locationTrigger {
+                    //     LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
+                    // }
                 }
                 do { try context.save() } catch { Logger(subsystem: "a-do", category: "Home").error("Toggle complete failed: \(String(describing: error))") }
             } label: {
@@ -988,9 +996,10 @@ private struct ReminderRow: View {
                     
                     // Cancel notifications and stop location monitoring
                     NotificationManager.shared.cancelNotifications(for: reminder.id)
-                    if let locationTrigger = reminder.locationTrigger {
-                        LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
-                    }
+                    // Temporarily disabled - locationTrigger relationship commented out
+                    // if let locationTrigger = reminder.locationTrigger {
+                    //     LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
+                    // }
                 }
                 do { try context.save() } catch { Logger(subsystem: "a-do", category: "Home").error("Toggle complete failed: \(String(describing: error))") }
             } label: { 
@@ -1008,7 +1017,8 @@ private struct ReminderRow: View {
                     await NotificationManager.shared.scheduleNotifications(
                         for: reminder.id,
                         dueDate: reminder.dueDate,
-                        leadTimes: reminder.notifications?.map { $0.leadTimeSeconds } ?? [],
+                        // Temporarily disabled - notifications relationship commented out
+                        leadTimes: [], // reminder.notifications?.map { $0.leadTimeSeconds } ?? [],
                         title: reminder.title
                     )
                 }
@@ -1024,7 +1034,8 @@ private struct ReminderRow: View {
                             details: reminder.details,
                             dueDate: reminder.dueDate,
                             duration: 30 * 60, // 30 minutes default
-                            location: reminder.locationTrigger?.label,
+                            // Temporarily disabled - locationTrigger relationship commented out
+                            location: nil, // reminder.locationTrigger?.label,
                             attendees: [], // Could be enhanced to include tagged contacts
                             reminder: reminder
                         ) {
@@ -1036,25 +1047,27 @@ private struct ReminderRow: View {
                     }
                 }
             } label: { Label("Create Calendar Invite", systemImage: "calendar.badge.plus") }
-            if reminder.appleNote != nil {
-                Button {
-                    NotesManager.shared.openNoteInNotesApp(noteIdentifier: reminder.appleNote!.noteIdentifier)
-                } label: { Label("Open Apple Note", systemImage: "note.text") }
-            }
-            if reminder.voiceReminder != nil {
-                Button {
-                    Task {
-                        if let voiceReminder = reminder.voiceReminder, let audioFileURL = voiceReminder.audioFileURL {
-                            do {
-                                let player = try AVAudioPlayer(contentsOf: audioFileURL)
-                                player.play()
-                            } catch {
-                                Logger(subsystem: "a-do", category: "Voice").error("Failed to play voice recording: \(String(describing: error))")
-                            }
-                        }
-                    }
-                } label: { Label("Play Voice Recording", systemImage: "play.circle") }
-            }
+            // Temporarily disabled - appleNote relationship commented out
+            // if reminder.appleNote != nil {
+            //     Button {
+            //         NotesManager.shared.openNoteInNotesApp(noteIdentifier: reminder.appleNote!.noteIdentifier)
+            //     } label: { Label("Open Apple Note", systemImage: "note.text") }
+            // }
+            // Temporarily disabled - voiceReminder relationship commented out
+            // if reminder.voiceReminder != nil {
+            //     Button {
+            //         Task {
+            //             if let voiceReminder = reminder.voiceReminder, let audioFileURL = voiceReminder.audioFileURL {
+            //                 do {
+            //                     let player = try AVAudioPlayer(contentsOf: audioFileURL)
+            //                     player.play()
+            //                 } catch {
+            //                     Logger(subsystem: "a-do", category: "Voice").error("Failed to play voice recording: \(String(describing: error))")
+            //                 }
+            //             }
+            //         }
+            //     } label: { Label("Play Voice Recording", systemImage: "play.circle") }
+            // }
             
             Divider()
             
@@ -1072,7 +1085,8 @@ extension HomeView {
     func composeAndSend(reminder: Reminder) async {
         var recipients: [String] = []
         if reminder.autoTextTaggedContacts {
-            recipients.append(contentsOf: reminder.taggedContacts?.compactMap { $0.phoneNumber } ?? [])
+            // Temporarily disabled - taggedContacts relationship commented out
+            // recipients.append(contentsOf: reminder.taggedContacts?.compactMap { $0.phoneNumber } ?? [])
         }
         if reminder.autoTextMe, let my = await ContactsManager.shared.myPhoneNumber() { recipients.append(my) }
         recipients = Array(Set(recipients)).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
@@ -1129,7 +1143,8 @@ extension HomeView {
                 transcribedText: transcribedText,
                 recordingDuration: AudioManager.shared.recordingDuration
             )
-            reminder.voiceReminder = voiceReminder
+            // Temporarily disabled - voiceReminder relationship commented out
+            // reminder.voiceReminder = voiceReminder
             
             Logger(subsystem: "a-do", category: "Voice").info("Voice recording attached: \(fileName)")
         }

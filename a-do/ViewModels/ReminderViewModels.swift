@@ -15,22 +15,31 @@ final class ReminderHomeViewModel {
 
     func addQuickReminder(context: ModelContext) {
         let safeTitle = quickTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        Logger(subsystem: "a-do", category: "Reminders").info("addQuickReminder called with title: '\(safeTitle)'")
+        
         guard !safeTitle.isEmpty else { 
             Logger(subsystem: "a-do", category: "Reminders").warning("Attempted to create quick reminder with empty title")
             return 
         }
         
+        Logger(subsystem: "a-do", category: "Reminders").info("Creating reminder object with title: '\(safeTitle)', dueDate: \(String(describing: self.quickDueDate))")
         let reminder = Reminder(title: safeTitle, dueDate: quickDueDate)
+        Logger(subsystem: "a-do", category: "Reminders").info("Inserting reminder into context with UUID: \(reminder.uuid)")
         context.insert(reminder)
         
+        Logger(subsystem: "a-do", category: "Reminders").info("Attempting to save context...")
         do { 
             try context.save() 
+            Logger(subsystem: "a-do", category: "Reminders").info("Context save succeeded")
             
             // Force context to process pending changes and assign permanent IDs
             context.processPendingChanges()
+            Logger(subsystem: "a-do", category: "Reminders").info("Context processing complete")
             
             // Verify the reminder was actually saved by trying to fetch it
-            let descriptor = FetchDescriptor<Reminder>(predicate: #Predicate<Reminder> { $0.uuid == reminder.uuid })
+            let reminderUUID = reminder.uuid
+            let descriptor = FetchDescriptor<Reminder>(predicate: #Predicate<Reminder> { $0.uuid == reminderUUID })
+            Logger(subsystem: "a-do", category: "Reminders").info("Attempting to fetch saved reminder with UUID: \(reminderUUID)")
             let savedReminders = try? context.fetch(descriptor)
             
             if let savedReminder = savedReminders?.first {
@@ -49,16 +58,25 @@ final class ReminderHomeViewModel {
             let totalCount = (try? context.fetch(totalDescriptor))?.count ?? 0
             Logger(subsystem: "a-do", category: "Reminders").info("Total reminders in database: \(totalCount)")
             
+            // Test: Try to fetch all reminders to see what's actually in the database
+            let allReminders = (try? context.fetch(FetchDescriptor<Reminder>()))?.map { "'\($0.title)' (UUID: \($0.uuid))" } ?? []
+            Logger(subsystem: "a-do", category: "Reminders").info("All reminders in DB: [\(allReminders.joined(separator: ", "))]")
+            
+            // Test with fresh context to check for isolation issues
+            let freshContext = ModelContext(context.container)
+            let freshCount = (try? freshContext.fetch(FetchDescriptor<Reminder>()))?.count ?? 0
+            Logger(subsystem: "a-do", category: "Reminders").info("Fresh context reminder count: \(freshCount)")
+            
             // Notify views to refresh their data
             NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: reminder)
             
-            // Sync to Apple Reminders (only if enabled)
-            Task {
-                let settings = SettingsManager.shared.getSettings(context: context)
-                if settings.appleRemindersEnabled {
-                    await AppleRemindersSyncManager.shared.performFullSync(context: context)
-                }
-            }
+            // Temporarily disable sync to debug reminder creation
+            // Task {
+            //     let settings = SettingsManager.shared.getSettings(context: context)
+            //     if settings.appleRemindersEnabled {
+            //         await AppleRemindersSyncManager.shared.performFullSync(context: context)
+            //     }
+            // }
         } catch { 
             Logger(subsystem: "a-do", category: "Reminders").error("Quick add failed: \(String(describing: error))") 
             // Reset form state on failure to allow retry
@@ -92,9 +110,9 @@ final class ReminderHomeViewModel {
         NotificationManager.shared.cancelNotifications(for: reminder.id)
         
         // Stop location monitoring if this reminder has location triggers
-        if let locationTrigger = reminder.locationTrigger {
-            LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
-        }
+        // if let locationTrigger = reminder.locationTrigger {
+        //     LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
+        // }
         
         do {
             try context.save()
@@ -213,18 +231,19 @@ final class ReminderFormViewModel {
         target.details = details.isEmpty ? nil : details
         target.dueDate = dueDate
         target.priority = priority
-        target.tags = selectedTags.isEmpty ? nil : Array(selectedTags)
-        target.notifications = leadTimes.isEmpty ? nil : leadTimes.map { ReminderNotification(leadTimeSeconds: $0) }
-        if !locationLabel.isEmpty && hasValidCoordinates {
-            target.locationTrigger = LocationTrigger(label: locationLabel, latitude: self.locationLatitude, longitude: self.locationLongitude, radius: locationRadius, type: locationType)
-        } else if !locationLabel.isEmpty && !hasValidCoordinates {
-            // Log invalid coordinates but don't create location trigger
-            Logger(subsystem: "a-do", category: "Location").error("Invalid coordinates provided: lat=\(self.locationLatitude), lon=\(self.locationLongitude)")
-        }
+        // Temporarily commented out relationship assignments
+        // target.tags = selectedTags.isEmpty ? nil : Array(selectedTags)
+        // target.notifications = leadTimes.isEmpty ? nil : leadTimes.map { ReminderNotification(leadTimeSeconds: $0) }
+        // if !locationLabel.isEmpty && hasValidCoordinates {
+        //     target.locationTrigger = LocationTrigger(label: locationLabel, latitude: self.locationLatitude, longitude: self.locationLongitude, radius: locationRadius, type: locationType)
+        // } else if !locationLabel.isEmpty && !hasValidCoordinates {
+        //     // Log invalid coordinates but don't create location trigger
+        //     Logger(subsystem: "a-do", category: "Location").error("Invalid coordinates provided: lat=\(self.locationLatitude), lon=\(self.locationLongitude)")
+        // }
         target.autoTextTaggedContacts = autoTextTaggedContacts
         target.autoTextMe = autoTextMe
-        target.appleNote = attachedNote
-        target.voiceReminder = voiceReminder
+        // target.appleNote = attachedNote
+        // target.voiceReminder = voiceReminder
         if existing == nil { context.insert(target) }
         do { 
             try context.save() 
@@ -234,13 +253,13 @@ final class ReminderFormViewModel {
                 NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: target)
             }
             
-            // Sync to Apple Reminders (only if enabled)
-            Task {
-                let settings = SettingsManager.shared.getSettings(context: context)
-                if settings.appleRemindersEnabled {
-                    await AppleRemindersSyncManager.shared.performFullSync(context: context)
-                }
-            }
+            // Temporarily disable sync to debug reminder creation
+            // Task {
+            //     let settings = SettingsManager.shared.getSettings(context: context)
+            //     if settings.appleRemindersEnabled {
+            //         await AppleRemindersSyncManager.shared.performFullSync(context: context)
+            //     }
+            // }
         } catch { 
             Logger(subsystem: "a-do", category: "Reminders").error("Save failed: \(String(describing: error))") 
         }

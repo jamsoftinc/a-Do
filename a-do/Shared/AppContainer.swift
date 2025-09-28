@@ -44,7 +44,7 @@ final class AppContainer {
             #if DEBUG
             let configs = container.configurations
             for config in configs {
-                print("Container configuration: memory-only=\(config.isStoredInMemoryOnly), URL=\(config.url?.path ?? "none")")
+                print("Container configuration: memory-only=\(config.isStoredInMemoryOnly), URL=\(config.url.path)")
             }
             #endif
             

@@ -82,7 +82,8 @@ final class SharedReminder {
     // Relationships
     @Relationship(deleteRule: .cascade) var participants: [ShareParticipant]? = []
     @Relationship(deleteRule: .cascade) var activities: [ShareActivity]? = []
-    @Relationship(deleteRule: .nullify, inverse: \Reminder.sharedReminders) var reminder: Reminder?
+    // @Relationship(deleteRule: .nullify, inverse: \Reminder.sharedReminders) var reminder: Reminder?
+    @Relationship(deleteRule: .nullify) var reminder: Reminder?
     @Relationship(deleteRule: .nullify) var workspace: Workspace?
     
     
@@ -373,7 +374,8 @@ final class SharedList {
     var allowManageParticipants: Bool = false
     
     @Relationship(deleteRule: .cascade) var participants: [ShareParticipant]? = []
-    @Relationship(deleteRule: .nullify, inverse: \ReminderList.sharedLists) var list: ReminderList?
+    // @Relationship(deleteRule: .nullify, inverse: \ReminderList.sharedLists) var list: ReminderList?
+    @Relationship(deleteRule: .nullify) var list: ReminderList?
     @Relationship(deleteRule: .nullify, inverse: \Workspace.sharedLists) var workspace: Workspace?
     
     
@@ -403,7 +405,8 @@ final class ReminderComment {
     var mentions: Data? // JSON encoded [String] - User IDs mentioned in comment
     var reactions: Data? // JSON data for emoji reactions
     
-    @Relationship(deleteRule: .nullify, inverse: \Reminder.reminderComments) var reminder: Reminder?
+    // @Relationship(deleteRule: .nullify, inverse: \Reminder.reminderComments) var reminder: Reminder?
+    @Relationship(deleteRule: .nullify) var reminder: Reminder?
     @Relationship(deleteRule: .cascade) var replies: [ReminderComment]? = []
     @Relationship(deleteRule: .nullify) var parentComment: ReminderComment?
     

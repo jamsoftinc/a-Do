@@ -153,15 +153,17 @@ struct CompletedRemindersView: View {
         NotificationManager.shared.cancelNotifications(for: reminder.id)
         
         // Stop location monitoring if this reminder has location triggers
-        if let locationTrigger = reminder.locationTrigger {
-            LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
-        }
+        // Temporarily disabled - locationTrigger relationship commented out
+        // if let locationTrigger = reminder.locationTrigger {
+        //     LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
+        // }
         
         // Delete voice recording file if it exists
-        if let voiceReminder = reminder.voiceReminder,
-           let audioFileURL = voiceReminder.audioFileURL {
-            try? FileManager.default.removeItem(at: audioFileURL)
-        }
+        // Temporarily disabled - voiceReminder relationship commented out
+        // if let voiceReminder = reminder.voiceReminder,
+        //    let audioFileURL = voiceReminder.audioFileURL {
+        //     try? FileManager.default.removeItem(at: audioFileURL)
+        // }
         
         // Delete from context
         context.delete(reminder)
@@ -318,15 +320,16 @@ private struct CompletedReminderCard: View {
                 
                 // Tags and attachments
                 HStack(spacing: 8) {
-                    if !(reminder.tags?.isEmpty ?? true) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "tag")
-                                .imageScale(.small)
-                            Text("\(reminder.tags?.count ?? 0) tags")
-                        }
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.7))
-                    }
+                    // Temporarily disabled - tags relationship commented out
+                    // if !(reminder.tags?.isEmpty ?? true) {
+                    //     HStack(spacing: 4) {
+                    //         Image(systemName: "tag")
+                    //             .imageScale(.small)
+                    //         Text("\(reminder.tags?.count ?? 0) tags")
+                    //     }
+                    //     .font(.caption)
+                    //     .foregroundStyle(.white.opacity(0.7))
+                    // }
                     
                     if reminder.autoTextTaggedContacts || reminder.autoTextMe {
                         HStack(spacing: 4) {
@@ -337,14 +340,15 @@ private struct CompletedReminderCard: View {
                         .foregroundStyle(.green.opacity(0.7))
                     }
                     
-                    if reminder.appleNote != nil {
-                        HStack(spacing: 4) {
-                            Image(systemName: "note.text")
-                            Text("Note")
-                        }
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.7))
-                    }
+                    // Temporarily disabled - appleNote relationship commented out
+                    // if reminder.appleNote != nil {
+                    //     HStack(spacing: 4) {
+                    //         Image(systemName: "note.text")
+                    //         Text("Note")
+                    //     }
+                    //     .font(.caption)
+                    //     .foregroundStyle(.white.opacity(0.7))
+                    // }
                     
                     if reminder.calendarInviteCreated {
                         HStack(spacing: 4) {
@@ -355,14 +359,15 @@ private struct CompletedReminderCard: View {
                         .foregroundStyle(.orange.opacity(0.7))
                     }
                     
-                    if reminder.voiceReminder != nil {
-                        HStack(spacing: 4) {
-                            Image(systemName: "waveform")
-                            Text("Voice")
-                        }
-                        .font(.caption)
-                        .foregroundStyle(.purple.opacity(0.7))
-                    }
+                    // Temporarily disabled - voiceReminder relationship commented out
+                    // if reminder.voiceReminder != nil {
+                    //     HStack(spacing: 4) {
+                    //         Image(systemName: "waveform")
+                    //         Text("Voice")
+                    //     }
+                    //     .font(.caption)
+                    //     .foregroundStyle(.purple.opacity(0.7))
+                    // }
                 }
             }
         }
@@ -384,26 +389,28 @@ private struct CompletedReminderCard: View {
                 showingEditSheet = true
             } label: { Label("Edit", systemImage: "pencil") }
             
-            if reminder.appleNote != nil {
-                Button {
-                    NotesManager.shared.openNoteInNotesApp(noteIdentifier: reminder.appleNote!.noteIdentifier)
-                } label: { Label("Open Apple Note", systemImage: "note.text") }
-            }
+            // Temporarily disabled - appleNote relationship commented out
+            // if reminder.appleNote != nil {
+            //     Button {
+            //         NotesManager.shared.openNoteInNotesApp(noteIdentifier: reminder.appleNote!.noteIdentifier)
+            //     } label: { Label("Open Apple Note", systemImage: "note.text") }
+            // }
             
-            if reminder.voiceReminder != nil {
-                Button {
-                    Task {
-                        if let voiceReminder = reminder.voiceReminder, let audioFileURL = voiceReminder.audioFileURL {
-                            do {
-                                let player = try AVAudioPlayer(contentsOf: audioFileURL)
-                                player.play()
-                            } catch {
-                                Logger(subsystem: "a-do", category: "Voice").error("Failed to play voice recording: \(String(describing: error))")
-                            }
-                        }
-                    }
-                } label: { Label("Play Voice Recording", systemImage: "play.circle") }
-            }
+            // Temporarily disabled - voiceReminder relationship commented out
+            // if reminder.voiceReminder != nil {
+            //     Button {
+            //         Task {
+            //             if let voiceReminder = reminder.voiceReminder, let audioFileURL = voiceReminder.audioFileURL {
+            //                 do {
+            //                     let player = try AVAudioPlayer(contentsOf: audioFileURL)
+            //                     player.play()
+            //                 } catch {
+            //                     Logger(subsystem: "a-do", category: "Voice").error("Failed to play voice recording: \(String(describing: error))")
+            //                 }
+            //             }
+            //         }
+            //     } label: { Label("Play Voice Recording", systemImage: "play.circle") }
+            // }
             
             Divider()
             
