@@ -3,6 +3,7 @@ import SwiftData
 import EventKit
 import os
 import AVFoundation
+import Combine
 
 extension Calendar {
     func isDateInTomorrow(_ date: Date) -> Bool {
@@ -100,10 +101,14 @@ struct HomeView: View {
                 cloudKitManager.loadSyncSetting(context: context)
                 loadRemindersAsync()
             }
-            .task {
-                // Load reminders on background thread
-                await loadRemindersInBackground()
-            }
+        .task {
+            // Load reminders on background thread
+            await loadRemindersInBackground()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ReminderCreated"))) { _ in
+            // Refresh reminders when a new one is created
+            loadRemindersAsync()
+        }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
@@ -1132,6 +1137,9 @@ extension HomeView {
         do {
             try context.save()
             Logger(subsystem: "a-do", category: "Voice").info("Voice reminder created successfully using Apple Speech Recognition: '\(transcribedText)'")
+            
+            // Notify views to refresh their data
+            NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: reminder)
             
             // Clear the transcribed text after successful creation
             AudioManager.shared.transcribedText = ""

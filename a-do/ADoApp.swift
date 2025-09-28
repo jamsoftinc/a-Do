@@ -18,8 +18,9 @@ struct ADoApp: App {
         // Configure global navigation bar appearance
         configureGlobalAppearance()
         
-        // Initialize location manager
-        _ = LocationManager.shared
+        // Initialize location manager and request permission
+        let locationManager = LocationManager.shared
+        locationManager.requestAuthorization(always: false)
     }
     
     private func configureGlobalAppearance() {

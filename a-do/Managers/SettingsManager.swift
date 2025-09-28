@@ -134,6 +134,31 @@ final class SettingsManager {
         return !settings.isFirstSyncCompleted
     }
     
+    func updateLastAppleRemindersImport(context: ModelContext) {
+        let settings = getSettings(context: context)
+        settings.lastAppleRemindersImport = Date()
+        
+        saveSettings(context: context)
+        logger.info("Last Apple Reminders import timestamp updated")
+    }
+    
+    func shouldPerformAppleRemindersImport(context: ModelContext) -> Bool {
+        let settings = getSettings(context: context)
+        
+        // Always perform import on first sync
+        if !settings.isFirstSyncCompleted {
+            return true
+        }
+        
+        // Check if enough time has passed since last import (1 hour minimum)
+        guard let lastImport = settings.lastAppleRemindersImport else {
+            return true
+        }
+        
+        let hoursSinceLastImport = Date().timeIntervalSince(lastImport) / 3600
+        return hoursSinceLastImport >= 1.0
+    }
+    
     // MARK: - Notification Settings
     
     func setNotificationsEnabled(_ enabled: Bool, context: ModelContext) {

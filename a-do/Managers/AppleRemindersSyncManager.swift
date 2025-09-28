@@ -43,8 +43,19 @@ final class AppleRemindersSyncManager {
                 SyncProgressManager.shared.updateProgress(operation: "Importing from Apple Reminders...")
             }
             
-            // Perform bidirectional sync
-            let importedCount = await syncFromAppleReminders(context: context, isInitialSync: isInitialSync)
+            // Check if we should perform import (throttle to prevent excessive imports)
+            let shouldImport = SettingsManager.shared.shouldPerformAppleRemindersImport(context: context) || isInitialSync
+            
+            let importedCount: Int
+            if shouldImport {
+                importedCount = await syncFromAppleReminders(context: context, isInitialSync: isInitialSync)
+                if importedCount > 0 {
+                    SettingsManager.shared.updateLastAppleRemindersImport(context: context)
+                }
+            } else {
+                Logger(subsystem: "a-do", category: "Sync").info("Skipping Apple Reminders import - too recent (less than 1 hour)")
+                importedCount = 0
+            }
             
             await MainActor.run {
                 SyncProgressManager.shared.updateProgress(operation: "Exporting to Apple Reminders...")
@@ -98,17 +109,24 @@ final class AppleRemindersSyncManager {
     private func importNewReminders(_ ekReminders: [EKReminder], into context: ModelContext, isInitialSync: Bool = false) async -> Int {
         var importedCount = 0
         
-        // Get existing reminders to avoid duplicates
+        // Get existing reminders to avoid duplicates - check both title AND Apple Reminder ID
         var descriptor = FetchDescriptor<Reminder>()
-        descriptor.fetchLimit = 1000
+        descriptor.fetchLimit = 2000
         let existingReminders = (try? context.fetch(descriptor)) ?? []
         let existingTitles = Set(existingReminders.map { $0.title })
+        let existingAppleIDs = Set(existingReminders.compactMap { $0.appleReminderID })
         
         for ekReminder in ekReminders {
             guard let title = ekReminder.title, !title.isEmpty else { continue }
             
-            // Skip if already exists
-            if existingTitles.contains(title) { continue }
+            // Skip if already exists by Apple Reminder ID (more reliable than title)
+            if existingAppleIDs.contains(ekReminder.calendarItemIdentifier) { continue }
+            
+            // Fallback: Skip if title already exists AND no Apple ID match
+            if existingTitles.contains(title) && !existingAppleIDs.contains(ekReminder.calendarItemIdentifier) { 
+                Logger(subsystem: "a-do", category: "Sync").debug("Skipping reminder with duplicate title: '\(title)'")
+                continue 
+            }
             
             // Skip completed items during initial sync
             if isInitialSync && ekReminder.isCompleted {
@@ -127,6 +145,9 @@ final class AppleRemindersSyncManager {
                 isCompleted: isCompleted,
                 priority: priority
             )
+            
+            // Store the Apple Reminder ID to prevent re-importing
+            reminder.appleReminderID = ekReminder.calendarItemIdentifier
             
             context.insert(reminder)
             importedCount += 1

@@ -39,6 +39,15 @@ final class AppContainer {
         
         if let container = container {
             _container = container
+            
+            // Log container configuration for debugging
+            #if DEBUG
+            let configs = container.configurations
+            for config in configs {
+                print("Container configuration: memory-only=\(config.isStoredInMemoryOnly), URL=\(config.url?.path ?? "none")")
+            }
+            #endif
+            
             return container
         }
         
@@ -229,6 +238,8 @@ final class AppContainer {
         // - Cleaning up orphaned records
         // - Optimizing indexes
         // - Compacting data
+        
+        // Perform standard database optimization
         
         do {
             try context.save()

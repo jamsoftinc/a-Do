@@ -13,6 +13,7 @@ final class AppSettings {
     var autoSyncEnabled: Bool = true
     var syncInterval: TimeInterval = 300 // 5 minutes
     var isFirstSyncCompleted: Bool = false
+    var lastAppleRemindersImport: Date? = nil
     
     // Notification Settings
     var notificationsEnabled: Bool = true

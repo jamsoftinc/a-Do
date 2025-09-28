@@ -15,12 +15,42 @@ final class ReminderHomeViewModel {
 
     func addQuickReminder(context: ModelContext) {
         let safeTitle = quickTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !safeTitle.isEmpty else { return }
+        guard !safeTitle.isEmpty else { 
+            Logger(subsystem: "a-do", category: "Reminders").warning("Attempted to create quick reminder with empty title")
+            return 
+        }
+        
         let reminder = Reminder(title: safeTitle, dueDate: quickDueDate)
         context.insert(reminder)
+        
         do { 
             try context.save() 
-            Logger(subsystem: "a-do", category: "Reminders").info("Quick reminder saved: '\(safeTitle)' with ID: \(String(describing: reminder.id)), due: \(self.quickDueDate?.description ?? "none")")
+            
+            // Force context to process pending changes and assign permanent IDs
+            context.processPendingChanges()
+            
+            // Verify the reminder was actually saved by trying to fetch it
+            let descriptor = FetchDescriptor<Reminder>(predicate: #Predicate<Reminder> { $0.uuid == reminder.uuid })
+            let savedReminders = try? context.fetch(descriptor)
+            
+            if let savedReminder = savedReminders?.first {
+                Logger(subsystem: "a-do", category: "Reminders").info("Quick reminder saved: '\(safeTitle)' with ID: \(String(describing: savedReminder.id)), due: \(self.quickDueDate?.description ?? "none")")
+                Logger(subsystem: "a-do", category: "Reminders").info("Reminder verification: Found saved reminder with UUID: \(savedReminder.uuid)")
+            } else {
+                Logger(subsystem: "a-do", category: "Reminders").error("Reminder verification failed: Could not fetch saved reminder with UUID: \(reminder.uuid)")
+                
+                // Check if the container is using in-memory storage
+                let containerType = AppContainer.shared.getContainer().configurations.first?.isStoredInMemoryOnly ?? true
+                Logger(subsystem: "a-do", category: "Reminders").error("Container is using in-memory storage: \(containerType)")
+            }
+            
+            // Log total reminder count for debugging
+            let totalDescriptor = FetchDescriptor<Reminder>()
+            let totalCount = (try? context.fetch(totalDescriptor))?.count ?? 0
+            Logger(subsystem: "a-do", category: "Reminders").info("Total reminders in database: \(totalCount)")
+            
+            // Notify views to refresh their data
+            NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: reminder)
             
             // Sync to Apple Reminders (only if enabled)
             Task {
@@ -31,7 +61,11 @@ final class ReminderHomeViewModel {
             }
         } catch { 
             Logger(subsystem: "a-do", category: "Reminders").error("Quick add failed: \(String(describing: error))") 
+            // Reset form state on failure to allow retry
+            return
         }
+        
+        // Clear form only on successful save
         quickTitle = ""
         quickDueDate = nil
     }
@@ -194,6 +228,11 @@ final class ReminderFormViewModel {
         if existing == nil { context.insert(target) }
         do { 
             try context.save() 
+            
+            // Notify views to refresh their data (only for new reminders)
+            if existing == nil {
+                NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: target)
+            }
             
             // Sync to Apple Reminders (only if enabled)
             Task {
