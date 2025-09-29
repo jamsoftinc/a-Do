@@ -436,9 +436,9 @@ final class BackupManager {
     // MARK: - Cleanup Operations
     
     private func cleanupOldBackups(userId: String, maxBackups: Int, context: ModelContext) async {
-        let completedStatus = BackupStatus.completed
+        let completedStatusRaw = BackupStatus.completed.rawValue
         let descriptor = FetchDescriptor<BackupRecord>(
-            predicate: #Predicate { $0.userId == userId && $0.status == completedStatus },
+            predicate: #Predicate { $0.userId == userId && $0.statusRaw == completedStatusRaw },
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
         )
         

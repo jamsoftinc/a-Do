@@ -17,6 +17,7 @@ final class FocusModeManager {
     static let shared = FocusModeManager()
     
     private let logger = Logger(subsystem: "a-do", category: "FocusMode")
+    private let behavioralLearning = BehavioralLearningManager.shared
     
     // Current session state
     var currentSession: FocusSession?
@@ -115,6 +116,16 @@ final class FocusModeManager {
         isSessionActive = false
         stopSessionTimer()
         
+        // Calculate session effectiveness based on completion and interruptions
+        let effectiveness = calculateSessionEffectiveness(session: session)
+        
+        // Track focus session for behavioral learning
+        behavioralLearning.trackFocusSession(
+            session: session,
+            effectiveness: effectiveness,
+            modelContext: context
+        )
+        
         // Update statistics
         updateDailyStatistics(session: session, context: context)
         
@@ -146,6 +157,20 @@ final class FocusModeManager {
         } catch {
             logger.error("Failed to record interruption: \(error.localizedDescription)")
         }
+    }
+    
+    // MARK: - Effectiveness Calculation
+    
+    private func calculateSessionEffectiveness(session: FocusSession) -> Double {
+        // Calculate effectiveness based on multiple factors
+        let completionRate = session.actualDuration / session.plannedDuration
+        let interruptionPenalty = max(0, 1.0 - (Double(session.interruptionCount) * 0.1))
+        let focusScore = session.productivityScore / 100.0 // Convert to 0-1 range
+        
+        // Weighted average of factors
+        let effectiveness = (completionRate * 0.4) + (interruptionPenalty * 0.3) + (focusScore * 0.3)
+        
+        return min(1.0, max(0.0, effectiveness))
     }
     
     // MARK: - Break Management

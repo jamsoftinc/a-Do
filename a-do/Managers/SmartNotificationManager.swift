@@ -302,16 +302,16 @@ final class SmartNotificationManager: NSObject {
         let endTime = notification.scheduledDate.addingTimeInterval(timeWindow)
         
         let userId = notification.userId
-        let scheduledStatus = NotificationStatus.scheduled
-        let notifType = notification.type
+        let scheduledStatusRaw = NotificationStatus.scheduled.rawValue
+        let notifTypeRaw = notification.type.rawValue
         
         let descriptor = FetchDescriptor<SmartNotification>(
             predicate: #Predicate<SmartNotification> { n in
                 n.userId == userId &&
-                n.status == scheduledStatus &&
+                n.statusRaw == scheduledStatusRaw &&
                 n.scheduledDate >= startTime &&
                 n.scheduledDate <= endTime &&
-                n.type == notifType
+                n.typeRaw == notifTypeRaw
             }
         )
         
@@ -451,11 +451,11 @@ final class SmartNotificationManager: NSObject {
         userId: String,
         modelContext: ModelContext
     ) async -> Date? {
-        let timeOfDayType = NotificationPatternType.timeOfDay
+        let timeOfDayTypeRaw = NotificationPatternType.timeOfDay.rawValue
         let descriptor = FetchDescriptor<NotificationPattern>(
             predicate: #Predicate<NotificationPattern> { pattern in
                 pattern.userId == userId &&
-                pattern.patternType == timeOfDayType &&
+                pattern.patternTypeRaw == timeOfDayTypeRaw &&
                 pattern.isActive &&
                 pattern.confidence > 0.5
             },
@@ -545,13 +545,15 @@ final class SmartNotificationManager: NSObject {
         userId: String,
         modelContext: ModelContext
     ) async -> Double {
-        let deliveredStatus = NotificationStatus.delivered
+        let deliveredStatusRaw = NotificationStatus.delivered.rawValue
+        let typeRaw = type.rawValue
+        let contextRaw = context.rawValue
         let descriptor = FetchDescriptor<SmartNotification>(
             predicate: #Predicate<SmartNotification> { n in
                 n.userId == userId &&
-                n.type == type &&
-                n.context == context &&
-                n.status == deliveredStatus
+                n.typeRaw == typeRaw &&
+                n.contextRaw == contextRaw &&
+                n.statusRaw == deliveredStatusRaw
             }
         )
         
@@ -570,12 +572,13 @@ final class SmartNotificationManager: NSObject {
         context: ModelContext
     ) async -> String {
         // Check if there's an existing batch for these notifications
-        let scheduledStatus = NotificationStatus.scheduled
+        let scheduledStatusRaw = NotificationStatus.scheduled.rawValue
+        let batchTypeRaw = type.rawValue
         let batchDescriptor = FetchDescriptor<NotificationBatch>(
             predicate: #Predicate<NotificationBatch> { batch in
                 batch.userId == userId &&
-                batch.batchType == type &&
-                batch.status == scheduledStatus
+                batch.batchTypeRaw == batchTypeRaw &&
+                batch.statusRaw == scheduledStatusRaw
             }
         )
         
@@ -697,10 +700,11 @@ final class SmartNotificationManager: NSObject {
         responseTime: TimeInterval,
         context: ModelContext
     ) {
+        let typeRaw = type.rawValue
         let descriptor = FetchDescriptor<NotificationPattern>(
             predicate: #Predicate<NotificationPattern> { pattern in
                 pattern.userId == userId &&
-                pattern.patternType == type &&
+                pattern.patternTypeRaw == typeRaw &&
                 pattern.contextValue == contextValue
             }
         )
@@ -771,12 +775,13 @@ final class SmartNotificationManager: NSObject {
     func suppressNotificationsForContext(_ context: NotificationContext, duration: TimeInterval, userId: String, modelContext: ModelContext) {
         let endTime = Date().addingTimeInterval(duration)
         
-        let scheduledStatus = NotificationStatus.scheduled
+        let scheduledStatusRaw = NotificationStatus.scheduled.rawValue
+        let contextRaw = context.rawValue
         let descriptor = FetchDescriptor<SmartNotification>(
             predicate: #Predicate<SmartNotification> { n in
                 n.userId == userId &&
-                n.context == context &&
-                n.status == scheduledStatus &&
+                n.contextRaw == contextRaw &&
+                n.statusRaw == scheduledStatusRaw &&
                 n.scheduledDate <= endTime
             }
         )

@@ -154,6 +154,12 @@ final class Habit {
         guard let todayEntry = todayEntry else { return 0.0 }
         return min(1.0, Double(todayEntry.count) / Double(targetCount))
     }
+    
+    var daysSinceCreation: Int {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.day], from: createdAt, to: Date())
+        return max(1, components.day ?? 1) // At least 1 day
+    }
 }
 
 // MARK: - Habit Entry Model

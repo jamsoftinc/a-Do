@@ -14,6 +14,7 @@ import os
 @Observable
 final class HabitViewModel {
     private let logger = Logger(subsystem: "a-do", category: "HabitViewModel")
+    private let behavioralLearning = BehavioralLearningManager.shared
     
     var habits: [Habit] = []
     var selectedHabit: Habit?
@@ -149,7 +150,32 @@ final class HabitViewModel {
     // MARK: - Habit Entry Management
     
     func incrementHabit(_ habit: Habit) {
+        let wasCompleted = habit.isCompletedToday
         habit.incrementToday()
+        let currentTime = Date()
+        
+        // Determine timing relative to optimal time
+        let timing: HabitTiming = {
+            // For now, we'll use a simple heuristic based on time of day
+            let hour = Calendar.current.component(.hour, from: currentTime)
+            if hour < 10 {
+                return .early
+            } else if hour > 18 {
+                return .late
+            } else {
+                return .onTime
+            }
+        }()
+        
+        // Track habit completion for behavioral learning
+        if let context = modelContext {
+            behavioralLearning.trackHabitCompletion(
+                habit: habit,
+                completed: habit.isCompletedToday,
+                timing: timing,
+                modelContext: context
+            )
+        }
         
         do {
             try modelContext?.save()

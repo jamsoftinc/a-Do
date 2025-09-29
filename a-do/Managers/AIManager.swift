@@ -519,9 +519,9 @@ final class AIManager {
     }
     
     private func clearExpiredSuggestions(context: ModelContext) async {
-        let pendingStatus = AISuggestionStatus.pending
+        let pendingStatusRaw = AISuggestionStatus.pending.rawValue
         let descriptor = FetchDescriptor<AISuggestion>(
-            predicate: #Predicate { $0.status == pendingStatus }
+            predicate: #Predicate { $0.statusRaw == pendingStatusRaw }
         )
         
         let suggestions = (try? context.fetch(descriptor)) ?? []
@@ -540,10 +540,10 @@ final class AIManager {
     }
     
     private func updatePendingSuggestions(context: ModelContext) async {
-        let pendingStatus = AISuggestionStatus.pending
+        let pendingStatusRaw = AISuggestionStatus.pending.rawValue
         let descriptor = FetchDescriptor<AISuggestion>(
-            predicate: #Predicate { $0.status == pendingStatus },
-            sortBy: [SortDescriptor(\.priority.rawValue, order: .reverse), SortDescriptor(\.confidence, order: .reverse)]
+            predicate: #Predicate { $0.statusRaw == pendingStatusRaw },
+            sortBy: [SortDescriptor(\.priorityRaw, order: .reverse), SortDescriptor(\.confidence, order: .reverse)]
         )
         
         pendingSuggestions = (try? context.fetch(descriptor)) ?? []

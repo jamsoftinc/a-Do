@@ -28,6 +28,7 @@ struct HomeView: View {
 
     @State private var viewModel = ReminderHomeViewModel()
     @State private var calendarManager = CalendarManager.shared
+    @State private var behavioralLearning = BehavioralLearningManager.shared
     @Environment(AppRouter.self) private var router
     @FocusState private var isQuickAddFocused: Bool
     @State private var showingImportReminders = false
@@ -159,6 +160,22 @@ struct HomeView: View {
                             Label("Smart Search", systemImage: "magnifyingglass.circle")
                         }
                         
+                        Divider()
+                        
+                        NavigationLink(destination: AISuggestionsView()) {
+                            Label("AI Suggestions", systemImage: "sparkles")
+                        }
+                        
+                        NavigationLink(destination: AIInsightsDashboard()) {
+                            Label("AI Insights", systemImage: "chart.line.uptrend.xyaxis")
+                        }
+                        
+                        NavigationLink(destination: AISettingsView()) {
+                            Label("AI Settings", systemImage: "brain.head.profile")
+                        }
+                        
+                        Divider()
+                        
                         Button {
                             showingAppleIntegrations = true
                         } label: {
@@ -226,6 +243,9 @@ struct HomeView: View {
             case .habits:
                 // Navigate to habits view
                 // This will be handled by the NavigationLink in the toolbar
+                break
+            case .aiSuggestions, .aiInsights, .aiSettings:
+                // AI navigation will be handled by NavigationLinks
                 break
             case .smartHighPriority, .tag, .priority:
                 break
@@ -865,6 +885,7 @@ private struct ReminderRow: View {
     @Environment(\.modelContext) private var context
     @State private var isCompleted: Bool
     @State private var showingEditSheet = false
+    @State private var behavioralLearning = BehavioralLearningManager.shared
     let reminder: Reminder
     let onDelete: (Reminder) -> Void
 
@@ -954,9 +975,20 @@ private struct ReminderRow: View {
                     reminder.completedAt = nil
                 } else {
                     // Mark as complete
+                    let completionTime = Date()
+                    let completedOnTime = reminder.dueDate?.timeIntervalSinceNow ?? 0 > 0
+                    
                     isCompleted = true
                     reminder.isCompleted = true
-                    reminder.completedAt = Date()
+                    reminder.completedAt = completionTime
+                    
+                    // Track task completion for behavioral learning
+                    behavioralLearning.trackTaskCompletion(
+                        reminder: reminder,
+                        completedOnTime: completedOnTime,
+                        actualTime: reminder.dueDate?.timeIntervalSince(completionTime),
+                        modelContext: context
+                    )
                     
                     // Cancel notifications and stop location monitoring
                     NotificationManager.shared.cancelNotifications(for: reminder.id)
@@ -990,9 +1022,20 @@ private struct ReminderRow: View {
                     reminder.isCompleted = false
                     reminder.completedAt = nil
                 } else {
+                    let completionTime = Date()
+                    let completedOnTime = reminder.dueDate?.timeIntervalSinceNow ?? 0 > 0
+                    
                     isCompleted = true
                     reminder.isCompleted = true
-                    reminder.completedAt = Date()
+                    reminder.completedAt = completionTime
+                    
+                    // Track task completion for behavioral learning
+                    behavioralLearning.trackTaskCompletion(
+                        reminder: reminder,
+                        completedOnTime: completedOnTime,
+                        actualTime: reminder.dueDate?.timeIntervalSince(completionTime),
+                        modelContext: context
+                    )
                     
                     // Cancel notifications and stop location monitoring
                     NotificationManager.shared.cancelNotifications(for: reminder.id)

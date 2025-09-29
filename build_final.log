@@ -1,0 +1,1213 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project a-do.xcodeproj -scheme a-do -configuration Debug build CODE_SIGNING_ALLOWED=NO
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+2025-09-28 14:51:32.524 xcodebuild[41499:7448424] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device }
+{ platform:iOS Simulator, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder, name:Any iOS Simulator Device }
+{ platform:iOS Simulator, arch:arm64, id:B0AD678F-D26F-4AFD-BD47-DA384A6202F1, OS:26.0, name:iPad (A16) }
+{ platform:iOS Simulator, arch:arm64, id:F618988A-47D0-4E1D-979F-CF1F659B5A90, OS:26.0, name:iPad Air 11-inch (M3) }
+{ platform:iOS Simulator, arch:arm64, id:A6A80E85-DA00-4A4B-A5F5-8B7C0307CD0B, OS:26.0, name:iPad Air 13-inch (M3) }
+{ platform:iOS Simulator, arch:arm64, id:15870543-6358-4BD2-A18A-81EA685C5AA9, OS:26.0, name:iPad Pro 11-inch (M4) }
+{ platform:iOS Simulator, arch:arm64, id:B6F64D87-B2B2-4C50-A3A4-71443A6353DB, OS:26.0, name:iPad Pro 13-inch (M4) }
+{ platform:iOS Simulator, arch:arm64, id:F6CFC8A2-053A-423F-9779-2DC339778294, OS:26.0, name:iPad mini (A17 Pro) }
+{ platform:iOS Simulator, arch:arm64, id:D1F8C0A4-E98F-450F-815A-D4A8EBD020E8, OS:26.0, name:iPhone 16e }
+{ platform:iOS Simulator, arch:arm64, id:77CB563F-760D-4968-8520-383D17DB1237, OS:26.0, name:iPhone 17 }
+{ platform:iOS Simulator, arch:arm64, id:47602CD7-ED5A-4A84-A57A-760D80019176, OS:26.0, name:iPhone 17 Pro }
+{ platform:iOS Simulator, arch:arm64, id:B4F0214A-F641-4D0B-9B05-E1A1FF7F9DF2, OS:26.0, name:iPhone 17 Pro Max }
+{ platform:iOS Simulator, arch:arm64, id:A4815C98-5D52-48A8-B387-571E838F6B8B, OS:26.0, name:iPhone Air }
+{ platform:iOS, arch:arm64, id:00008132-000A01442ED9001C, name:IP13 }
+{ platform:iOS, arch:arm64, id:00008150-0001602C2100401C, name:IPA }
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'a-do' in project 'a-do' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/ibtool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: a9116e939c03f461386a7a3e3ab6edcd
+Build description path: /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/XCBuildData/a9116e939c03f461386a7a3e3ab6edcd.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos26.0-23A339-81ce72e5b06c9602b9d30b56f2eed08a.sdkstatcache
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember/a-do.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos26.0-23A339-81ce72e5b06c9602b9d30b56f2eed08a.sdkstatcache
+
+ProcessInfoPlistFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/a-do.app/Info.plist /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/empty-a-do.plist (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    builtin-infoPlistUtility /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/empty-a-do.plist -producttype com.apple.product-type.application -genpkginfo /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/a-do.app/PkgInfo -expandbuildsettings -format binary -platform iphoneos -additionalcontentfile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/LaunchScreen-SBPartialInfo.plist -additionalcontentfile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/assetcatalog_generated_info.plist -requiredArchitecture arm64 -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/a-do.app/Info.plist
+
+SwiftDriver a-do normal arm64 com.apple.xcode.tools.swift.compiler (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name a_do -Onone -enforce-exclusivity\=checked @/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do.SwiftFileList -DDEBUG -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk -target arm64-apple-ios18.0 -g -module-cache-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos -F /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos -emit-localized-strings -emit-localized-strings-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64 -c -j14 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos26.0-23A339-81ce72e5b06c9602b9d30b56f2eed08a.sdkstatcache -output-file-map /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a_do.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do_const_extract_protocols.json -Xcc -iquote -Xcc /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-generated-files.hmap -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-own-target-headers.hmap -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-all-target-headers.hmap -Xcc -iquote -Xcc /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-project-headers.hmap -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/include -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources-normal/arm64 -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources/arm64 -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a_do-Swift.h -working-directory /Users/ahmadhamilton/Documents/GitHub/Remember -experimental-emit-module-separately -disable-cmo
+
+SwiftCompile normal arm64 Compiling\ TimeTrackingManager.swift,\ AdvancedSmartListModels.swift,\ AIModels.swift,\ AppSettings.swift,\ BackupModels.swift,\ CollaborationModels.swift,\ FocusModeModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/TimeTrackingManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AdvancedSmartListModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AIModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AppSettings.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/BackupModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/CollaborationModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/FocusModeModels.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/TimeTrackingManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+2025-09-28 14:51:35.426 xcodebuild[41499:7448485]  DTDKRemoteDeviceConnection: Failed to start remote service "com.apple.mobile.notification_proxy" on device. Error: Error Domain=com.apple.dtdevicekit Code=811 "Failed to start remote service "com.apple.mobile.notification_proxy" on device." UserInfo={NSUnderlyingError=0xa46419230 {Error Domain=com.apple.dt.MobileDeviceErrorDomain Code=-402653158 "The device is passcode protected." UserInfo={MobileDeviceErrorCode=(0xE800001A), com.apple.dtdevicekit.stacktrace=(
+	0   DTDeviceKitBase                     0x00000001106aa644 DTDKCreateNSErrorFromAMDErrorCode + 312
+	1   DTDeviceKitBase                     0x00000001106b63c0 __63-[DTDKRemoteDeviceConnection startFirstServiceOf:unlockKeybag:]_block_invoke + 368
+	2   DTDeviceKitBase                     0x00000001106b5bc8 __48-[DTDKRemoteDeviceConnection futureWithSession:]_block_invoke_4 + 28
+	3   DTDeviceKitBase                     0x00000001106ac6b4 __DTDKExecuteInSession_block_invoke_2 + 68
+	4   DTDeviceKitBase                     0x00000001106abdf4 __DTDKExecuteWithConnection_block_invoke_2 + 216
+	5   DTDeviceKitBase                     0x00000001106abcf0 __DTDKExecuteWithConnection_block_invoke + 104
+	6   libdispatch.dylib                   0x000000019ef5aac4 _dispatch_client_callout + 16
+	7   libdispatch.dylib                   0x000000019ef50d64 _dispatch_sync_invoke_and_complete_recurse + 64
+	8   libdispatch.dylib                   0x000000019ef507f4 _dispatch_sync_f_slow + 176
+	9   DVTFoundation                       0x0000000108d786cc DVTDispatchBarrierSync + 148
+	10  DVTFoundation                       0x0000000108d7982c -[DVTDispatchLock performLockedBlock:] + 60
+	11  DTDeviceKitBase                     0x00000001106abbf4 DTDKExecuteWithConnection + 200
+	12  DTDeviceKitBase                     0x00000001106ac548 DTDKExecuteInSession + 260
+	13  DTDeviceKitBase                     0x00000001106b599c __48-[DTDKRemoteDeviceConnection futureWithSession:]_block_invoke_2 + 204
+	14  DVTFoundation                       0x0000000108d77a90 __DVT_CALLING_CLIENT_BLOCK__ + 16
+	15  DVTFoundation                       0x0000000108d78410 __DVTDispatchAsync_block_invoke + 152
+	16  libdispatch.dylib                   0x000000019ef40b5c _dispatch_call_block_and_release + 32
+	17  libdispatch.dylib                   0x000000019ef5aac4 _dispatch_client_callout + 16
+	18  libdispatch.dylib                   0x000000019ef494e8 _dispatch_lane_serial_drain + 740
+	19  libdispatch.dylib                   0x000000019ef49ff8 _dispatch_lane_invoke + 440
+	20  libdispatch.dylib                   0x000000019ef54474 _dispatch_root_queue_drain_deferred_wlh + 292
+	21  libdispatch.dylib                   0x000000019ef53d6c _dispatch_workloop_worker_thread + 692
+	22  libsystem_pthread.dylib             0x000000019f0f8e4c _pthread_wqthread + 292
+	23  libsystem_pthread.dylib             0x000000019f0f7b9c start_wqthread + 8
+), DVTRadarComponentKey=261622, NSLocalizedDescription=The device is passcode protected.}}, NSLocalizedRecoverySuggestion=Please check your connection to your device., DVTRadarComponentKey=261622, NSLocalizedDescription=Failed to start remote service "com.apple.mobile.notification_proxy" on device.}
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/TimeTrackingManager.swift:27:5: warning: 'nonisolated(unsafe)' has no effect on property 'timer', consider using 'nonisolated'
+    nonisolated(unsafe) private var timer: Timer?
+    ^~~~~~~~~~~
+    nonisolated
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/TimeTrackingManager.swift:114:17: warning: reference to captured var 'self' in concurrently-executing code; this is an error in the Swift 6 language mode
+                self?.updateElapsedTime()
+                ^
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AdvancedSmartListModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AIModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AppSettings.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/BackupModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/CollaborationModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/FocusModeModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ ReminderShortcuts.swift,\ AdvancedSearchManager.swift,\ AdvancedSmartListManager.swift,\ AIBehavioralIntegrationCoordinator.swift,\ AIDataService.swift,\ AIManager.swift,\ AppleRemindersSyncManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/AppIntents/ReminderShortcuts.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSearchManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSmartListManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIDataService.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AppleRemindersSyncManager.swift (in target 'a-do' from project 'a-do')
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/AppIntents/ReminderShortcuts.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/AppIntents/ReminderShortcuts.swift:39:9: warning: expression is 'async' but is not marked with 'await'; this is an error in the Swift 6 language mode
+        AppGroupDefaults.shared.set(true, forKey: "deeplink_open_today")
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        await 
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/AppIntents/ReminderShortcuts.swift:39:9: note: calls to instance method 'set(_:forKey:)' from outside of its actor context are implicitly asynchronous
+        AppGroupDefaults.shared.set(true, forKey: "deeplink_open_today")
+        ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/AppIntents/ReminderShortcuts.swift:39:9: note: property access is 'async'
+        AppGroupDefaults.shared.set(true, forKey: "deeplink_open_today")
+        ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/AppIntents/ReminderShortcuts.swift:53:9: warning: expression is 'async' but is not marked with 'await'; this is an error in the Swift 6 language mode
+        AppGroupDefaults.shared.set(uuid.uuidString, forKey: "deeplink_send_text_reminder_id")
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        await 
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/AppIntents/ReminderShortcuts.swift:53:9: note: calls to instance method 'set(_:forKey:)' from outside of its actor context are implicitly asynchronous
+        AppGroupDefaults.shared.set(uuid.uuidString, forKey: "deeplink_send_text_reminder_id")
+        ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/AppIntents/ReminderShortcuts.swift:53:9: note: property access is 'async'
+        AppGroupDefaults.shared.set(uuid.uuidString, forKey: "deeplink_send_text_reminder_id")
+        ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/AppIntents/ReminderShortcuts.swift:101:9: warning: expression is 'async' but is not marked with 'await'; this is an error in the Swift 6 language mode
+        AppGroupDefaults.shared.set(true, forKey: "deeplink_open_habits")
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        await 
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/AppIntents/ReminderShortcuts.swift:101:9: note: calls to instance method 'set(_:forKey:)' from outside of its actor context are implicitly asynchronous
+        AppGroupDefaults.shared.set(true, forKey: "deeplink_open_habits")
+        ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/AppIntents/ReminderShortcuts.swift:101:9: note: property access is 'async'
+        AppGroupDefaults.shared.set(true, forKey: "deeplink_open_habits")
+        ^
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSearchManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSmartListManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSmartListManager.swift:205:22: warning: conformance of 'Reminder' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use Reminder's persistentModelID instead; this is an error in the Swift 6 language mode
+        return await Task.detached {
+                     ^
+@__swiftmacro_4a_do8Reminder5ModelfMe_.swift:9:1: note: conformance of 'Reminder' to 'Sendable' has been explicitly marked unavailable here
+extension Reminder: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSmartListManager.swift:205:27: warning: conformance of 'Reminder' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use Reminder's persistentModelID instead; this is an error in the Swift 6 language mode
+        return await Task.detached {
+                          ^
+@__swiftmacro_4a_do8Reminder5ModelfMe_.swift:9:1: note: conformance of 'Reminder' to 'Sendable' has been explicitly marked unavailable here
+extension Reminder: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSmartListManager.swift:240:11: warning: conformance of 'Reminder' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use Reminder's persistentModelID instead; this is an error in the Swift 6 language mode
+        }.value
+          ^
+@__swiftmacro_4a_do8Reminder5ModelfMe_.swift:9:1: note: conformance of 'Reminder' to 'Sendable' has been explicitly marked unavailable here
+extension Reminder: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSmartListManager.swift:205:22: warning: non-Sendable type 'Task<[Reminder], Never>' cannot exit main actor-isolated context in call to nonisolated property 'value'; this is an error in the Swift 6 language mode
+        return await Task.detached {
+                     ^
+_Concurrency.Task:2:23: note: generic struct 'Task' does not conform to the 'Sendable' protocol
+@frozen public struct Task<Success, Failure> : Sendable where Success : Sendable, Failure : Error {
+                      ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSmartListManager.swift:240:11: warning: non-Sendable type '[Reminder]' of nonisolated property 'value' cannot be sent to main actor-isolated context; this is an error in the Swift 6 language mode
+        }.value
+          ^
+Swift.Array:1:23: note: generic struct 'Array' does not conform to the 'Sendable' protocol
+@frozen public struct Array<Element> : _DestructorSafeContainer {
+                      ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSmartListManager.swift:233:52: warning: capture of 'results' with non-Sendable type '[Reminder]' in a '@Sendable' closure; this is an error in the Swift 6 language mode
+                self.cachedResults[smartList.id] = results
+                                                   ^
+Swift.Array:1:23: note: generic struct 'Array' does not conform to the 'Sendable' protocol
+@frozen public struct Array<Element> : _DestructorSafeContainer {
+                      ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSmartListManager.swift:236:79: warning: implicit capture of 'results' requires that '[Reminder]' conforms to 'Sendable'; this is an error in the Swift 6 language mode
+                self.logger.info("Evaluated smart list '\(smartList.name)': \(results.count) results")
+                                                                              ^
+Swift.Array:1:23: note: generic struct 'Array' does not conform to the 'Sendable' protocol
+@frozen public struct Array<Element> : _DestructorSafeContainer {
+                      ^
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:77:11: warning: 'catch' block is unreachable because no errors are thrown in 'do' block
+        } catch {
+          ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:88:66: error: value of type 'ProductivityPatterns' has no member 'peakHours'
+        if let productivityPeaks = patterns.productivityPatterns.peakHours {
+                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ^~~~~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:93:21: error: value of type 'UserBehaviorAnalysis' has no member 'habitSuccessFactors'
+        if patterns.habitSuccessFactors.isNotEmpty {
+           ~~~~~~~~ ^~~~~~~~~~~~~~~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:94:73: error: value of type 'UserBehaviorAnalysis' has no member 'habitSuccessFactors'
+            await updateHabitSuggestionWeights(successFactors: patterns.habitSuccessFactors, context: context)
+                                                               ~~~~~~~~ ^~~~~~~~~~~~~~~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:98:44: error: value of type 'TaskCompletionPatterns' has no member 'isNotEmpty'
+        if patterns.taskCompletionPatterns.isNotEmpty {
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ^~~~~~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:99:70: error: cannot convert value of type 'TaskCompletionPatterns' to expected argument type '[String : Any]'
+            await updateTaskSchedulingSuggestions(patterns: patterns.taskCompletionPatterns, context: context)
+                                                                     ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:103:21: error: value of type 'UserBehaviorAnalysis' has no member 'focusEffectivenessFactors'
+        if patterns.focusEffectivenessFactors.isNotEmpty {
+           ~~~~~~~~ ^~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:104:71: error: value of type 'UserBehaviorAnalysis' has no member 'focusEffectivenessFactors'
+            await updateFocusSessionRecommendations(factors: patterns.focusEffectivenessFactors, context: context)
+                                                             ~~~~~~~~ ^~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:128:23: error: value of type 'AIInsight' has no member 'tags'
+            aiInsight.tags.append("behavioral-learning")
+            ~~~~~~~~~ ^~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:129:23: error: value of type 'AIInsight' has no member 'tags'
+            aiInsight.tags.append("personalized")
+            ~~~~~~~~~ ^~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:150:16: error: value of type 'AIConfiguration' has no member 'setParameter'
+        config.setParameter(key: "productivity_peak_hours", value: peakHoursData)
+        ~~~~~~ ^~~~~~~~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:160:20: error: value of type 'AIConfiguration' has no member 'setParameter'
+            config.setParameter(key: "habit_weight_\(factor)", value: String(weight))
+            ~~~~~~ ^~~~~~~~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:172:24: error: value of type 'AIConfiguration' has no member 'setParameter'
+                config.setParameter(key: "task_timing_\(timeSlot)", value: String(preference))
+                ~~~~~~ ^~~~~~~~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:184:20: error: value of type 'AIConfiguration' has no member 'setParameter'
+            config.setParameter(key: "focus_effectiveness_\(factor)", value: String(effectiveness))
+            ~~~~~~ ^~~~~~~~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:189:20: error: value of type 'AIConfiguration' has no member 'setParameter'
+            config.setParameter(key: "optimal_focus_duration", value: String(optimalLength))
+            ~~~~~~ ^~~~~~~~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:235:101: error: missing argument for parameter 'confidence' in call
+            description: "Based on your patterns, consider tackling important tasks between 9-11 AM"
+                                                                                                    ^
+                                                                                                    , confidence: <#Double#>
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AIModels.swift:55:5: note: 'init(type:title:description:confidence:)' declared here
+    init(type: AISuggestionType, title: String, description: String, confidence: Double) {
+    ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:233:20: error: type 'AISuggestionType' has no member 'taskScheduling'
+            type: .taskScheduling,
+                  ~^~~~~~~~~~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:269:25: error: value of type 'AIInsight' has no member 'tags'
+                insight.tags.contains("behavioral-learning")
+                ~~~~~~~ ^~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift:275:50: error: generic parameter 'T' could not be inferred
+            let behavioralInsights = try context.fetch(descriptor)
+                                                 ^
+SwiftData.ModelContext.fetch:2:13: note: in call to function 'fetch'
+public func fetch<T>(_ descriptor: FetchDescriptor<T>) throws -> [T] where T : PersistentModel}
+            ^
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIDataService.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIManager.swift:514:77: warning: variable 'self' was written to, but never read
+        Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
+                                                                            ^
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AppleRemindersSyncManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+Failed frontend command:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -c -primary-file /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/AppIntents/ReminderShortcuts.swift -primary-file /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSearchManager.swift -primary-file /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSmartListManager.swift -primary-file /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift -primary-file /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIDataService.swift -primary-file /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIManager.swift -primary-file /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AppleRemindersSyncManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AudioManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/BackupManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/BehavioralLearningManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/CalendarManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/CloudKitManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/CollaborationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/ContactsManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/FocusModeManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/GamificationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/HealthKitManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/LocationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/MLPatternRecognitionManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/NotesManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/NotificationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RealNotesManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RecurringRemindersManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/ReminderCleanupManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RemindersManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SettingsManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SmartNotificationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SyncProgressManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/TimeTrackingManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AdvancedSmartListModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AIModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AppSettings.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/BackupModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/CollaborationModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/FocusModeModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/GamificationModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/HabitModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/HealthModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/RecurringModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/SearchModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/SmartNotificationModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/TimeTrackingModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppContainer.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppRouter.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/SwiftDataUtils.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Styles/AppTheme.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/AppGroupDefaults.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/Color+Hex.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/DeviceAdaptive.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/SecurityUtils.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/UserDefaults+AppGroup.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/HabitViewModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/ReminderViewModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/SmartListEngine.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AISettingsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AISuggestionsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/InsightDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/SuggestionDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/CollaborationView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/CreateListView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/EditWorkspaceView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/ShareReminderView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/WorkspaceDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/WorkspaceMembersView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/AppleNoteAttachmentView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/FlowLayout.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/GlassCard.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/ImportRemindersView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/LocationStatusView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/SyncProgressView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/AddHabitEntryView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/CreateHabitView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/EditHabitView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitCardView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/CompletedRemindersView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/HomeView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/InboxView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/AppleNotePickerView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/ReminderFormView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/TagPeopleView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Search/SmartSearchView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Settings/AppleIntegrationsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Settings/SyncSettingsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Tags/TagsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/CreateRecurringReminderView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/CreateTemplateView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/EditRecurringReminderView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/EditTemplateView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/RecurringReminderDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/TemplateDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/TemplatesView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/CreateTimeGoalView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/EditTimeGoalView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeAnalyticsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeGoalDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeGoalsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeHistoryView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeTrackingView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/LaunchScreenCoordinator.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/LaunchScreenView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/StaticLaunchScreenView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ADoApp.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ContentView.swift /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources/GeneratedAssetSymbols.swift -supplementary-output-file-map /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/supplementaryOutputs-1 -emit-localized-strings -emit-localized-strings-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64 -target arm64-apple-ios18.0 -module-can-import-version CoreLocation 53 3056.0.25 -module-can-import-version DeveloperToolsSupport 23.0.4 23.0.4 -module-can-import-version MapKit 14.30.6.27 14.0.0 -module-can-import-version SwiftUI 7.0.84.1 7.0.84 -module-can-import-version UIKit 9088.1.113 9088.1.113 -disable-cross-import-overlay-search -swift-module-cross-import AppIntents /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/AppIntents.framework/Modules/AppIntents.swiftcrossimport/SwiftUI.swiftoverlay -swift-module-cross-import AppIntents /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/AppIntents.framework/Modules/AppIntents.swiftcrossimport/UIKit.swiftoverlay -swift-module-cross-import AppIntents /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/AppIntents.framework/Modules/AppIntents.swiftcrossimport/SwiftUI.swiftoverlay -swift-module-cross-import AppIntents /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/AppIntents.framework/Modules/AppIntents.swiftcrossimport/UIKit.swiftoverlay -swift-module-cross-import MapKit /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/MapKit.framework/Modules/MapKit.swiftcrossimport/SwiftUI.swiftoverlay -swift-module-cross-import RelevanceKit /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/RelevanceKit.framework/Modules/RelevanceKit.swiftcrossimport/MapKit.swiftoverlay -swift-module-cross-import RelevanceKit /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/RelevanceKit.framework/Modules/RelevanceKit.swiftcrossimport/MapKit.swiftoverlay -swift-module-cross-import SwiftData /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/SwiftData.framework/Modules/SwiftData.swiftcrossimport/CoreData.swiftoverlay -swift-module-cross-import SwiftData /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/SwiftData.framework/Modules/SwiftData.swiftcrossimport/SwiftUI.swiftoverlay -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libAppIntentsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#AppIntentsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libFoundationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#FoundationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libObservationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#ObservationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libPreviewsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#PreviewsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftDataMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftDataMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftUIMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftUIMacros -disable-implicit-swift-modules -Xcc -fno-implicit-modules -Xcc -fno-implicit-module-maps -explicit-swift-module-map-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a_do-dependencies-1.json -Xllvm -aarch64-use-tbi -enable-objc-interop -stack-check -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk -I /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos -F /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos -no-color-diagnostics -Xcc -fno-color-diagnostics -enable-testing -g -debug-info-format\=dwarf -dwarf-version\=5 -module-cache-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -swift-version 5 -enforce-exclusivity\=checked -Onone -D DEBUG -serialize-debugging-options -const-gather-protocols-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do_const_extract_protocols.json -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -default-isolation\=MainActor -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -working-directory -Xcc /Users/ahmadhamilton/Documents/GitHub/Remember -enable-anonymous-context-mangled-names -file-compilation-dir /Users/ahmadhamilton/Documents/GitHub/Remember -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -Xcc -ivfsstatcache -Xcc /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos26.0-23A339-81ce72e5b06c9602b9d30b56f2eed08a.sdkstatcache -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/swift-overrides.hmap -Xcc -iquote -Xcc /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-generated-files.hmap -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-own-target-headers.hmap -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-all-target-headers.hmap -Xcc -iquote -Xcc /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-project-headers.hmap -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/include -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources-normal/arm64 -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources/arm64 -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources -Xcc -DDEBUG\=1 -no-auto-bridging-header-chaining -module-name a_do -frontend-parseable-output -disable-clang-spi -target-sdk-version 26.0 -target-sdk-name iphoneos26.0 -clang-target arm64-apple-ios26.0 -in-process-plugin-server-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/ReminderShortcuts.o -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/AdvancedSearchManager.o -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/AdvancedSmartListManager.o -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/AIBehavioralIntegrationCoordinator.o -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/AIDataService.o -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/AIManager.o -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/AppleRemindersSyncManager.o -index-unit-output-path /a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/ReminderShortcuts.o -index-unit-output-path /a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/AdvancedSearchManager.o -index-unit-output-path /a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/AdvancedSmartListManager.o -index-unit-output-path /a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/AIBehavioralIntegrationCoordinator.o -index-unit-output-path /a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/AIDataService.o -index-unit-output-path /a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/AIManager.o -index-unit-output-path /a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/AppleRemindersSyncManager.o -index-store-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Index.noindex/DataStore -index-system-modules
+SwiftCompile normal arm64 Compiling\ FocusModeManager.swift,\ GamificationManager.swift,\ HealthKitManager.swift,\ LocationManager.swift,\ MLPatternRecognitionManager.swift,\ NotesManager.swift,\ NotificationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/FocusModeManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/GamificationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/HealthKitManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/LocationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/MLPatternRecognitionManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/NotesManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/NotificationManager.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/FocusModeManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/FocusModeManager.swift:30:5: warning: 'nonisolated(unsafe)' has no effect on property 'sessionTimer', consider using 'nonisolated'
+    nonisolated(unsafe) private var sessionTimer: Timer?
+    ^~~~~~~~~~~
+    nonisolated
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/FocusModeManager.swift:31:5: warning: 'nonisolated(unsafe)' has no effect on property 'breakTimer', consider using 'nonisolated'
+    nonisolated(unsafe) private var breakTimer: Timer?
+    ^~~~~~~~~~~
+    nonisolated
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/FocusModeManager.swift:249:17: warning: reference to captured var 'self' in concurrently-executing code; this is an error in the Swift 6 language mode
+                self?.updateSessionTimer()
+                ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/FocusModeManager.swift:269:21: warning: capture of 'timer' with non-Sendable type 'Timer' in a '@Sendable' closure; this is an error in the Swift 6 language mode
+                    timer.invalidate()
+                    ^
+/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework/Headers/NSTimer.h:10:12: note: class 'Timer' does not conform to the 'Sendable' protocol
+@interface NSTimer : NSObject
+           ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/FocusModeManager.swift:270:21: warning: reference to captured var 'self' in concurrently-executing code; this is an error in the Swift 6 language mode
+                    self?.breakTimerExpired()
+                    ^
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/GamificationManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/HealthKitManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/HealthKitManager.swift:280:44: warning: capture of 'context' with non-Sendable type 'ModelContext' in a '@Sendable' closure; this is an error in the Swift 6 language mode
+                    if let existing = try? context.fetch(existingDescriptor).first {
+                                           ^
+SwiftData.ModelContext:3:14: note: class 'ModelContext' does not conform to the 'Sendable' protocol
+public class ModelContext : Equatable, SendableMetatype {
+             ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/HealthKitManager.swift:280:44: warning: capture of 'context' with non-Sendable type 'ModelContext' in an isolated closure
+                    if let existing = try? context.fetch(existingDescriptor).first {
+                                           ^
+SwiftData.ModelContext:3:14: note: class 'ModelContext' does not conform to the 'Sendable' protocol
+public class ModelContext : Equatable, SendableMetatype {
+             ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/HealthKitManager.swift:263:59: warning: call to main actor-isolated instance method 'getUnit(for:)' in a synchronous nonisolated context
+                    let value = sum.doubleValue(for: self.getUnit(for: type))
+                                                          ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/HealthKitManager.swift:674:18: note: calls to instance method 'getUnit(for:)' from outside of its actor context are implicitly asynchronous
+    private func getUnit(for identifier: HKQuantityTypeIdentifier) -> HKUnit {
+                 ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/HealthKitManager.swift:358:44: warning: 'totalEnergyBurned' was deprecated in iOS 18.0: Use statisticsForType: passing the HKQuantityType for HKQuantityTypeIdentifierActiveEnergyBurned
+                    let calories = workout.totalEnergyBurned?.doubleValue(for: .kilocalorie()) ?? 0
+                                           ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/HealthKitManager.swift:343:30: warning: capture of 'context' with non-Sendable type 'ModelContext' in a '@Sendable' closure
+                    if (try? context.fetch(existingDescriptor).first) != nil {
+                             ^
+SwiftData.ModelContext:3:14: note: class 'ModelContext' does not conform to the 'Sendable' protocol
+public class ModelContext : Equatable, SendableMetatype {
+             ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/HealthKitManager.swift:347:44: warning: call to main actor-isolated instance method 'mapWorkoutType' in a synchronous nonisolated context
+                    let workoutType = self.mapWorkoutType(workout.workoutActivityType)
+                                           ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/HealthKitManager.swift:697:18: note: calls to instance method 'mapWorkoutType' from outside of its actor context are implicitly asynchronous
+    private func mapWorkoutType(_ hkWorkoutType: HKWorkoutActivityType) -> WorkoutType {
+                 ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/HealthKitManager.swift:431:30: warning: capture of 'context' with non-Sendable type 'ModelContext' in a '@Sendable' closure
+                    if (try? context.fetch(existingDescriptor).first) != nil {
+                             ^
+SwiftData.ModelContext:3:14: note: class 'ModelContext' does not conform to the 'Sendable' protocol
+public class ModelContext : Equatable, SendableMetatype {
+             ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/HealthKitManager.swift:494:30: warning: capture of 'context' with non-Sendable type 'ModelContext' in a '@Sendable' closure
+                    if (try? context.fetch(existingDescriptor).first) != nil {
+                             ^
+SwiftData.ModelContext:3:14: note: class 'ModelContext' does not conform to the 'Sendable' protocol
+public class ModelContext : Equatable, SendableMetatype {
+             ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/HealthKitManager.swift:730:23: warning: 'init(activityType:start:end:duration:totalEnergyBurned:totalDistance:metadata:)' was deprecated in iOS 17.0: Use HKWorkoutBuilder
+        let workout = HKWorkout(
+                      ^
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/LocationManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/MLPatternRecognitionManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/NotesManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/NotificationManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/NotificationManager.swift:52:28: warning: value 'error' was defined but never used; consider replacing with boolean test
+                    if let error {
+                       ~~~~^
+                                 != nil
+
+SwiftCompile normal arm64 Compiling\ GamificationModels.swift,\ HabitModels.swift,\ HealthModels.swift,\ RecurringModels.swift,\ ReminderModels.swift,\ SearchModels.swift,\ SmartNotificationModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/GamificationModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/HabitModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/HealthModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/RecurringModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/SearchModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/SmartNotificationModels.swift (in target 'a-do' from project 'a-do')
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/GamificationModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/HabitModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/HealthModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/RecurringModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/SearchModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/SmartNotificationModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ RealNotesManager.swift,\ RecurringRemindersManager.swift,\ ReminderCleanupManager.swift,\ RemindersManager.swift,\ SettingsManager.swift,\ SmartNotificationManager.swift,\ SyncProgressManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RealNotesManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RecurringRemindersManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/ReminderCleanupManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RemindersManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SettingsManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SmartNotificationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SyncProgressManager.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RealNotesManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RecurringRemindersManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RecurringRemindersManager.swift:220:13: warning: initialization of immutable value 'calendar' was never used; consider replacing with assignment to '_' or removing it
+        let calendar = Calendar.current
+        ~~~~^~~~~~~~
+        _
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/ReminderCleanupManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RemindersManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SettingsManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SmartNotificationManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SmartNotificationManager.swift:37:5: warning: 'nonisolated(unsafe)' has no effect on property 'processingTimer', consider using 'nonisolated'
+    nonisolated(unsafe) private var processingTimer: Timer?
+    ^~~~~~~~~~~
+    nonisolated
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SmartNotificationManager.swift:38:5: warning: 'nonisolated(unsafe)' has no effect on property 'analyticsTimer', consider using 'nonisolated'
+    nonisolated(unsafe) private var analyticsTimer: Timer?
+    ^~~~~~~~~~~
+    nonisolated
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SmartNotificationManager.swift:816:13: warning: initialization of immutable value 'responseTime' was never used; consider replacing with assignment to '_' or removing it
+        let responseTime = Date().timeIntervalSince(response.notification.date)
+        ~~~~^~~~~~~~~~~~
+        _
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SyncProgressManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ AudioManager.swift,\ BackupManager.swift,\ BehavioralLearningManager.swift,\ CalendarManager.swift,\ CloudKitManager.swift,\ CollaborationManager.swift,\ ContactsManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AudioManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/BackupManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/BehavioralLearningManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/CalendarManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/CloudKitManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/CollaborationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/ContactsManager.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AudioManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/BackupManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/BehavioralLearningManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/BehavioralLearningManager.swift:436:34: warning: reference to captured var 'self' in concurrently-executing code; this is an error in the Swift 6 language mode
+                guard let self = self else { return }
+                                 ^
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/CalendarManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/CalendarManager.swift:123:16: warning: value 'reminder' was defined but never used; consider replacing with boolean test
+        if let reminder = reminder {
+           ~~~~^~~~~~~~~~~
+                                   != nil
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/CalendarManager.swift:138:13: warning: variable 'allAttendees' was never mutated; consider changing to 'let' constant
+        var allAttendees = attendees
+        ~~~ ^
+        let
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/CloudKitManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/CollaborationManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/CollaborationManager.swift:114:21: warning: initialization of immutable value 'participant' was never used; consider replacing with assignment to '_' or removing it
+                let participant = sharedReminder.addParticipant(
+                ~~~~^~~~~~~~~~~
+                _
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/CollaborationManager.swift:234:13: warning: initialization of immutable value 'participant' was never used; consider replacing with assignment to '_' or removing it
+        let participant = sharedReminder.addParticipant(
+        ~~~~^~~~~~~~~~~
+        _
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/ContactsManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ SyncProgressView.swift,\ AddHabitEntryView.swift,\ CreateHabitView.swift,\ EditHabitView.swift,\ HabitCardView.swift,\ HabitDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/SyncProgressView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/AddHabitEntryView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/CreateHabitView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/EditHabitView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitCardView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitDetailView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/SyncProgressView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/AddHabitEntryView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/CreateHabitView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/EditHabitView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitCardView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitDetailView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ TimeTrackingModels.swift,\ AppContainer.swift,\ AppRouter.swift,\ SwiftDataUtils.swift,\ ReminderViewModels.swift,\ SmartListEngine.swift,\ AIInsightsDashboard.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/TimeTrackingModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppContainer.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppRouter.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/SwiftDataUtils.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/ReminderViewModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/SmartListEngine.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/TimeTrackingModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppContainer.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppContainer.swift:119:19: warning: value 'currentContainer' was defined but never used; consider replacing with boolean test
+        guard let currentContainer = _container else {
+              ~~~~^~~~~~~~~~~~~~~~~~~
+                                                != nil
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppContainer.swift:139:21: warning: initialization of immutable value 'schema' was never used; consider replacing with assignment to '_' or removing it
+                let schema = Schema([modelType])
+                ~~~~^~~~~~
+                _
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppContainer.swift:142:15: warning: 'catch' block is unreachable because no errors are thrown in 'do' block
+            } catch {
+              ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppContainer.swift:161:17: warning: initialization of immutable value 'container' was never used; consider replacing with assignment to '_' or removing it
+            let container = getContainer()
+            ~~~~^~~~~~~~~
+            _
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppContainer.swift:169:11: warning: 'catch' block is unreachable because no errors are thrown in 'do' block
+        } catch {
+          ^
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppRouter.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/SwiftDataUtils.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/SwiftDataUtils.swift:20:17: warning: initialization of immutable value 'container' was never used; consider replacing with assignment to '_' or removing it
+            let container = try ModelContainer(for: schema, configurations: config)
+            ~~~~^~~~~~~~~
+            _
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/ReminderViewModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/SmartListEngine.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/SmartListEngine.swift:40:24: warning: value 'tagName' was defined but never used; consider replacing with boolean test
+                if let tagName = rule.tagName {
+                   ~~~~^~~~~~~~~~
+                                              != nil
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ a_do (in target 'a-do' from project 'a-do')
+
+EmitSwiftModule normal arm64 (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ ReminderFormView.swift,\ TagPeopleView.swift,\ SmartSearchView.swift,\ AppleIntegrationsView.swift,\ SyncSettingsView.swift,\ TagsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/ReminderFormView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/TagPeopleView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Search/SmartSearchView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Settings/AppleIntegrationsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Settings/SyncSettingsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Tags/TagsView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/ReminderFormView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/TagPeopleView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Search/SmartSearchView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Search/SmartSearchView.swift:275:19: warning: value 'sanitizedQuery' was defined but never used; consider replacing with boolean test
+        guard let sanitizedQuery = SecurityUtils.sanitizeTextInput(searchText) else {
+              ~~~~^~~~~~~~~~~~~~~~~
+                                                                               != nil
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Settings/AppleIntegrationsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Settings/SyncSettingsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Tags/TagsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ CreateTemplateView.swift,\ EditRecurringReminderView.swift,\ EditTemplateView.swift,\ RecurringReminderDetailView.swift,\ TemplateDetailView.swift,\ TemplatesView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/CreateTemplateView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/EditRecurringReminderView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/EditTemplateView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/RecurringReminderDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/TemplateDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/TemplatesView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/CreateTemplateView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/EditRecurringReminderView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/EditTemplateView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/RecurringReminderDetailView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/TemplateDetailView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/TemplatesView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/TemplatesView.swift:311:13: warning: initialization of immutable value 'reminder' was never used; consider replacing with assignment to '_' or removing it
+        let reminder = recurringManager.createReminderFromTemplate(template, context: context)
+        ~~~~^~~~~~~~
+        _
+
+SwiftCompile normal arm64 Compiling\ AISettingsView.swift,\ AISuggestionsView.swift,\ InsightDetailView.swift,\ SuggestionDetailView.swift,\ CollaborationView.swift,\ CreateListView.swift,\ EditWorkspaceView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AISettingsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AISuggestionsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/InsightDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/SuggestionDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/CollaborationView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/CreateListView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/EditWorkspaceView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AISettingsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AISuggestionsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/InsightDetailView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/SuggestionDetailView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/CollaborationView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/CollaborationView.swift:190:61: warning: left side of nil coalescing operator '??' has non-optional type 'String', so the right side is never used
+                        Text(workspace.workspaceDescription ?? "No description")
+                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~
+                                                           
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/CreateListView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/EditWorkspaceView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ CreateTimeGoalView.swift,\ EditTimeGoalView.swift,\ TimeAnalyticsView.swift,\ TimeGoalDetailView.swift,\ TimeGoalsView.swift,\ TimeHistoryView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/CreateTimeGoalView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/EditTimeGoalView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeAnalyticsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeGoalDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeGoalsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeHistoryView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/CreateTimeGoalView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/EditTimeGoalView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeAnalyticsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeGoalDetailView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeGoalsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeHistoryView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ HabitsView.swift,\ CompletedRemindersView.swift,\ HomeView.swift,\ InboxView.swift,\ ListsView.swift,\ AppleNotePickerView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/CompletedRemindersView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/HomeView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/InboxView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/AppleNotePickerView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/CompletedRemindersView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/CompletedRemindersView.swift:186:31: warning: conformance of 'Reminder' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use Reminder's persistentModelID instead; this is an error in the Swift 6 language mode
+        let reminders = await Task.detached {
+                              ^
+@__swiftmacro_4a_do8Reminder5ModelfMe_.swift:9:1: note: conformance of 'Reminder' to 'Sendable' has been explicitly marked unavailable here
+extension Reminder: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/CompletedRemindersView.swift:186:36: warning: conformance of 'Reminder' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use Reminder's persistentModelID instead; this is an error in the Swift 6 language mode
+        let reminders = await Task.detached {
+                                   ^
+@__swiftmacro_4a_do8Reminder5ModelfMe_.swift:9:1: note: conformance of 'Reminder' to 'Sendable' has been explicitly marked unavailable here
+extension Reminder: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/CompletedRemindersView.swift:198:11: warning: conformance of 'Reminder' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use Reminder's persistentModelID instead; this is an error in the Swift 6 language mode
+        }.value
+          ^
+@__swiftmacro_4a_do8Reminder5ModelfMe_.swift:9:1: note: conformance of 'Reminder' to 'Sendable' has been explicitly marked unavailable here
+extension Reminder: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/CompletedRemindersView.swift:186:31: warning: non-Sendable type 'Task<[Reminder], Never>' cannot exit main actor-isolated context in call to nonisolated property 'value'; this is an error in the Swift 6 language mode
+        let reminders = await Task.detached {
+                              ^
+_Concurrency.Task:2:23: note: generic struct 'Task' does not conform to the 'Sendable' protocol
+@frozen public struct Task<Success, Failure> : Sendable where Success : Sendable, Failure : Error {
+                      ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/CompletedRemindersView.swift:198:11: warning: non-Sendable type '[Reminder]' of nonisolated property 'value' cannot be sent to main actor-isolated context; this is an error in the Swift 6 language mode
+        }.value
+          ^
+Swift.Array:1:23: note: generic struct 'Array' does not conform to the 'Sendable' protocol
+@frozen public struct Array<Element> : _DestructorSafeContainer {
+                      ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/CompletedRemindersView.swift:187:55: warning: non-Sendable type 'ModelContext' of property 'context' cannot exit main actor-isolated context; this is an error in the Swift 6 language mode
+            let backgroundContext = ModelContext(self.context.container)
+                                                      ^
+SwiftData.ModelContext:3:14: note: class 'ModelContext' does not conform to the 'Sendable' protocol
+public class ModelContext : Equatable, SendableMetatype {
+             ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/CompletedRemindersView.swift:187:55: warning: main actor-isolated property 'context' cannot be accessed from outside of the actor; this is an error in the Swift 6 language mode
+            let backgroundContext = ModelContext(self.context.container)
+                                    ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+                                    await 
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/HomeView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/HomeView.swift:1184:17: warning: initialization of immutable value 'voiceReminder' was never used; consider replacing with assignment to '_' or removing it
+            let voiceReminder = VoiceReminder(
+            ~~~~^~~~~~~~~~~~~
+            _
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/InboxView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/InboxView.swift:226:31: warning: conformance of 'Reminder' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use Reminder's persistentModelID instead; this is an error in the Swift 6 language mode
+        let reminders = await Task.detached {
+                              ^
+@__swiftmacro_4a_do8Reminder5ModelfMe_.swift:9:1: note: conformance of 'Reminder' to 'Sendable' has been explicitly marked unavailable here
+extension Reminder: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/InboxView.swift:226:36: warning: conformance of 'Reminder' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use Reminder's persistentModelID instead; this is an error in the Swift 6 language mode
+        let reminders = await Task.detached {
+                                   ^
+@__swiftmacro_4a_do8Reminder5ModelfMe_.swift:9:1: note: conformance of 'Reminder' to 'Sendable' has been explicitly marked unavailable here
+extension Reminder: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/InboxView.swift:235:11: warning: conformance of 'Reminder' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use Reminder's persistentModelID instead; this is an error in the Swift 6 language mode
+        }.value
+          ^
+@__swiftmacro_4a_do8Reminder5ModelfMe_.swift:9:1: note: conformance of 'Reminder' to 'Sendable' has been explicitly marked unavailable here
+extension Reminder: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/InboxView.swift:226:31: warning: non-Sendable type 'Task<[Reminder], Never>' cannot exit main actor-isolated context in call to nonisolated property 'value'; this is an error in the Swift 6 language mode
+        let reminders = await Task.detached {
+                              ^
+_Concurrency.Task:2:23: note: generic struct 'Task' does not conform to the 'Sendable' protocol
+@frozen public struct Task<Success, Failure> : Sendable where Success : Sendable, Failure : Error {
+                      ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/InboxView.swift:235:11: warning: non-Sendable type '[Reminder]' of nonisolated property 'value' cannot be sent to main actor-isolated context; this is an error in the Swift 6 language mode
+        }.value
+          ^
+Swift.Array:1:23: note: generic struct 'Array' does not conform to the 'Sendable' protocol
+@frozen public struct Array<Element> : _DestructorSafeContainer {
+                      ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/InboxView.swift:227:55: warning: non-Sendable type 'ModelContext' of property 'context' cannot exit main actor-isolated context; this is an error in the Swift 6 language mode
+            let backgroundContext = ModelContext(self.context.container)
+                                                      ^
+SwiftData.ModelContext:3:14: note: class 'ModelContext' does not conform to the 'Sendable' protocol
+public class ModelContext : Equatable, SendableMetatype {
+             ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/InboxView.swift:227:55: warning: main actor-isolated property 'context' cannot be accessed from outside of the actor; this is an error in the Swift 6 language mode
+            let backgroundContext = ModelContext(self.context.container)
+                                    ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+                                    await 
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift:269:68: warning: conformance of 'ListSection' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use ListSection's persistentModelID instead; this is an error in the Swift 6 language mode
+        let (loadedSections, loadedLists, loadedReminders) = await Task.detached {
+                                                                   ^
+@__swiftmacro_4a_do11ListSection5ModelfMe_.swift:9:1: note: conformance of 'ListSection' to 'Sendable' has been explicitly marked unavailable here
+extension ListSection: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:42:1: note: in expansion of macro 'Model' on class 'ListSection' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:42:1: note: in expansion of macro 'Model' on class 'ListSection' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift:269:68: warning: conformance of 'ReminderList' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use ReminderList's persistentModelID instead; this is an error in the Swift 6 language mode
+        let (loadedSections, loadedLists, loadedReminders) = await Task.detached {
+                                                                   ^
+@__swiftmacro_4a_do12ReminderList5ModelfMe_.swift:9:1: note: conformance of 'ReminderList' to 'Sendable' has been explicitly marked unavailable here
+extension ReminderList: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:170:1: note: in expansion of macro 'Model' on class 'ReminderList' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:170:1: note: in expansion of macro 'Model' on class 'ReminderList' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift:269:68: warning: conformance of 'Reminder' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use Reminder's persistentModelID instead; this is an error in the Swift 6 language mode
+        let (loadedSections, loadedLists, loadedReminders) = await Task.detached {
+                                                                   ^
+@__swiftmacro_4a_do8Reminder5ModelfMe_.swift:9:1: note: conformance of 'Reminder' to 'Sendable' has been explicitly marked unavailable here
+extension Reminder: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift:269:73: warning: conformance of 'ListSection' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use ListSection's persistentModelID instead; this is an error in the Swift 6 language mode
+        let (loadedSections, loadedLists, loadedReminders) = await Task.detached {
+                                                                        ^
+@__swiftmacro_4a_do11ListSection5ModelfMe_.swift:9:1: note: conformance of 'ListSection' to 'Sendable' has been explicitly marked unavailable here
+extension ListSection: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:42:1: note: in expansion of macro 'Model' on class 'ListSection' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:42:1: note: in expansion of macro 'Model' on class 'ListSection' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift:269:73: warning: conformance of 'ReminderList' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use ReminderList's persistentModelID instead; this is an error in the Swift 6 language mode
+        let (loadedSections, loadedLists, loadedReminders) = await Task.detached {
+                                                                        ^
+@__swiftmacro_4a_do12ReminderList5ModelfMe_.swift:9:1: note: conformance of 'ReminderList' to 'Sendable' has been explicitly marked unavailable here
+extension ReminderList: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:170:1: note: in expansion of macro 'Model' on class 'ReminderList' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:170:1: note: in expansion of macro 'Model' on class 'ReminderList' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift:269:73: warning: conformance of 'Reminder' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use Reminder's persistentModelID instead; this is an error in the Swift 6 language mode
+        let (loadedSections, loadedLists, loadedReminders) = await Task.detached {
+                                                                        ^
+@__swiftmacro_4a_do8Reminder5ModelfMe_.swift:9:1: note: conformance of 'Reminder' to 'Sendable' has been explicitly marked unavailable here
+extension Reminder: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift:290:11: warning: conformance of 'ListSection' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use ListSection's persistentModelID instead; this is an error in the Swift 6 language mode
+        }.value
+          ^
+@__swiftmacro_4a_do11ListSection5ModelfMe_.swift:9:1: note: conformance of 'ListSection' to 'Sendable' has been explicitly marked unavailable here
+extension ListSection: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:42:1: note: in expansion of macro 'Model' on class 'ListSection' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:42:1: note: in expansion of macro 'Model' on class 'ListSection' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift:290:11: warning: conformance of 'ReminderList' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use ReminderList's persistentModelID instead; this is an error in the Swift 6 language mode
+        }.value
+          ^
+@__swiftmacro_4a_do12ReminderList5ModelfMe_.swift:9:1: note: conformance of 'ReminderList' to 'Sendable' has been explicitly marked unavailable here
+extension ReminderList: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:170:1: note: in expansion of macro 'Model' on class 'ReminderList' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:170:1: note: in expansion of macro 'Model' on class 'ReminderList' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift:290:11: warning: conformance of 'Reminder' to 'Sendable' is unavailable: PersistentModels are not Sendable, consider utilizing a ModelActor or use Reminder's persistentModelID instead; this is an error in the Swift 6 language mode
+        }.value
+          ^
+@__swiftmacro_4a_do8Reminder5ModelfMe_.swift:9:1: note: conformance of 'Reminder' to 'Sendable' has been explicitly marked unavailable here
+extension Reminder: Sendable {
+^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift:208:1: note: in expansion of macro 'Model' on class 'Reminder' here
+@Model
+^~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift:269:68: warning: non-Sendable type 'Task<([ListSection], [ReminderList], [Reminder]), Never>' cannot exit main actor-isolated context in call to nonisolated property 'value'; this is an error in the Swift 6 language mode
+        let (loadedSections, loadedLists, loadedReminders) = await Task.detached {
+                                                                   ^
+_Concurrency.Task:2:23: note: generic struct 'Task' does not conform to the 'Sendable' protocol
+@frozen public struct Task<Success, Failure> : Sendable where Success : Sendable, Failure : Error {
+                      ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift:270:55: warning: non-Sendable type 'ModelContext' of property 'context' cannot exit main actor-isolated context; this is an error in the Swift 6 language mode
+            let backgroundContext = ModelContext(self.context.container)
+                                                      ^
+SwiftData.ModelContext:3:14: note: class 'ModelContext' does not conform to the 'Sendable' protocol
+public class ModelContext : Equatable, SendableMetatype {
+             ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift:270:55: warning: main actor-isolated property 'context' cannot be accessed from outside of the actor; this is an error in the Swift 6 language mode
+            let backgroundContext = ModelContext(self.context.container)
+                                    ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+                                    await 
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/AppleNotePickerView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ ShareReminderView.swift,\ WorkspaceDetailView.swift,\ WorkspaceMembersView.swift,\ AppleNoteAttachmentView.swift,\ ImportRemindersView.swift,\ LocationStatusView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/ShareReminderView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/WorkspaceDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/WorkspaceMembersView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/AppleNoteAttachmentView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/ImportRemindersView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/LocationStatusView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/ShareReminderView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/WorkspaceDetailView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/WorkspaceMembersView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/AppleNoteAttachmentView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/ImportRemindersView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/LocationStatusView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling CreateTemplateView.swift, EditRecurringReminderView.swift, EditTemplateView.swift, RecurringReminderDetailView.swift, TemplateDetailView.swift, TemplatesView.swift (in target 'a-do' from project 'a-do')
+
+SwiftDriverJobDiscovery normal arm64 Compiling CreateTimeGoalView.swift, EditTimeGoalView.swift, TimeAnalyticsView.swift, TimeGoalDetailView.swift, TimeGoalsView.swift, TimeHistoryView.swift (in target 'a-do' from project 'a-do')
+
+SwiftDriverJobDiscovery normal arm64 Compiling RealNotesManager.swift, RecurringRemindersManager.swift, ReminderCleanupManager.swift, RemindersManager.swift, SettingsManager.swift, SmartNotificationManager.swift, SyncProgressManager.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 Compiling\ ADoApp.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ADoApp.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ADoApp.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ CreateRecurringReminderView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/CreateRecurringReminderView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/CreateRecurringReminderView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling AudioManager.swift, BackupManager.swift, BehavioralLearningManager.swift, CalendarManager.swift, CloudKitManager.swift, CollaborationManager.swift, ContactsManager.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 Compiling\ StaticLaunchScreenView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/StaticLaunchScreenView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/StaticLaunchScreenView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ HabitViewModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/HabitViewModels.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/HabitViewModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/HabitViewModels.swift:153:13: warning: initialization of immutable value 'wasCompleted' was never used; consider replacing with assignment to '_' or removing it
+        let wasCompleted = habit.isCompletedToday
+        ~~~~^~~~~~~~~~~~
+        _
+
+SwiftDriverJobDiscovery normal arm64 Compiling ADoApp.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 Compiling\ AppTheme.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Styles/AppTheme.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Styles/AppTheme.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling SyncProgressView.swift, AddHabitEntryView.swift, CreateHabitView.swift, EditHabitView.swift, HabitCardView.swift, HabitDetailView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 Compiling\ FlowLayout.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/FlowLayout.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/FlowLayout.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling TimeTrackingModels.swift, AppContainer.swift, AppRouter.swift, SwiftDataUtils.swift, ReminderViewModels.swift, SmartListEngine.swift, AIInsightsDashboard.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 Compiling\ LaunchScreenView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/LaunchScreenView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/LaunchScreenView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling AppTheme.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 Compiling\ SecurityUtils.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/SecurityUtils.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/SecurityUtils.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling FlowLayout.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 Compiling\ ContentView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ContentView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ContentView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling SecurityUtils.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 Compiling\ GlassCard.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/GlassCard.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/GlassCard.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling HabitViewModels.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 Compiling\ TimeTrackingView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeTrackingView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeTrackingView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling CreateRecurringReminderView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 Compiling\ DeviceAdaptive.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/DeviceAdaptive.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/DeviceAdaptive.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling FocusModeManager.swift, GamificationManager.swift, HealthKitManager.swift, LocationManager.swift, MLPatternRecognitionManager.swift, NotesManager.swift, NotificationManager.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 Compiling\ UserDefaults+AppGroup.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/UserDefaults+AppGroup.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/UserDefaults+AppGroup.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling StaticLaunchScreenView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 Compiling\ AppGroupDefaults.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/AppGroupDefaults.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/AppGroupDefaults.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling GlassCard.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 Compiling\ Color+Hex.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/Color+Hex.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/Color+Hex.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling DeviceAdaptive.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 Compiling\ LaunchScreenCoordinator.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/LaunchScreenCoordinator.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/LaunchScreenCoordinator.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling UserDefaults+AppGroup.swift (in target 'a-do' from project 'a-do')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ReminderFormView.swift, TagPeopleView.swift, SmartSearchView.swift, AppleIntegrationsView.swift, SyncSettingsView.swift, TagsView.swift (in target 'a-do' from project 'a-do')
+
+SwiftDriverJobDiscovery normal arm64 Compiling Color+Hex.swift (in target 'a-do' from project 'a-do')
+
+SwiftDriverJobDiscovery normal arm64 Compiling AppGroupDefaults.swift (in target 'a-do' from project 'a-do')
+
+SwiftDriverJobDiscovery normal arm64 Compiling LaunchScreenView.swift (in target 'a-do' from project 'a-do')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ContentView.swift (in target 'a-do' from project 'a-do')
+
+SwiftDriverJobDiscovery normal arm64 Compiling AISettingsView.swift, AISuggestionsView.swift, InsightDetailView.swift, SuggestionDetailView.swift, CollaborationView.swift, CreateListView.swift, EditWorkspaceView.swift (in target 'a-do' from project 'a-do')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ShareReminderView.swift, WorkspaceDetailView.swift, WorkspaceMembersView.swift, AppleNoteAttachmentView.swift, ImportRemindersView.swift, LocationStatusView.swift (in target 'a-do' from project 'a-do')
+
+SwiftDriverJobDiscovery normal arm64 Compiling HabitsView.swift, CompletedRemindersView.swift, HomeView.swift, InboxView.swift, ListsView.swift, AppleNotePickerView.swift (in target 'a-do' from project 'a-do')
+
+SwiftDriverJobDiscovery normal arm64 Compiling LaunchScreenCoordinator.swift (in target 'a-do' from project 'a-do')
+
+SwiftDriverJobDiscovery normal arm64 Compiling TimeTrackingView.swift (in target 'a-do' from project 'a-do')
+
+SwiftDriverJobDiscovery normal arm64 Compiling TimeTrackingManager.swift, AdvancedSmartListModels.swift, AIModels.swift, AppSettings.swift, BackupModels.swift, CollaborationModels.swift, FocusModeModels.swift (in target 'a-do' from project 'a-do')
+
+** BUILD FAILED **
+
+
+The following build commands failed:
+	SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift (in target 'a-do' from project 'a-do')
+	SwiftCompile normal arm64 Compiling\ ReminderShortcuts.swift,\ AdvancedSearchManager.swift,\ AdvancedSmartListManager.swift,\ AIBehavioralIntegrationCoordinator.swift,\ AIDataService.swift,\ AIManager.swift,\ AppleRemindersSyncManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/AppIntents/ReminderShortcuts.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSearchManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSmartListManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIDataService.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AppleRemindersSyncManager.swift (in target 'a-do' from project 'a-do')
+	Building project a-do with scheme a-do and configuration Debug
+(3 failures)

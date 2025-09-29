@@ -10,6 +10,9 @@ enum DeepLinkDestination: Identifiable, Equatable {
     case priority(Priority)
     case sendText(reminderId: UUID)
     case habits
+    case aiSuggestions
+    case aiInsights
+    case aiSettings
 
     var id: String {
         switch self {
@@ -19,6 +22,9 @@ enum DeepLinkDestination: Identifiable, Equatable {
         case .priority(let p): return "priority_\(p.rawValue)"
         case .sendText(let id): return "send_text_\(id.uuidString)"
         case .habits: return "habits"
+        case .aiSuggestions: return "ai_suggestions"
+        case .aiInsights: return "ai_insights"
+        case .aiSettings: return "ai_settings"
         }
     }
 }
@@ -61,6 +67,12 @@ final class AppRouter {
             }
         } else if path.hasPrefix("/habits") {
             destination = .habits
+        } else if path.hasPrefix("/ai/suggestions") {
+            destination = .aiSuggestions
+        } else if path.hasPrefix("/ai/insights") {
+            destination = .aiInsights
+        } else if path.hasPrefix("/ai/settings") {
+            destination = .aiSettings
         }
     }
 

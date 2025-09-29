@@ -1,0 +1,695 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project a-do.xcodeproj -scheme a-do -configuration Debug build CODE_SIGNING_ALLOWED=NO
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'a-do' in project 'a-do' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/ibtool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: 349e84dcfc1a0f1cb6b33ae8ded8c5c6
+Build description path: /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/XCBuildData/349e84dcfc1a0f1cb6b33ae8ded8c5c6.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos26.0-23A339-81ce72e5b06c9602b9d30b56f2eed08a.sdkstatcache
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember/a-do.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos26.0-23A339-81ce72e5b06c9602b9d30b56f2eed08a.sdkstatcache
+
+CreateBuildDirectory /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember/a-do.xcodeproj
+    builtin-create-build-directory /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products
+
+CreateBuildDirectory /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember/a-do.xcodeproj
+    builtin-create-build-directory /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex
+
+CreateBuildDirectory /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/ExplicitPrecompiledModules
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember/a-do.xcodeproj
+    builtin-create-build-directory /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember/a-do.xcodeproj
+    builtin-create-build-directory /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember/a-do.xcodeproj
+    builtin-create-build-directory /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos
+
+WriteAuxiliaryFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do-5d5d753a783d9c231b5ae24ec7585299-VFS-iphoneos/all-product-headers.yaml
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember/a-do.xcodeproj
+    write-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do-5d5d753a783d9c231b5ae24ec7585299-VFS-iphoneos/all-product-headers.yaml
+
+CreateBuildDirectory /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphoneos
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember/a-do.xcodeproj
+    builtin-create-build-directory /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphoneos
+
+WriteAuxiliaryFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/empty-a-do.plist (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    write-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/empty-a-do.plist
+
+WriteAuxiliaryFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-all-non-framework-target-headers.hmap (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    write-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do.hmap (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    write-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do.hmap
+
+WriteAuxiliaryFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-DebugDylibPath-normal-arm64.txt (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    write-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-DebugDylibPath-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-project-headers.hmap (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    write-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-project-headers.hmap
+
+WriteAuxiliaryFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-generated-files.hmap (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    write-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-generated-files.hmap
+
+WriteAuxiliaryFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-own-target-headers.hmap (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    write-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do.DependencyStaticMetadataFileList (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    write-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-all-target-headers.hmap (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    write-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do.DependencyMetadataFileList (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    write-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-DebugDylibInstallName-normal-arm64.txt (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    write-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-DebugDylibInstallName-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do_const_extract_protocols.json (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    write-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do.SwiftFileList (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    write-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do.SwiftFileList
+
+WriteAuxiliaryFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do.SwiftConstValuesFileList (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    write-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do.LinkFileList (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    write-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do.LinkFileList
+
+WriteAuxiliaryFile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do-OutputFileMap.json (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    write-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do-OutputFileMap.json
+
+MkDir /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/a-do.app (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    /bin/mkdir -p /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/a-do.app
+
+CpResource /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/a-do.app/a-do.entitlements.backup /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/a-do.entitlements.backup (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/a-do.entitlements.backup /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/a-do.app
+
+Ld /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/a-do.app/__preview.dylib normal (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.0 -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk -O0 -L/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos -F/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos -install_name @rpath/a-do.debug.dylib -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -dependency_info -Xlinker /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do_dependency_info.dat -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/a-do.app/__preview.dylib
+
+CpResource /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/a-do.app/LocationUsageDescription.md /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/LocationUsageDescription.md (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/LocationUsageDescription.md /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/a-do.app
+
+MkDir /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/assetcatalog_output/unthinned (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    /bin/mkdir -p /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/assetcatalog_output/unthinned
+
+CpResource /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/a-do.app/DuplicateFileCheck.md /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/DuplicateFileCheck.md (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/DuplicateFileCheck.md /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/a-do.app
+
+MkDir /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/assetcatalog_output/thinned (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    /bin/mkdir -p /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/assetcatalog_output/thinned
+
+CompileStoryboard /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Launch/LaunchScreen.storyboard (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    /Applications/Xcode.app/Contents/Developer/usr/bin/ibtool --errors --warnings --notices --module a_do --output-partial-info-plist /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/LaunchScreen-SBPartialInfo.plist --auto-activate-custom-fonts --target-device iphone --target-device ipad --minimum-deployment-target 18.0 --output-format human-readable-text /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Launch/LaunchScreen.storyboard --compilation-directory /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build
+
+GenerateAssetSymbols /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Assets.xcassets (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Assets.xcassets --compile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/a-do.app --output-format human-readable-text --notices --warnings --export-dependency-info /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/assetcatalog_dependencies --output-partial-info-plist /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/assetcatalog_generated_info.plist --app-icon AppIcon --accent-color AccentColor --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 18.0 --platform iphoneos --bundle-identifier JAMSoft.a-do --generate-swift-asset-symbols /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources/GeneratedAssetSymbols.swift --generate-objc-asset-symbols /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/* com.apple.actool.compilation-results */
+/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources/GeneratedAssetSymbols.h
+/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources/GeneratedAssetSymbols.swift
+
+
+CompileAssetCatalogVariant thinned /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/a-do.app /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Assets.xcassets (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Assets.xcassets --compile /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --accent-color AccentColor --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 18.0 --platform iphoneos
+
+SwiftDriver a-do normal arm64 com.apple.xcode.tools.swift.compiler (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name a_do -Onone -enforce-exclusivity\=checked @/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do.SwiftFileList -DDEBUG -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk -target arm64-apple-ios18.0 -g -module-cache-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos -F /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos -emit-localized-strings -emit-localized-strings-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64 -c -j14 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos26.0-23A339-81ce72e5b06c9602b9d30b56f2eed08a.sdkstatcache -output-file-map /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a_do.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do_const_extract_protocols.json -Xcc -iquote -Xcc /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-generated-files.hmap -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-own-target-headers.hmap -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-all-target-headers.hmap -Xcc -iquote -Xcc /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-project-headers.hmap -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/include -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources-normal/arm64 -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources/arm64 -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a_do-Swift.h -working-directory /Users/ahmadhamilton/Documents/GitHub/Remember -experimental-emit-module-separately -disable-cmo
+
+SwiftCompile normal arm64 Compiling\ HealthKitManager.swift,\ LocationManager.swift,\ MLPatternRecognitionManager.swift,\ NotesManager.swift,\ NotificationManager.swift,\ RealNotesManager.swift,\ RecurringRemindersManager.swift,\ ReminderCleanupManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/HealthKitManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/LocationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/MLPatternRecognitionManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/NotesManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/NotificationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RealNotesManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RecurringRemindersManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/ReminderCleanupManager.swift (in target 'a-do' from project 'a-do')
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/HealthKitManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/LocationManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/MLPatternRecognitionManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/NotesManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/NotificationManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RealNotesManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RecurringRemindersManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/ReminderCleanupManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ BackupModels.swift,\ CollaborationModels.swift,\ FocusModeModels.swift,\ GamificationModels.swift,\ HabitModels.swift,\ HealthModels.swift,\ RecurringModels.swift,\ ReminderModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/BackupModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/CollaborationModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/FocusModeModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/GamificationModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/HabitModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/HealthModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/RecurringModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift (in target 'a-do' from project 'a-do')
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/BackupModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/CollaborationModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/FocusModeModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/GamificationModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/HabitModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/HealthModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/RecurringModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ RemindersManager.swift,\ SettingsManager.swift,\ SmartNotificationManager.swift,\ SyncProgressManager.swift,\ TimeTrackingManager.swift,\ AdvancedSmartListModels.swift,\ AIModels.swift,\ AppSettings.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RemindersManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SettingsManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SmartNotificationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SyncProgressManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/TimeTrackingManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AdvancedSmartListModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AIModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AppSettings.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RemindersManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SettingsManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SmartNotificationManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SyncProgressManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/TimeTrackingManager.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AdvancedSmartListModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AIModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AppSettings.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ WorkspaceDetailView.swift,\ WorkspaceMembersView.swift,\ AppleNoteAttachmentView.swift,\ FlowLayout.swift,\ GlassCard.swift,\ ImportRemindersView.swift,\ LocationStatusView.swift,\ SyncProgressView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/WorkspaceDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/WorkspaceMembersView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/AppleNoteAttachmentView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/FlowLayout.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/GlassCard.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/ImportRemindersView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/LocationStatusView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/SyncProgressView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/WorkspaceDetailView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/WorkspaceMembersView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/AppleNoteAttachmentView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/FlowLayout.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/GlassCard.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/ImportRemindersView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/LocationStatusView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/SyncProgressView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ TagsView.swift,\ CreateRecurringReminderView.swift,\ CreateTemplateView.swift,\ EditRecurringReminderView.swift,\ EditTemplateView.swift,\ RecurringReminderDetailView.swift,\ TemplateDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Tags/TagsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/CreateRecurringReminderView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/CreateTemplateView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/EditRecurringReminderView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/EditTemplateView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/RecurringReminderDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/TemplateDetailView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Tags/TagsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/CreateRecurringReminderView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/CreateTemplateView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/EditRecurringReminderView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/EditTemplateView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/RecurringReminderDetailView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/TemplateDetailView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ AddHabitEntryView.swift,\ CreateHabitView.swift,\ EditHabitView.swift,\ HabitCardView.swift,\ HabitDetailView.swift,\ HabitsView.swift,\ CompletedRemindersView.swift,\ HomeView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/AddHabitEntryView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/CreateHabitView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/EditHabitView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitCardView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/CompletedRemindersView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/HomeView.swift (in target 'a-do' from project 'a-do')
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/AddHabitEntryView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/CreateHabitView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/EditHabitView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitCardView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitDetailView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/CompletedRemindersView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/HomeView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ Color+Hex.swift,\ DeviceAdaptive.swift,\ SecurityUtils.swift,\ UserDefaults+AppGroup.swift,\ HabitViewModels.swift,\ ReminderViewModels.swift,\ SmartListEngine.swift,\ AIInsightsDashboard.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/Color+Hex.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/DeviceAdaptive.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/SecurityUtils.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/UserDefaults+AppGroup.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/HabitViewModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/ReminderViewModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/SmartListEngine.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift (in target 'a-do' from project 'a-do')
+Failed frontend command:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -c /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/AppIntents/ReminderShortcuts.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSearchManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSmartListManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIDataService.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AppleRemindersSyncManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AudioManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/BackupManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/BehavioralLearningManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/CalendarManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/CloudKitManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/CollaborationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/ContactsManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/FocusModeManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/GamificationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/HealthKitManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/LocationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/MLPatternRecognitionManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/NotesManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/NotificationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RealNotesManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RecurringRemindersManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/ReminderCleanupManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/RemindersManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SettingsManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SmartNotificationManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/SyncProgressManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/TimeTrackingManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AdvancedSmartListModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AIModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/AppSettings.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/BackupModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/CollaborationModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/FocusModeModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/GamificationModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/HabitModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/HealthModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/RecurringModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/ReminderModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/SearchModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/SmartNotificationModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/TimeTrackingModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppContainer.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppRouter.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/SwiftDataUtils.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Styles/AppTheme.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/AppGroupDefaults.swift -primary-file /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/Color+Hex.swift -primary-file /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/DeviceAdaptive.swift -primary-file /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/SecurityUtils.swift -primary-file /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/UserDefaults+AppGroup.swift -primary-file /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/HabitViewModels.swift -primary-file /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/ReminderViewModels.swift -primary-file /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/SmartListEngine.swift -primary-file /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AISettingsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AISuggestionsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/InsightDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/SuggestionDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/CollaborationView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/CreateListView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/EditWorkspaceView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/ShareReminderView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/WorkspaceDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/WorkspaceMembersView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/AppleNoteAttachmentView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/FlowLayout.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/GlassCard.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/ImportRemindersView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/LocationStatusView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Components/SyncProgressView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/AddHabitEntryView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/CreateHabitView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/EditHabitView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitCardView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Habits/HabitsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/CompletedRemindersView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/HomeView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/InboxView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/AppleNotePickerView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/ReminderFormView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/TagPeopleView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Search/SmartSearchView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Settings/AppleIntegrationsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Settings/SyncSettingsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Tags/TagsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/CreateRecurringReminderView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/CreateTemplateView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/EditRecurringReminderView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/EditTemplateView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/RecurringReminderDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/TemplateDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/TemplatesView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/CreateTimeGoalView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/EditTimeGoalView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeAnalyticsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeGoalDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeGoalsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeHistoryView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeTrackingView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/LaunchScreenCoordinator.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/LaunchScreenView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/StaticLaunchScreenView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ADoApp.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ContentView.swift /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources/GeneratedAssetSymbols.swift -supplementary-output-file-map /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/supplementaryOutputs-7 -emit-localized-strings -emit-localized-strings-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64 -target arm64-apple-ios18.0 -module-can-import-version CoreLocation 53 3056.0.25 -module-can-import-version DeveloperToolsSupport 23.0.4 23.0.4 -module-can-import-version MapKit 14.30.6.27 14.0.0 -module-can-import-version SwiftUI 7.0.84.1 7.0.84 -module-can-import-version UIKit 9088.1.113 9088.1.113 -disable-cross-import-overlay-search -swift-module-cross-import AppIntents /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/AppIntents.framework/Modules/AppIntents.swiftcrossimport/SwiftUI.swiftoverlay -swift-module-cross-import AppIntents /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/AppIntents.framework/Modules/AppIntents.swiftcrossimport/UIKit.swiftoverlay -swift-module-cross-import AppIntents /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/AppIntents.framework/Modules/AppIntents.swiftcrossimport/SwiftUI.swiftoverlay -swift-module-cross-import AppIntents /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/AppIntents.framework/Modules/AppIntents.swiftcrossimport/UIKit.swiftoverlay -swift-module-cross-import MapKit /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/MapKit.framework/Modules/MapKit.swiftcrossimport/SwiftUI.swiftoverlay -swift-module-cross-import RelevanceKit /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/RelevanceKit.framework/Modules/RelevanceKit.swiftcrossimport/MapKit.swiftoverlay -swift-module-cross-import RelevanceKit /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/RelevanceKit.framework/Modules/RelevanceKit.swiftcrossimport/MapKit.swiftoverlay -swift-module-cross-import SwiftData /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/SwiftData.framework/Modules/SwiftData.swiftcrossimport/CoreData.swiftoverlay -swift-module-cross-import SwiftData /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/SwiftData.framework/Modules/SwiftData.swiftcrossimport/SwiftUI.swiftoverlay -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libAppIntentsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#AppIntentsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libFoundationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#FoundationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libObservationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#ObservationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libPreviewsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#PreviewsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftDataMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftDataMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftUIMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftUIMacros -disable-implicit-swift-modules -Xcc -fno-implicit-modules -Xcc -fno-implicit-module-maps -explicit-swift-module-map-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a_do-dependencies-1.json -Xllvm -aarch64-use-tbi -enable-objc-interop -stack-check -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk -I /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos -F /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos -no-color-diagnostics -Xcc -fno-color-diagnostics -enable-testing -g -debug-info-format\=dwarf -dwarf-version\=5 -module-cache-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -swift-version 5 -enforce-exclusivity\=checked -Onone -D DEBUG -serialize-debugging-options -const-gather-protocols-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/a-do_const_extract_protocols.json -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -default-isolation\=MainActor -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -working-directory -Xcc /Users/ahmadhamilton/Documents/GitHub/Remember -enable-anonymous-context-mangled-names -file-compilation-dir /Users/ahmadhamilton/Documents/GitHub/Remember -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -Xcc -ivfsstatcache -Xcc /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos26.0-23A339-81ce72e5b06c9602b9d30b56f2eed08a.sdkstatcache -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/swift-overrides.hmap -Xcc -iquote -Xcc /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-generated-files.hmap -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-own-target-headers.hmap -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-all-target-headers.hmap -Xcc -iquote -Xcc /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/a-do-project-headers.hmap -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Products/Debug-iphoneos/include -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources-normal/arm64 -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources/arm64 -Xcc -I/Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources -Xcc -DDEBUG\=1 -no-auto-bridging-header-chaining -module-name a_do -frontend-parseable-output -disable-clang-spi -target-sdk-version 26.0 -target-sdk-name iphoneos26.0 -clang-target arm64-apple-ios26.0 -in-process-plugin-server-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/Color+Hex.o -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/DeviceAdaptive.o -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/SecurityUtils.o -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/UserDefaults+AppGroup.o -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/HabitViewModels.o -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/ReminderViewModels.o -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/SmartListEngine.o -o /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/AIInsightsDashboard.o -index-unit-output-path /a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/Color+Hex.o -index-unit-output-path /a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/DeviceAdaptive.o -index-unit-output-path /a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/SecurityUtils.o -index-unit-output-path /a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/UserDefaults+AppGroup.o -index-unit-output-path /a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/HabitViewModels.o -index-unit-output-path /a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/ReminderViewModels.o -index-unit-output-path /a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/SmartListEngine.o -index-unit-output-path /a-do.build/Debug-iphoneos/a-do.build/Objects-normal/arm64/AIInsightsDashboard.o -index-store-path /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Index.noindex/DataStore -index-system-modules
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/Color+Hex.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/DeviceAdaptive.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/SecurityUtils.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/UserDefaults+AppGroup.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/HabitViewModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/HabitViewModels.swift:153:13: warning: initialization of immutable value 'wasCompleted' was never used; consider replacing with assignment to '_' or removing it
+        let wasCompleted = habit.isCompletedToday
+        ~~~~^~~~~~~~~~~~
+        _
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/ReminderViewModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/SmartListEngine.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ViewModels/SmartListEngine.swift:40:24: warning: value 'tagName' was defined but never used; consider replacing with boolean test
+                if let tagName = rule.tagName {
+                   ~~~~^~~~~~~~~~
+                                              != nil
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift:379:33: error: 'HabitData' is ambiguous for type lookup in this context
+    private var realHabitData: [HabitData] {
+                                ^~~~~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/MLPatternRecognitionManager.swift:452:8: note: found this candidate
+struct HabitData {
+       ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift:520:8: note: found this candidate
+struct HabitData {
+       ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift:390:32: error: 'TimeData' is ambiguous for type lookup in this context
+    private var realTimeData: [TimeData] {
+                               ^~~~~~~~
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/MLPatternRecognitionManager.swift:444:8: note: found this candidate
+struct TimeData {
+       ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift:526:8: note: found this candidate
+struct TimeData {
+       ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift:520:8: error: invalid redeclaration of 'HabitData'
+struct HabitData {
+       ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/MLPatternRecognitionManager.swift:452:8: note: 'HabitData' previously declared here
+struct HabitData {
+       ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/MLPatternRecognitionManager.swift:452:8: note: 'HabitData' previously declared here
+struct HabitData {
+       ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift:526:8: error: invalid redeclaration of 'TimeData'
+struct TimeData {
+       ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/MLPatternRecognitionManager.swift:444:8: note: 'TimeData' previously declared here
+struct TimeData {
+       ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/MLPatternRecognitionManager.swift:444:8: note: 'TimeData' previously declared here
+struct TimeData {
+       ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift:262:17: error: generic parameter 'C' could not be inferred
+                ForEach(realHabitData, id: \.name) { habit in
+                ^
+SwiftUI.ForEach.init:2:8: note: in call to initializer
+public init<C>(_ data: Binding<C>, id: KeyPath<C.Element, ID>, @ViewBuilder content: @escaping (Binding<C.Element>) -> Content) where Data == LazyMapSequence<C.Indices, (C.Index, ID)>, C : MutableCollection, C : RandomAccessCollection, C.Index : Hashable}
+       ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift:262:44: error: cannot infer key path type from context; consider explicitly specifying a root type
+                ForEach(realHabitData, id: \.name) { habit in
+                                           ^
+                                            <#Root#>
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift:263:21: error: static method 'buildExpression' requires that 'some ChartContent' conform to 'View'
+                    BarMark(
+                    ^
+SwiftUI.ViewBuilder.buildExpression:2:20: note: where 'Content' = 'some ChartContent'
+public static func buildExpression<Content>(_ content: Content) -> Content where Content : View}
+                   ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift:263:21: error: initializer 'init(x:y:width:height:stacking:)' requires that 'Binding<Subject>' conform to 'Plottable'
+                    BarMark(
+                    ^
+Charts.BarMark.init:2:20: note: where 'X' = 'Binding<Subject>'
+nonisolated public init<X, Y>(x: PlottableValue<X>, y: PlottableValue<Y>, width: MarkDimension = .automatic, height: MarkDimension = .automatic, stacking: MarkStackingMethod = .standard) where X : Plottable, Y : Plottable}
+                   ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift:263:21: error: initializer 'init(x:y:width:height:stacking:)' requires that 'Binding<Subject>' conform to 'Plottable'
+                    BarMark(
+                    ^
+Charts.BarMark.init:2:20: note: where 'Y' = 'Binding<Subject>'
+nonisolated public init<X, Y>(x: PlottableValue<X>, y: PlottableValue<Y>, width: MarkDimension = .automatic, height: MarkDimension = .automatic, stacking: MarkStackingMethod = .standard) where X : Plottable, Y : Plottable}
+                   ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift:267:22: error: instance method 'foregroundStyle' requires that 'Binding<Subject>' conform to 'ShapeStyle'
+                    .foregroundStyle(habit.color)
+                     ^
+Charts.ChartContent.foregroundStyle:2:25: note: where 'S' = 'Binding<Subject>'
+nonisolated public func foregroundStyle<S>(_ style: S) -> some ChartContent where S : ShapeStyle
+                        ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift:294:17: error: generic parameter 'C' could not be inferred
+                ForEach(realTimeData, id: \.category) { data in
+                ^
+SwiftUI.ForEach.init:2:8: note: in call to initializer
+public init<C>(_ data: Binding<C>, id: KeyPath<C.Element, ID>, @ViewBuilder content: @escaping (Binding<C.Element>) -> Content) where Data == LazyMapSequence<C.Indices, (C.Index, ID)>, C : MutableCollection, C : RandomAccessCollection, C.Index : Hashable}
+       ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift:294:43: error: cannot infer key path type from context; consider explicitly specifying a root type
+                ForEach(realTimeData, id: \.category) { data in
+                                          ^
+                                           <#Root#>
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift:295:21: error: initializer 'init(angle:innerRadius:outerRadius:angularInset:)' requires that 'Binding<Subject>' conform to 'Plottable'
+                    SectorMark(
+                    ^
+Charts.SectorMark.init:2:20: note: where 'some Plottable' = 'Binding<Subject>'
+nonisolated public init(angle: PlottableValue<some Plottable>, innerRadius: MarkDimension = .automatic, outerRadius: MarkDimension = .automatic, angularInset: CGFloat? = nil)}
+                   ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift:295:21: error: static method 'buildExpression' requires that 'some ChartContent' conform to 'View'
+                    SectorMark(
+                    ^
+SwiftUI.ViewBuilder.buildExpression:2:20: note: where 'Content' = 'some ChartContent'
+public static func buildExpression<Content>(_ content: Content) -> Content where Content : View}
+                   ^
+/Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AIInsightsDashboard.swift:300:22: error: instance method 'foregroundStyle' requires that 'Binding<Subject>' conform to 'ShapeStyle'
+                    .foregroundStyle(data.color)
+                     ^
+Charts.ChartContent.foregroundStyle:2:25: note: where 'S' = 'Binding<Subject>'
+nonisolated public func foregroundStyle<S>(_ style: S) -> some ChartContent where S : ShapeStyle
+                        ^
+
+SwiftCompile normal arm64 Compiling\ AISettingsView.swift,\ AISuggestionsView.swift,\ InsightDetailView.swift,\ SuggestionDetailView.swift,\ CollaborationView.swift,\ CreateListView.swift,\ EditWorkspaceView.swift,\ ShareReminderView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AISettingsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AISuggestionsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/InsightDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/SuggestionDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/CollaborationView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/CreateListView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/EditWorkspaceView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/ShareReminderView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AISettingsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/AISuggestionsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/InsightDetailView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/AI/SuggestionDetailView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/CollaborationView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/CreateListView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/EditWorkspaceView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Collaboration/ShareReminderView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ SearchModels.swift,\ SmartNotificationModels.swift,\ TimeTrackingModels.swift,\ AppContainer.swift,\ AppRouter.swift,\ SwiftDataUtils.swift,\ AppTheme.swift,\ AppGroupDefaults.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/SearchModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/SmartNotificationModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/TimeTrackingModels.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppContainer.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppRouter.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/SwiftDataUtils.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Styles/AppTheme.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/AppGroupDefaults.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/SearchModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/SmartNotificationModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Models/TimeTrackingModels.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppContainer.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/AppRouter.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Shared/SwiftDataUtils.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Styles/AppTheme.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Utils/AppGroupDefaults.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ a_do (in target 'a-do' from project 'a-do')
+
+EmitSwiftModule normal arm64 (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ TimeTrackingView.swift,\ LaunchScreenCoordinator.swift,\ LaunchScreenView.swift,\ StaticLaunchScreenView.swift,\ ADoApp.swift,\ ContentView.swift,\ GeneratedAssetSymbols.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeTrackingView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/LaunchScreenCoordinator.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/LaunchScreenView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/StaticLaunchScreenView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ADoApp.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ContentView.swift /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeTrackingView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/LaunchScreenCoordinator.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/LaunchScreenView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/StaticLaunchScreenView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ADoApp.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/ContentView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Library/Developer/Xcode/DerivedData/a-do-bftrwaswllkyrrgwbkjoeerjxfwv/Build/Intermediates.noindex/a-do.build/Debug-iphoneos/a-do.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ TemplatesView.swift,\ CreateTimeGoalView.swift,\ EditTimeGoalView.swift,\ TimeAnalyticsView.swift,\ TimeGoalDetailView.swift,\ TimeGoalsView.swift,\ TimeHistoryView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/TemplatesView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/CreateTimeGoalView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/EditTimeGoalView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeAnalyticsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeGoalDetailView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeGoalsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeHistoryView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Templates/TemplatesView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/CreateTimeGoalView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/EditTimeGoalView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeAnalyticsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeGoalDetailView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeGoalsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/TimeTracking/TimeHistoryView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 Compiling\ InboxView.swift,\ ListsView.swift,\ AppleNotePickerView.swift,\ ReminderFormView.swift,\ TagPeopleView.swift,\ SmartSearchView.swift,\ AppleIntegrationsView.swift,\ SyncSettingsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/InboxView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/AppleNotePickerView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/ReminderFormView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/TagPeopleView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Search/SmartSearchView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Settings/AppleIntegrationsView.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Settings/SyncSettingsView.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Home/InboxView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Lists/ListsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/AppleNotePickerView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/ReminderFormView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/ReminderForm/TagPeopleView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Search/SmartSearchView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Settings/AppleIntegrationsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftCompile normal arm64 /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Views/Settings/SyncSettingsView.swift (in target 'a-do' from project 'a-do')
+    cd /Users/ahmadhamilton/Documents/GitHub/Remember
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling TimeTrackingView.swift, LaunchScreenCoordinator.swift, LaunchScreenView.swift, StaticLaunchScreenView.swift, ADoApp.swift, ContentView.swift, GeneratedAssetSymbols.swift (in target 'a-do' from project 'a-do')
+
+SwiftCompile normal arm64 Compiling\ ReminderShortcuts.swift,\ AdvancedSearchManager.swift,\ AdvancedSmartListManager.swift,\ AIBehavioralIntegrationCoordinator.swift,\ AIDataService.swift,\ AIManager.swift,\ AppleRemindersSyncManager.swift,\ AudioManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/AppIntents/ReminderShortcuts.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSearchManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AdvancedSmartListManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIBehavioralIntegrationCoordinator.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIDataService.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AIManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AppleRemindersSyncManager.swift /Users/ahmadhamilton/Documents/GitHub/Remember/a-do/Managers/AudioManager.swift (in target 'a-do' from project 'a-do')
+
