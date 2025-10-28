@@ -18,7 +18,12 @@ final class AdvancedSearchManager: ObservableObject {
     static let shared = AdvancedSearchManager()
     
     private let logger = Logger(subsystem: "a-do", category: "AdvancedSearch")
-    
+
+    // Pro feature check
+    var isProEnabled: Bool {
+        return EntitlementManager.shared.isProUser
+    }
+
     // Search state
     var isSearching: Bool = false
     var currentQuery: String = ""
@@ -75,7 +80,7 @@ final class AdvancedSearchManager: ObservableObject {
     }
     
     // MARK: - Search Operations
-    
+
     func search(
         query: String,
         type: SearchType = .text,
@@ -85,6 +90,11 @@ final class AdvancedSearchManager: ObservableObject {
         userId: String,
         context: ModelContext
     ) async -> [SearchResult] {
+        guard isProEnabled else {
+            logger.warning("Advanced search is a Pro feature")
+            return []
+        }
+
         // Validate and sanitize search query
         guard let sanitizedQuery = SecurityUtils.sanitizeTextInput(query) else {
             logger.warning("Invalid search query rejected")

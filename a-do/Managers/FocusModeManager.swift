@@ -18,7 +18,12 @@ final class FocusModeManager {
     
     private let logger = Logger(subsystem: "a-do", category: "FocusMode")
     private let behavioralLearning = BehavioralLearningManager.shared
-    
+
+    // Pro feature check
+    var isProEnabled: Bool {
+        return EntitlementManager.shared.isProUser
+    }
+
     // Current session state
     var currentSession: FocusSession?
     var isSessionActive: Bool = false
@@ -46,6 +51,11 @@ final class FocusModeManager {
     // MARK: - Session Management
     
     func startSession(template: FocusTemplate, reminders: [Reminder] = [], context: ModelContext) {
+        guard isProEnabled else {
+            logger.warning("Focus mode sessions is a Pro feature")
+            return
+        }
+
         // End any existing session
         if let existing = currentSession, existing.isActive {
             endSession(context: context)
@@ -69,6 +79,9 @@ final class FocusModeManager {
         
         // Schedule notifications
         scheduleSessionNotifications(for: session)
+        
+        // Start Live Activity for Pro users
+        LiveActivityManager.shared.startFocusSessionActivity(session: session)
         
         do {
             try context.save()
@@ -134,6 +147,9 @@ final class FocusModeManager {
         
         // Cancel notifications
         cancelSessionNotifications()
+        
+        // End Live Activity for Pro users
+        LiveActivityManager.shared.endFocusSessionActivity(session: session)
         
         do {
             try context.save()
@@ -282,6 +298,9 @@ final class FocusModeManager {
         guard let session = currentSession, session.isActive else { return }
         
         sessionTimeRemaining = session.remainingTime
+        
+        // Update Live Activity for Pro users
+        LiveActivityManager.shared.updateFocusSessionActivity(session: session)
         
         if sessionTimeRemaining <= 0 {
             sessionTimerExpired()

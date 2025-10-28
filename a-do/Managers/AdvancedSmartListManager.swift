@@ -206,20 +206,21 @@ final class AdvancedSmartListManager {
             // Create background context for database operations
             let backgroundContext = ModelContext(context.container)
             
-            // Fetch all reminders with pagination to avoid memory issues
-            var reminderDescriptor = FetchDescriptor<Reminder>()
-            reminderDescriptor.fetchLimit = 1000 // Limit to prevent memory issues
-            let allReminders = (try? backgroundContext.fetch(reminderDescriptor)) ?? []
+            // Use memory-safe data loading with smaller limits
+            let allReminders = await MemorySafeDataLoader.loadReminders(
+                context: backgroundContext,
+                limit: 500 // Reduced from 1000
+            )
             
-            // Fetch time entries with limit
-            var timeDescriptor = FetchDescriptor<TimeEntry>()
-            timeDescriptor.fetchLimit = 1000
-            let timeEntries = (try? backgroundContext.fetch(timeDescriptor)) ?? []
+            let timeEntries = await MemorySafeDataLoader.loadTimeEntries(
+                context: backgroundContext,
+                limit: 500 // Reduced from 1000
+            )
             
-            // Fetch shared reminders with limit
-            var sharedDescriptor = FetchDescriptor<SharedReminder>()
-            sharedDescriptor.fetchLimit = 1000
-            let sharedReminders = (try? backgroundContext.fetch(sharedDescriptor)) ?? []
+            let sharedReminders = await MemorySafeDataLoader.loadSharedReminders(
+                context: backgroundContext,
+                limit: 200 // New limit for shared reminders
+            )
             
             // Evaluate the smart list
             let results = smartList.evaluate(

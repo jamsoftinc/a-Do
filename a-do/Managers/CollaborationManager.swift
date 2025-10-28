@@ -19,7 +19,7 @@ final class CollaborationManager: ObservableObject {
     
     private let logger = Logger(subsystem: "a-do", category: "Collaboration")
     private let container = CKContainer.default()
-    
+
     // Current user info - Secure user identification
     var currentUserID: String?
     var currentUserName: String?
@@ -62,7 +62,7 @@ final class CollaborationManager: ObservableObject {
     }
     
     // MARK: - Reminder Sharing
-    
+
     func shareReminder(_ reminder: Reminder, with participants: [String], permission: SharingPermission, context: ModelContext) async -> SharedReminder? {
         guard let userID = currentUserID,
               let userName = currentUserName,
@@ -167,7 +167,7 @@ final class CollaborationManager: ObservableObject {
     }
     
     // MARK: - List Sharing
-    
+
     func shareList(_ list: ReminderList, with participants: [String], context: ModelContext) async -> SharedList? {
         guard let userID = currentUserID,
               let userName = currentUserName else {
@@ -491,7 +491,7 @@ final class CollaborationManager: ObservableObject {
     }
     
     // MARK: - Workspace Management
-    
+
     func createWorkspace(name: String, description: String, context: ModelContext) -> Workspace? {
         guard let userID = currentUserID,
               let userName = currentUserName else {
@@ -574,12 +574,160 @@ final class CollaborationManager: ObservableObject {
     func declineInvitation(_ participant: ShareParticipant, context: ModelContext) async {
         participant.status = ShareStatus.declined
         participant.respondedAt = Date()
-        
+
         do {
             try context.save()
             logger.info("Declined invitation for participant: \(participant.email)")
         } catch {
             logger.error("Failed to decline invitation: \(error.localizedDescription)")
         }
+    }
+
+    // MARK: - Translation Integration
+
+    func translateCommentForUser(_ comment: ReminderComment, targetLanguage: SupportedLanguage) async -> String? {
+        // Translation is a Pro feature
+        guard EntitlementManager.shared.isProUser else {
+            logger.warning("Translation is a Pro feature")
+            return nil
+        }
+
+        let translationManager = TranslationManager.shared
+
+        guard translationManager.translateComments else {
+            return nil
+        }
+
+        if #available(iOS 17.4, *) {
+            return await translationManager.translate(
+                text: comment.content,
+                to: targetLanguage
+            )
+        } else {
+            logger.warning("Translation requires iOS 17.4 or later")
+            return nil
+        }
+    }
+
+    func translateReminderForParticipants(
+        _ reminder: Reminder,
+        participants: [ShareParticipant]
+    ) async -> [String: String] {
+        // Translation is a Pro feature
+        guard EntitlementManager.shared.isProUser else {
+            logger.warning("Translation is a Pro feature")
+            return [:]
+        }
+
+        let translationManager = TranslationManager.shared
+
+        guard translationManager.translateSharedReminders else {
+            return [:]
+        }
+
+        // Detect source language
+        var sourceLanguage: SupportedLanguage = .english
+        if #available(iOS 17.4, *) {
+            if let detected = await translationManager.detectLanguage(in: reminder.title) {
+                sourceLanguage = detected
+            }
+        }
+
+        // Build user language preferences
+        var userLanguages: [String: SupportedLanguage] = [:]
+        for participant in participants {
+            // In a real implementation, you'd fetch the user's preferred language
+            // For now, we'll use English as default
+            userLanguages[participant.userID] = translationManager.preferredLanguage
+        }
+
+        // Translate title for each participant
+        if #available(iOS 17.4, *) {
+            return await translationManager.translateSharedContent(
+                content: reminder.title,
+                fromLanguage: sourceLanguage,
+                forUsers: userLanguages
+            )
+        } else {
+            return [:]
+        }
+    }
+
+    func getTranslatedComment(
+        _ comment: ReminderComment,
+        for userID: String,
+        targetLanguage: SupportedLanguage
+    ) async -> String {
+        // Try to get translation
+        if let translated = await translateCommentForUser(comment, targetLanguage: targetLanguage) {
+            return translated
+        }
+
+        // Fall back to original content
+        return comment.content
+    }
+
+    func notifyParticipantsWithTranslation(
+        sharedReminder: SharedReminder,
+        message: String,
+        type: ShareActivityType
+    ) async {
+        let translationManager = TranslationManager.shared
+
+        guard translationManager.translateSharedReminders else {
+            // Send notifications without translation
+            for participant in sharedReminder.activeParticipants {
+                await notifyParticipant(participant, about: type, sharedReminder: sharedReminder)
+            }
+            return
+        }
+
+        // Detect source language
+        var sourceLanguage: SupportedLanguage = .english
+        if #available(iOS 17.4, *) {
+            if let detected = await translationManager.detectLanguage(in: message) {
+                sourceLanguage = detected
+            }
+        }
+
+        // Send translated notifications to each participant
+        for participant in sharedReminder.activeParticipants {
+            let targetLanguage = translationManager.preferredLanguage // Should fetch per-user preference
+
+            if #available(iOS 17.4, *), sourceLanguage != targetLanguage {
+                if let translatedMessage = await translationManager.translate(
+                    text: message,
+                    from: sourceLanguage,
+                    to: targetLanguage
+                ) {
+                    logger.info("Sending translated notification to \(participant.email): \(translatedMessage)")
+                    await notifyParticipant(participant, about: type, sharedReminder: sharedReminder)
+                }
+            } else {
+                await notifyParticipant(participant, about: type, sharedReminder: sharedReminder)
+            }
+        }
+    }
+
+    func addCommentWithTranslation(
+        to reminder: Reminder,
+        content: String,
+        context: ModelContext,
+        shouldTranslate: Bool = true
+    ) async -> ReminderComment? {
+        guard let comment = addComment(to: reminder, content: content, context: context) else {
+            return nil
+        }
+
+        // If translation is enabled, notify participants with translated versions
+        if shouldTranslate, let sharedReminder = getSharedReminder(for: reminder, context: context) {
+            await notifyParticipantsWithTranslation(
+                sharedReminder: sharedReminder,
+                message: "New comment: \(content)",
+                type: .commentAdded
+            )
+        }
+
+        return comment
     }
 }

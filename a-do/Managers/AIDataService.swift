@@ -18,12 +18,32 @@ final class AIDataService {
     private let logger = Logger(subsystem: "a-do", category: "AIDataService")
     private let timeTrackingManager = TimeTrackingManager.shared
     private let focusModeManager = FocusModeManager.shared
-    
+
+    // Pro feature check
+    var isProEnabled: Bool {
+        return EntitlementManager.shared.isProUser
+    }
+
     private init() {}
     
     // MARK: - Productivity Data Integration
-    
+
     func getProductivityMetrics(context: ModelContext, timeframe: AIInsightTimeframe = .week) -> ProductivityMetrics {
+        guard isProEnabled else {
+            logger.warning("AI productivity metrics is a Pro feature")
+            return ProductivityMetrics(
+                totalFocusTime: 0,
+                totalTimeTracked: 0,
+                averageProductivityScore: 0,
+                completionRate: 0,
+                totalSessions: 0,
+                totalInterruptions: 0,
+                averageSessionLength: 0,
+                mostProductiveHour: 0,
+                timeframe: timeframe
+            )
+        }
+
         let dateRange = getDateRange(for: timeframe)
         let startDate = dateRange.start
         let endDate = dateRange.end
@@ -67,6 +87,18 @@ final class AIDataService {
     }
     
     func getHabitMetrics(context: ModelContext, timeframe: AIInsightTimeframe = .week) -> HabitMetrics {
+        guard isProEnabled else {
+            logger.warning("AI habit metrics is a Pro feature")
+            return HabitMetrics(
+                totalHabits: 0,
+                habitsWithActiveStreak: 0,
+                averageStreak: 0,
+                totalCompletions: 0,
+                bestPerformingHabit: "None",
+                overallCompletionRate: 0
+            )
+        }
+
         let dateRange = getDateRange(for: timeframe)
         
         // Fetch active habits

@@ -16,7 +16,12 @@ final class AIBehavioralIntegrationCoordinator {
     static let shared = AIBehavioralIntegrationCoordinator()
     
     private let logger = Logger(subsystem: "a-do", category: "AIBehavioralIntegration")
-    
+
+    // Pro feature check
+    var isProEnabled: Bool {
+        return EntitlementManager.shared.isProUser
+    }
+
     // AI Managers
     private let aiManager = AIManager.shared
     private let behavioralLearning = BehavioralLearningManager.shared
@@ -44,8 +49,13 @@ final class AIBehavioralIntegrationCoordinator {
     
     /// Runs a complete learning cycle that improves AI suggestions based on user behavior
     func runLearningCycle() async {
+        guard isProEnabled else {
+            logger.warning("AI behavioral learning is a Pro feature")
+            return
+        }
+
         guard isIntegrationActive else { return }
-        
+
         logger.info("Starting AI behavioral learning cycle")
         
         // Get the current model context (in a real app, this would be injected)
@@ -201,8 +211,13 @@ final class AIBehavioralIntegrationCoordinator {
     
     /// Demonstrates how the system would work with sample user interactions
     func demonstrateLearningCycle(context: ModelContext) async {
+        guard isProEnabled else {
+            logger.warning("AI behavioral learning demonstration is a Pro feature")
+            return
+        }
+
         logger.info("Running demonstration of behavioral learning system")
-        
+
         // Simulate user interactions
         await simulateUserInteractions(context: context)
         

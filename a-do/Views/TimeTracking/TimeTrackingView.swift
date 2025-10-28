@@ -43,8 +43,13 @@ struct TimeTrackingView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
-                        Button("Analytics") {
-                            showingAnalytics = true
+                        HStack {
+                            Button("Analytics") {
+                                showingAnalytics = true
+                            }
+                            if !EntitlementManager.shared.isProUser {
+                                ProFeaturesAvailableBadge()
+                            }
                         }
                         Button("Goals") {
                             showingGoals = true

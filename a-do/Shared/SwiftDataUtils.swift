@@ -80,6 +80,19 @@ struct SwiftDataUtils {
         ]
         extendedModels.append(contentsOf: habitModels)
         
+        // Add subscription models
+        let subscriptionModels: [any PersistentModel.Type] = [
+            SubscriptionStatus.self
+        ]
+        extendedModels.append(contentsOf: subscriptionModels)
+        
+        // Add Pro feature models (subtasks and dependencies)
+        let proModels: [any PersistentModel.Type] = [
+            Subtask.self,
+            TaskDependency.self
+        ]
+        extendedModels.append(contentsOf: proModels)
+        
         // Note: We're not including models that might not exist yet like:
         // RecurrenceRule, etc. These can be added later when they're properly defined
         

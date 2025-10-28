@@ -8,6 +8,7 @@
 import WidgetKit
 import SwiftUI
 import SwiftData
+import AppIntents
 
 struct HabitWidget: Widget {
     let kind: String = "HabitWidget"
@@ -40,13 +41,27 @@ struct HabitProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<HabitEntry>) -> ()) {
-        // For now, return a simple timeline that updates every hour
         let currentDate = Date()
+
+        // Check Pro status
+        guard let sharedDefaults = UserDefaults(suiteName: "group.com.ado.app"),
+              sharedDefaults.bool(forKey: "isProUser") else {
+            // Show upgrade message for free users
+            let entry = HabitEntry(date: currentDate, habits: [
+                HabitData(title: "Widgets are a Pro feature", icon: "star.fill", color: "#FF9500", currentStreak: 0, isCompletedToday: false)
+            ])
+            let nextUpdate = Calendar.current.date(byAdding: .hour, value: 1, to: currentDate)!
+            let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
+            completion(timeline)
+            return
+        }
+
+        // For now, return a simple timeline that updates every hour
         let entry = HabitEntry(date: currentDate, habits: [
             HabitData(title: "Exercise", icon: "figure.run", color: "#007AFF", currentStreak: 5, isCompletedToday: true),
             HabitData(title: "Read", icon: "book.fill", color: "#34C759", currentStreak: 3, isCompletedToday: false)
         ])
-        
+
         let nextUpdate = Calendar.current.date(byAdding: .hour, value: 1, to: currentDate)!
         let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
         completion(timeline)
@@ -79,7 +94,7 @@ struct HabitWidgetEntryView: View {
                     .fontWeight(.semibold)
                 Spacer()
             }
-            
+
             if entry.habits.isEmpty {
                 VStack {
                     Image(systemName: "star.circle")
@@ -94,7 +109,7 @@ struct HabitWidgetEntryView: View {
                 ForEach(Array(entry.habits.prefix(3).enumerated()), id: \.offset) { index, habit in
                     HabitRowView(habit: habit)
                 }
-                
+
                 if entry.habits.count > 3 {
                     Text("+\(entry.habits.count - 3) more")
                         .font(.caption)
@@ -108,29 +123,54 @@ struct HabitWidgetEntryView: View {
 
 struct HabitRowView: View {
     let habit: HabitData
-    
+
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: habit.icon)
                 .foregroundColor(Color(hex: habit.color) ?? .blue)
                 .frame(width: 16, height: 16)
-            
+
             Text(habit.title)
                 .font(.caption)
                 .lineLimit(1)
-            
+                .strikethrough(habit.isCompletedToday)
+                .foregroundColor(habit.isCompletedToday ? .secondary : .primary)
+
             Spacer()
-            
-            if habit.isCompletedToday {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
-                    .font(.caption)
-            } else {
-                Image(systemName: "circle")
-                    .foregroundColor(.gray)
-                    .font(.caption)
+
+            // Interactive completion button
+            Button(intent: CompleteHabitIntent(habitId: habit.id)) {
+                Image(systemName: habit.isCompletedToday ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(habit.isCompletedToday ? .green : .gray)
+                    .font(.body)
             }
+            .buttonStyle(.plain)
         }
+    }
+}
+
+// Add HabitData update to include id
+extension HabitData {
+    var id: String {
+        return title // For now, use title as ID; should be UUID in production
+    }
+}
+
+// Color extension for hex colors
+extension Color {
+    init?(hex: String) {
+        var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        hexSanitized = hexSanitized.replacingOccurrences(of: "#", with: "")
+
+        var rgb: UInt64 = 0
+
+        guard Scanner(string: hexSanitized).scanHexInt64(&rgb) else { return nil }
+
+        let r = Double((rgb & 0xFF0000) >> 16) / 255.0
+        let g = Double((rgb & 0x00FF00) >> 8) / 255.0
+        let b = Double(rgb & 0x0000FF) / 255.0
+
+        self.init(red: r, green: g, blue: b)
     }
 }
 

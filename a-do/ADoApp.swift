@@ -21,6 +21,13 @@ struct ADoApp: App {
         // Initialize location manager and request permission
         let locationManager = LocationManager.shared
         locationManager.requestAuthorization(always: false)
+        
+        // Initialize subscription manager
+        _ = SubscriptionManager.shared
+        _ = EntitlementManager.shared
+        
+        // Initialize memory monitor
+        _ = MemoryMonitor.shared
     }
     
     private func configureGlobalAppearance() {

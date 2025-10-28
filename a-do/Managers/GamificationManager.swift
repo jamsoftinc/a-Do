@@ -16,7 +16,12 @@ final class GamificationManager {
     static let shared = GamificationManager()
     
     private let logger = Logger(subsystem: "a-do", category: "Gamification")
-    
+
+    // Pro feature check
+    var isProEnabled: Bool {
+        return EntitlementManager.shared.isProUser
+    }
+
     // Current user profile
     var currentProfile: UserProfile?
     
@@ -79,9 +84,14 @@ final class GamificationManager {
     // MARK: - Achievement System
     
     func checkAchievements(for profile: UserProfile, context: ModelContext) async {
+        guard isProEnabled else {
+            logger.warning("Gamification achievements is a Pro feature")
+            return
+        }
+
         isProcessing = true
         defer { isProcessing = false }
-        
+
         logger.info("Checking achievements for user: \(profile.displayName)")
         
         let incompleteAchievements = (profile.achievements ?? []).filter { !$0.isCompleted }

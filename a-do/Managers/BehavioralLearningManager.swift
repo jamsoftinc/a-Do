@@ -17,7 +17,12 @@ final class BehavioralLearningManager {
     
     private let logger = Logger(subsystem: "a-do", category: "BehavioralLearning")
     private let mlPatternManager = MLPatternRecognitionManager.shared
-    
+
+    // Pro feature check
+    var isProEnabled: Bool {
+        return EntitlementManager.shared.isProUser
+    }
+
     // Learning state
     var isLearningEnabled: Bool = true
     var learningProgress: Double = 0.0
@@ -30,8 +35,13 @@ final class BehavioralLearningManager {
     }
     
     // MARK: - User Action Tracking
-    
+
     func trackAction(_ action: UserActionType, context: [String: Any] = [:], modelContext: ModelContext) {
+        guard isProEnabled else {
+            logger.warning("Behavioral learning is a Pro feature")
+            return
+        }
+
         guard isLearningEnabled else { return }
         
         let userAction = UserAction(

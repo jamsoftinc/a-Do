@@ -16,7 +16,12 @@ final class AIManager {
     static let shared = AIManager()
     
     private let logger = Logger(subsystem: "a-do", category: "AI")
-    
+
+    // Pro feature check
+    var isProEnabled: Bool {
+        return EntitlementManager.shared.isProUser
+    }
+
     // Processing state
     var isProcessing: Bool = false
     var lastAnalysisDate: Date?
@@ -94,10 +99,15 @@ final class AIManager {
     }
     
     // MARK: - Suggestion Generation
-    
+
     func generateSuggestions(userId: String, context: ModelContext) async {
+        guard isProEnabled else {
+            logger.warning("AI suggestions is a Pro feature")
+            return
+        }
+
         let config = getConfiguration(userId: userId, context: context)
-        
+
         guard config.isAIEnabled else {
             logger.info("AI suggestions disabled for user: \(userId)")
             return
@@ -396,6 +406,10 @@ final class AIManager {
     // MARK: - Insight Generation
     
     func generateInsights(userId: String, context: ModelContext) async {
+        guard isProEnabled else {
+            logger.warning("AI insights is a Pro feature")
+            return
+        }
         let config = getConfiguration(userId: userId, context: context)
         
         guard config.isAIEnabled else { return }

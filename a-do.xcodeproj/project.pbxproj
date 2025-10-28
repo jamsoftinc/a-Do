@@ -6,6 +6,25 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		7C07D3932EB05C2900BA0958 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CD98A7A2E5A178200B00CBD /* WidgetKit.framework */; };
+		7C07D3942EB05C2900BA0958 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CD98A7C2E5A178200B00CBD /* SwiftUI.framework */; };
+		7C07D3A32EB05C2A00BA0958 /* a-do WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7C07D3922EB05C2900BA0958 /* a-do WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		7C07D3CB2EB06AFB00BA0958 /* EnhancedWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C07D3C72EB06AFB00BA0958 /* EnhancedWidgets.swift */; };
+		7C07D3CC2EB06AFB00BA0958 /* HabitWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C07D3C92EB06AFB00BA0958 /* HabitWidgetBundle.swift */; };
+		7C07D3CD2EB06AFB00BA0958 /* HabitWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C07D3C82EB06AFB00BA0958 /* HabitWidget.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		7C07D3A12EB05C2A00BA0958 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7CC0E5362E496AEC00116982 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7C07D3912EB05C2900BA0958;
+			remoteInfo = "a-do WidgetExtension";
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXCopyFilesBuildPhase section */
 		7CD98A912E5A178500B00CBD /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -13,6 +32,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				7C07D3A32EB05C2A00BA0958 /* a-do WidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -20,6 +40,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7C07D3672EB03BF200BA0958 /* Configuration.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Configuration.storekit; sourceTree = "<group>"; };
+		7C07D3922EB05C2900BA0958 /* a-do WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "a-do WidgetExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		7C07D3AA2EB05C5000BA0958 /* a-do WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "a-do WidgetExtension.entitlements"; sourceTree = "<group>"; };
+		7C07D3C72EB06AFB00BA0958 /* EnhancedWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnhancedWidgets.swift; sourceTree = "<group>"; };
+		7C07D3C82EB06AFB00BA0958 /* HabitWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitWidget.swift; sourceTree = "<group>"; };
+		7C07D3C92EB06AFB00BA0958 /* HabitWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitWidgetBundle.swift; sourceTree = "<group>"; };
 		7CC0E53E2E496AEC00116982 /* a-do.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "a-do.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7CD98A7A2E5A178200B00CBD /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		7CD98A7C2E5A178200B00CBD /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -33,14 +59,18 @@
 			path = "a-do";
 			sourceTree = "<group>";
 		};
-		7CD98AC22E5A1AAA00B00CBD /* a-do_Widget */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "a-do_Widget";
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		7C07D38F2EB05C2900BA0958 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7C07D3942EB05C2900BA0958 /* SwiftUI.framework in Frameworks */,
+				7C07D3932EB05C2900BA0958 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7CC0E53B2E496AEC00116982 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -51,12 +81,24 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		7C07D3CA2EB06AFB00BA0958 /* a-do_Widget */ = {
+			isa = PBXGroup;
+			children = (
+				7C07D3C72EB06AFB00BA0958 /* EnhancedWidgets.swift */,
+				7C07D3C82EB06AFB00BA0958 /* HabitWidget.swift */,
+				7C07D3C92EB06AFB00BA0958 /* HabitWidgetBundle.swift */,
+			);
+			path = "a-do_Widget";
+			sourceTree = "<group>";
+		};
 		7CC0E5352E496AEC00116982 = {
 			isa = PBXGroup;
 			children = (
+				7C07D3CA2EB06AFB00BA0958 /* a-do_Widget */,
+				7C07D3AA2EB05C5000BA0958 /* a-do WidgetExtension.entitlements */,
+				7C07D3672EB03BF200BA0958 /* Configuration.storekit */,
 				7CD98AD82E5A1D6500B00CBD /* a-do_WidgetExtension.entitlements */,
 				7CC0E5402E496AEC00116982 /* a-do */,
-				7CD98AC22E5A1AAA00B00CBD /* a-do_Widget */,
 				7CD98A792E5A178200B00CBD /* Frameworks */,
 				7CC0E53F2E496AEC00116982 /* Products */,
 				7CD98AB92E5A19F000B00CBD /* Info.plist */,
@@ -67,6 +109,7 @@
 			isa = PBXGroup;
 			children = (
 				7CC0E53E2E496AEC00116982 /* a-do.app */,
+				7C07D3922EB05C2900BA0958 /* a-do WidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -83,6 +126,25 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		7C07D3912EB05C2900BA0958 /* a-do WidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7C07D3A52EB05C2A00BA0958 /* Build configuration list for PBXNativeTarget "a-do WidgetExtension" */;
+			buildPhases = (
+				7C07D38E2EB05C2900BA0958 /* Sources */,
+				7C07D38F2EB05C2900BA0958 /* Frameworks */,
+				7C07D3902EB05C2900BA0958 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "a-do WidgetExtension";
+			packageProductDependencies = (
+			);
+			productName = "a-do WidgetExtension";
+			productReference = 7C07D3922EB05C2900BA0958 /* a-do WidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		7CC0E53D2E496AEC00116982 /* a-do */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 7CC0E5492E496AED00116982 /* Build configuration list for PBXNativeTarget "a-do" */;
@@ -95,6 +157,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				7C07D3A22EB05C2A00BA0958 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				7CC0E5402E496AEC00116982 /* a-do */,
@@ -116,6 +179,10 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					7C07D3912EB05C2900BA0958 = {
+						CreatedOnToolsVersion = 26.0.1;
+						LastSwiftMigration = 2600;
+					};
 					7CC0E53D2E496AEC00116982 = {
 						CreatedOnToolsVersion = 26.0;
 					};
@@ -136,11 +203,19 @@
 			projectRoot = "";
 			targets = (
 				7CC0E53D2E496AEC00116982 /* a-do */,
+				7C07D3912EB05C2900BA0958 /* a-do WidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		7C07D3902EB05C2900BA0958 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7CC0E53C2E496AEC00116982 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -151,6 +226,16 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		7C07D38E2EB05C2900BA0958 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7C07D3CB2EB06AFB00BA0958 /* EnhancedWidgets.swift in Sources */,
+				7C07D3CC2EB06AFB00BA0958 /* HabitWidgetBundle.swift in Sources */,
+				7C07D3CD2EB06AFB00BA0958 /* HabitWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7CC0E53A2E496AEC00116982 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -160,7 +245,80 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		7C07D3A22EB05C2A00BA0958 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7C07D3912EB05C2900BA0958 /* a-do WidgetExtension */;
+			targetProxy = 7C07D3A12EB05C2A00BA0958 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		7C07D3A62EB05C2A00BA0958 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = "a-do WidgetExtension.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 4;
+				DEVELOPMENT_TEAM = 4ZNP9N3A76;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "a-do_Widget/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 3.3;
+				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-do.a-do-Widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		7C07D3A72EB05C2A00BA0958 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = "a-do WidgetExtension.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 4;
+				DEVELOPMENT_TEAM = 4ZNP9N3A76;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "a-do_Widget/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 3.3;
+				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-do.a-do-Widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		7CC0E5472E496AED00116982 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -288,7 +446,7 @@
 				CODE_SIGN_ENTITLEMENTS = "a-do/a-do.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -312,7 +470,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.2;
+				MARKETING_VERSION = 3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-do";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -338,7 +496,7 @@
 				CODE_SIGN_ENTITLEMENTS = "a-do/a-do.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -362,7 +520,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.2;
+				MARKETING_VERSION = 3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-do";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -383,6 +541,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		7C07D3A52EB05C2A00BA0958 /* Build configuration list for PBXNativeTarget "a-do WidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7C07D3A62EB05C2A00BA0958 /* Debug */,
+				7C07D3A72EB05C2A00BA0958 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		7CC0E5392E496AEC00116982 /* Build configuration list for PBXProject "a-do" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

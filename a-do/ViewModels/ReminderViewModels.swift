@@ -22,8 +22,27 @@ final class ReminderHomeViewModel {
             return 
         }
         
-        Logger(subsystem: "a-do", category: "Reminders").info("Creating reminder object with title: '\(safeTitle)', dueDate: \(String(describing: self.quickDueDate))")
-        let reminder = Reminder(title: safeTitle, dueDate: quickDueDate)
+        // Use advanced NLP if Pro, otherwise use basic parsing
+        if EntitlementManager.shared.canUseAdvancedNLP {
+            Task {
+                let parsed = await NaturalLanguageProcessor.shared.parseReminderText(safeTitle)
+                let title = parsed.finalText
+                let dueDate = parsed.dueDate ?? self.quickDueDate
+                let priority = parsed.priority != .none ? parsed.priority : .none
+                
+                let reminder = Reminder(title: title, dueDate: dueDate, priority: priority)
+                createReminder(reminder: reminder, context: context)
+            }
+            return
+        } else {
+            // Basic creation for non-Pro users
+            Logger(subsystem: "a-do", category: "Reminders").info("Creating reminder object with title: '\(safeTitle)', dueDate: \(String(describing: self.quickDueDate))")
+            let reminder = Reminder(title: safeTitle, dueDate: quickDueDate)
+            createReminder(reminder: reminder, context: context)
+        }
+    }
+    
+    private func createReminder(reminder: Reminder, context: ModelContext) {
         Logger(subsystem: "a-do", category: "Reminders").info("Inserting reminder into context with UUID: \(reminder.uuid)")
         context.insert(reminder)
         
@@ -43,7 +62,7 @@ final class ReminderHomeViewModel {
             let savedReminders = try? context.fetch(descriptor)
             
             if let savedReminder = savedReminders?.first {
-                Logger(subsystem: "a-do", category: "Reminders").info("Quick reminder saved: '\(safeTitle)' with ID: \(String(describing: savedReminder.id)), due: \(self.quickDueDate?.description ?? "none")")
+                Logger(subsystem: "a-do", category: "Reminders").info("Quick reminder saved: '\(reminder.title)' with ID: \(String(describing: savedReminder.id)), due: \(reminder.dueDate?.description ?? "none")")
                 Logger(subsystem: "a-do", category: "Reminders").info("Reminder verification: Found saved reminder with UUID: \(savedReminder.uuid)")
             } else {
                 Logger(subsystem: "a-do", category: "Reminders").error("Reminder verification failed: Could not fetch saved reminder with UUID: \(reminder.uuid)")

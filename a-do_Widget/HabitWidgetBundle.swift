@@ -2,14 +2,14 @@
 //  HabitWidgetBundle.swift
 //  a-do_Widget
 //
-//  Created by Ahmad Hamilton on 8/10/25.
+//  Widget Bundle for all widgets
 //
 
 import WidgetKit
 import SwiftUI
 
 @main
-struct HabitWidgetBundle: WidgetBundle {
+struct ADOWidgetBundle: WidgetBundle {
     var body: some Widget {
         HabitWidget()
         ReminderWidget()

@@ -245,6 +245,11 @@ final class Reminder {
     // @Relationship(deleteRule: .nullify) var reminderComments: [ReminderComment]? = []
     // @Relationship(deleteRule: .nullify) var aiSuggestions: [AISuggestion]? = []
     // @Relationship(deleteRule: .nullify) var recurringReminder: RecurringReminder?
+    
+    // Pro features
+    @Relationship(deleteRule: .cascade) var subtasks: [Subtask]? = []
+    @Relationship(deleteRule: .cascade) var dependencies: [TaskDependency]? = []
+    @Relationship(deleteRule: .cascade) var sketches: [Sketch]? = []
 
     // Required parameterless initializer for SwiftData
     init() {

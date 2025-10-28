@@ -16,7 +16,12 @@ final class MLPatternRecognitionManager {
     static let shared = MLPatternRecognitionManager()
     
     private let logger = Logger(subsystem: "a-do", category: "MLPatternRecognition")
-    
+
+    // Pro feature check
+    var isProEnabled: Bool {
+        return EntitlementManager.shared.isProUser
+    }
+
     // Pattern recognition models
     private var userBehaviorModel: UserBehaviorModel
     private var productivityPatternModel: ProductivityPatternModel
@@ -33,8 +38,47 @@ final class MLPatternRecognitionManager {
     // MARK: - Pattern Analysis
     
     func analyzeUserBehaviorPatterns(context: ModelContext) async -> UserBehaviorAnalysis {
+        guard isProEnabled else {
+            logger.warning("ML pattern recognition is a Pro feature")
+            return UserBehaviorAnalysis(
+                taskCompletionPatterns: TaskCompletionPatterns(
+                    optimalCompletionHours: [],
+                    optimalCompletionDays: [],
+                    completionRateByPriority: [:],
+                    procrastinationScore: 0,
+                    averageCompletionDelay: 0
+                ),
+                timeUsagePatterns: TimeUsagePatterns(
+                    categoryDistribution: [:],
+                    peakProductivityHours: [],
+                    averageSessionLength: 0,
+                    optimalSessionLength: 0,
+                    consistencyScore: 0
+                ),
+                productivityPatterns: ProductivityPatterns(
+                    dailyScoreTrends: [:],
+                    focusTypeEffectiveness: [:],
+                    interruptionPatterns: InterruptionPatterns(commonTypes: [], peakTimes: [], averageRecoveryTime: 0),
+                    optimalWorkingHours: [],
+                    burnoutRiskScore: 0
+                ),
+                habitPatterns: HabitPatterns(
+                    successRates: [:],
+                    streakPatterns: [],
+                    habitClusters: [],
+                    optimalFormationTime: 0
+                ),
+                contextualPatterns: ContextualPatterns(
+                    timeOfDayEffects: [:],
+                    dayOfWeekEffects: [:],
+                    seasonalEffects: [:]
+                ),
+                overallScore: 0
+            )
+        }
+
         logger.info("Starting user behavior pattern analysis")
-        
+
         // Collect comprehensive data
         let behaviorData = await collectBehaviorData(context: context)
         
@@ -62,8 +106,13 @@ final class MLPatternRecognitionManager {
     }
     
     func predictOptimalScheduling(for reminder: Reminder, context: ModelContext) async -> SchedulingPrediction {
+        guard isProEnabled else {
+            logger.warning("ML scheduling prediction is a Pro feature")
+            return SchedulingPrediction(optimalTimes: [], confidence: 0, reasoningFactors: [])
+        }
+
         logger.info("Predicting optimal scheduling for reminder: \(reminder.title)")
-        
+
         // Analyze historical patterns
         let userPatterns = await getUserSchedulingPatterns(context: context)
         let similarTasks = await findSimilarTasks(reminder: reminder, context: context)
@@ -85,8 +134,13 @@ final class MLPatternRecognitionManager {
     }
     
     func predictHabitSuccess(habit: Habit, context: ModelContext) async -> HabitSuccessPrediction {
+        guard isProEnabled else {
+            logger.warning("ML habit prediction is a Pro feature")
+            return HabitSuccessPrediction(successProbability: 0, riskFactors: [], optimizationSuggestions: [], confidence: 0)
+        }
+
         logger.info("Predicting habit success for: \(habit.title)")
-        
+
         let habitHistory = await getHabitHistory(habit: habit, context: context)
         let userHabitPatterns = await getUserHabitPatterns(context: context)
         let environmentalFactors = await getEnvironmentalFactors(for: habit, context: context)
@@ -119,8 +173,13 @@ final class MLPatternRecognitionManager {
     }
     
     func detectProductivityAnomalies(context: ModelContext) async -> [ProductivityAnomaly] {
+        guard isProEnabled else {
+            logger.warning("ML anomaly detection is a Pro feature")
+            return []
+        }
+
         logger.info("Detecting productivity anomalies")
-        
+
         let recentData = await getRecentProductivityData(context: context, days: 30)
         let historicalBaseline = await calculateProductivityBaseline(context: context)
         
@@ -137,8 +196,13 @@ final class MLPatternRecognitionManager {
     }
     
     func generatePersonalizedInsights(context: ModelContext) async -> [PersonalizedInsight] {
+        guard isProEnabled else {
+            logger.warning("ML personalized insights is a Pro feature")
+            return []
+        }
+
         logger.info("Generating personalized insights")
-        
+
         let behaviorAnalysis = await analyzeUserBehaviorPatterns(context: context)
         let productivityTrends = await analyzeProductivityTrends(context: context)
         let habitInsights = await analyzeHabitInsights(context: context)

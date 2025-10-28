@@ -19,7 +19,12 @@ final class SmartNotificationManager: NSObject {
     
     private let logger = Logger(subsystem: "a-do", category: "SmartNotifications")
     private let notificationCenter = UNUserNotificationCenter.current()
-    
+
+    // Pro feature check
+    var isProEnabled: Bool {
+        return EntitlementManager.shared.isProUser
+    }
+
     // Processing state
     var isProcessing: Bool = false
     var lastProcessingDate: Date?
@@ -153,7 +158,7 @@ final class SmartNotificationManager: NSObject {
     }
     
     // MARK: - Smart Notification Scheduling
-    
+
     func scheduleSmartNotification(
         userId: String,
         type: SmartNotificationType,
@@ -166,8 +171,13 @@ final class SmartNotificationManager: NSObject {
         relatedHabit: Habit? = nil,
         modelContext: ModelContext
     ) async {
+        guard isProEnabled else {
+            logger.warning("Smart notifications is a Pro feature")
+            return
+        }
+
         let config = getConfiguration(userId: userId, context: modelContext)
-        
+
         guard config.isEnabled else {
             logger.info("Smart notifications disabled for user: \(userId)")
             return

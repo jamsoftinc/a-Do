@@ -17,7 +17,7 @@ final class TimeTrackingManager: ObservableObject {
     static let shared = TimeTrackingManager()
     
     private let logger = Logger(subsystem: "a-do", category: "TimeTracking")
-    
+
     // Current tracking state
     var currentEntry: TimeEntry?
     var isTracking: Bool = false
@@ -33,7 +33,7 @@ final class TimeTrackingManager: ObservableObject {
     }
     
     // MARK: - Time Tracking
-    
+
     func startTracking(for reminder: Reminder? = nil, habit: Habit? = nil, category: String = "Work", context: ModelContext) {
         // Stop any existing tracking
         if let current = currentEntry, current.isActive {

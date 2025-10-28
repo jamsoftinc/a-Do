@@ -34,6 +34,11 @@ struct HomeView: View {
     @State private var showingImportReminders = false
     @State private var showingReminderForm = false
     @State private var showingAppleIntegrations = false
+    @State private var showingPaywall = false
+    @State private var showingAIInsights = false
+    @State private var showingAISuggestions = false
+    @State private var showingAISettings = false
+    @State private var showingCollaboration = false
 
     var body: some View {
         NavigationStack {
@@ -47,6 +52,9 @@ struct HomeView: View {
                         
                         // Features Navigation Section
                         featuresNavigationSection
+                        
+                        // Pro Upgrade Section
+                        proUpgradeSection
                         
                         // Quick Actions Section
                         quickActionsSection
@@ -148,10 +156,6 @@ struct HomeView: View {
                             Label("Habits", systemImage: "chart.line.uptrend.xyaxis")
                         }
                         
-                        NavigationLink(destination: TimeTrackingView()) {
-                            Label("Time Tracking", systemImage: "timer")
-                        }
-                        
                         NavigationLink(destination: TemplatesView()) {
                             Label("Templates", systemImage: "doc.text.below.ecg")
                         }
@@ -159,31 +163,85 @@ struct HomeView: View {
                         NavigationLink(destination: SmartSearchView()) {
                             Label("Smart Search", systemImage: "magnifyingglass.circle")
                         }
-                        
-                        Divider()
-                        
-                        NavigationLink(destination: AISuggestionsView()) {
-                            Label("AI Suggestions", systemImage: "sparkles")
+
+                        NavigationLink(destination: TimeTrackingView()) {
+                            Label("Time Tracking", systemImage: "timer")
                         }
-                        
-                        NavigationLink(destination: AIInsightsDashboard()) {
-                            Label("AI Insights", systemImage: "chart.line.uptrend.xyaxis")
+
+                        Button {
+                            showingCollaboration = true
+                        } label: {
+                            Label("Collaboration", systemImage: "person.2.circle")
                         }
-                        
-                        NavigationLink(destination: AISettingsView()) {
-                            Label("AI Settings", systemImage: "brain.head.profile")
-                        }
-                        
-                        Divider()
-                        
+
                         Button {
                             showingAppleIntegrations = true
                         } label: {
                             Label("Sync Settings", systemImage: "arrow.triangle.2.circlepath")
                         }
+
+                        Divider()
+
+                        Text("Pro Features")
+                            .font(.subheadline)
+                            .fontWeight(.bold)
+                            .foregroundColor(AppTheme.Colors.primary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(AppTheme.Colors.primary.opacity(0.1))
+                            )
+
+                        Button {
+                            if EntitlementManager.shared.hasAccess(to: .aiWritingTools) {
+                                showingAISuggestions = true
+                            } else {
+                                showingPaywall = true
+                            }
+                        } label: {
+                            HStack {
+                                Label("AI Suggestions", systemImage: "sparkles")
+                                if !EntitlementManager.shared.isProUser {
+                                    ProFeaturesAvailableBadge()
+                                }
+                            }
+                        }
+
+                        Button {
+                            if EntitlementManager.shared.hasAccess(to: .advancedNLP) {
+                                showingAIInsights = true
+                            } else {
+                                showingPaywall = true
+                            }
+                        } label: {
+                            HStack {
+                                Label("AI Insights", systemImage: "chart.line.uptrend.xyaxis")
+                                if !EntitlementManager.shared.isProUser {
+                                    ProFeaturesAvailableBadge()
+                                }
+                            }
+                        }
+
+                        Button {
+                            if EntitlementManager.shared.hasAccess(to: .aiWritingTools) {
+                                showingAISettings = true
+                            } else {
+                                showingPaywall = true
+                            }
+                        } label: {
+                            HStack {
+                                Label("AI Settings", systemImage: "brain.head.profile")
+                                if !EntitlementManager.shared.isProUser {
+                                    ProFeaturesAvailableBadge()
+                                }
+                            }
+                        }
+
+                        Divider()
                         
-                        NavigationLink(destination: CollaborationView()) {
-                            Label("Collaboration", systemImage: "person.2.circle")
+                        NavigationLink(destination: SubscriptionManagementView()) {
+                            Label("Subscription", systemImage: "crown")
                         }
                         
                         Divider()
@@ -226,6 +284,27 @@ struct HomeView: View {
         .sheet(isPresented: $showingReminderForm) {
             NavigationStack {
                 ReminderFormView()
+            }
+        }
+        .sheet(isPresented: $showingPaywall) {
+            PaywallView()
+        }
+        .sheet(isPresented: $showingAIInsights) {
+            AIInsightsDashboardWrapper()
+        }
+        .sheet(isPresented: $showingAISuggestions) {
+            NavigationStack {
+                AISuggestionsViewWrapper()
+            }
+        }
+        .sheet(isPresented: $showingAISettings) {
+            NavigationStack {
+                AISettingsViewWrapper()
+            }
+        }
+        .sheet(isPresented: $showingCollaboration) {
+            NavigationStack {
+                CollaborationView()
             }
         }
         .onChange(of: router.destination) { _, dest in
@@ -825,20 +904,12 @@ struct HomeView: View {
             }
         }
         
-        // Perform database operations on main actor to avoid concurrency warnings
-        // Create a separate context from the same container
-        let backgroundContext = ModelContext(context.container)
-        
-        // Fetch only incomplete reminders with pagination
-        var descriptor = FetchDescriptor<Reminder>(
-            predicate: #Predicate<Reminder> { reminder in
-                !reminder.isCompleted
-            },
-            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        // Use memory-safe data loading
+        let reminders = await MemorySafeDataLoader.loadReminders(
+            context: context,
+            limit: 200, // Reduced limit for better memory usage
+            predicate: #Predicate<Reminder> { !$0.isCompleted }
         )
-        descriptor.fetchLimit = 500 // Limit to prevent memory issues
-        
-        let reminders = (try? backgroundContext.fetch(descriptor)) ?? []
         
         // Update UI on main thread
         await MainActor.run {
@@ -1256,7 +1327,8 @@ extension HomeView {
                         FeatureCard(
                             icon: "timer",
                             title: "Time Tracking",
-                            color: .mint
+                            color: .mint,
+                            hasPro: false
                         )
                     }
                     
@@ -1265,7 +1337,8 @@ extension HomeView {
                         FeatureCard(
                             icon: "chart.line.uptrend.xyaxis",
                             title: "Habits",
-                            color: .orange
+                            color: .orange,
+                            hasPro: false
                         )
                     }
                     
@@ -1274,7 +1347,8 @@ extension HomeView {
                         FeatureCard(
                             icon: "doc.text.below.ecg",
                             title: "Templates",
-                            color: .indigo
+                            color: .indigo,
+                            hasPro: false
                         )
                     }
                     
@@ -1283,7 +1357,8 @@ extension HomeView {
                         FeatureCard(
                             icon: "magnifyingglass.circle",
                             title: "Smart Search",
-                            color: .cyan
+                            color: .cyan,
+                            hasPro: false
                         )
                     }
                     
@@ -1292,7 +1367,8 @@ extension HomeView {
                         FeatureCard(
                             icon: "person.2.circle",
                             title: "Collaboration",
-                            color: .pink
+                            color: .pink,
+                            hasPro: false
                         )
                     }
                     
@@ -1301,7 +1377,8 @@ extension HomeView {
                         FeatureCard(
                             icon: "folder.fill",
                             title: "Lists",
-                            color: .blue
+                            color: .blue,
+                            hasPro: false
                         )
                     }
                     
@@ -1310,22 +1387,77 @@ extension HomeView {
                         FeatureCard(
                             icon: "checkmark.circle.fill",
                             title: "Completed",
-                            color: .green
+                            color: .green,
+                            hasPro: false
                         )
                     }
                     
                     // Analytics
-                    NavigationLink(destination: TimeAnalyticsView()) {
+                    NavigationLink(destination: TimeAnalyticsViewWrapper()) {
                         FeatureCard(
                             icon: "chart.bar.fill",
                             title: "Analytics",
-                            color: .purple
+                            color: .purple,
+                            hasPro: true
                         )
                     }
                 }
             }
         }
         .padding(.horizontal, 16)
+    }
+    
+    // MARK: - Pro Upgrade Section
+    
+    private var proUpgradeSection: some View {
+        @State var entitlementManager = EntitlementManager.shared
+        
+        return Group {
+            if !entitlementManager.isProUser {
+                GlassCard {
+                    HStack(spacing: 12) {
+                        Image(systemName: "crown.fill")
+                            .font(.title3)
+                            .foregroundColor(.purple)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Unlock Pro Features")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(AppTheme.Colors.textPrimary)
+                            
+                            Text("AI-powered features, collaboration & more")
+                                .font(.caption)
+                                .foregroundColor(AppTheme.Colors.textSecondary)
+                        }
+                        
+                        Spacer()
+                        
+                        Button {
+                            showingPaywall = true
+                        } label: {
+                            Text("Upgrade")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    LinearGradient(
+                                        colors: [.purple, .blue],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .cornerRadius(8)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(12)
+                }
+                .padding(.horizontal, 16)
+            }
+        }
     }
 }
 
@@ -1335,15 +1467,26 @@ struct FeatureCard: View {
     let icon: String
     let title: String
     let color: Color
+    let hasPro: Bool
+    
+    @State private var entitlementManager = EntitlementManager.shared
     
     var body: some View {
         VStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundColor(color)
-                .frame(width: 32, height: 32)
-                .background(color.opacity(0.15))
-                .clipShape(Circle())
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundColor(color)
+                    .frame(width: 32, height: 32)
+                    .background(color.opacity(0.15))
+                    .clipShape(Circle())
+                
+                if hasPro && !entitlementManager.isProUser {
+                    ProFeaturesAvailableBadge()
+                        .offset(x: 6, y: -6)
+                        .scaleEffect(0.8)
+                }
+            }
             
             Text(title)
                 .font(.caption2)

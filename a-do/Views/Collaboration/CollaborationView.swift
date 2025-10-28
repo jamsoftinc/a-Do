@@ -56,7 +56,12 @@ struct CollaborationView: View {
                             showingInviteUser = true
                         }
                     } label: {
-                        Image(systemName: "plus")
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus")
+                            if !EntitlementManager.shared.isProUser {
+                                ProFeaturesAvailableBadge()
+                            }
+                        }
                     }
                 }
             }

@@ -86,9 +86,17 @@ struct CreateHabitView: View {
                         VStack(spacing: 16) {
                             // Icon Selection
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("Icon")
-                                    .font(.headline)
-                                    .foregroundColor(AppTheme.Colors.textPrimary)
+                                HStack {
+                                    Text("Icon")
+                                        .font(.headline)
+                                        .foregroundColor(AppTheme.Colors.textPrimary)
+                                    
+                                    Spacer()
+                                    
+                                    if !EntitlementManager.shared.isProUser {
+                                        ProFeaturesAvailableBadge()
+                                    }
+                                }
                                 
                                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 12) {
                                     ForEach(availableIcons, id: \.self) { icon in
