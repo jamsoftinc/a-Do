@@ -109,3 +109,4 @@ To actually use this feature in the app, developers should:
 2. Call the appropriate `createJournalEntry()` method to get the shareable content
 3. Let users share the content to Journal app via the system share sheet
 
+
