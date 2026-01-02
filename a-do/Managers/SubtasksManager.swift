@@ -217,8 +217,8 @@ final class TaskDependency {
     var id: UUID = UUID()
     var createdAt: Date = Date()
     
-    @Relationship(deleteRule: .nullify) var blockingTask: Reminder?
-    @Relationship(deleteRule: .nullify) var blockedTask: Reminder?
+    @Relationship(deleteRule: .nullify, inverse: \Reminder.blockingTasks) var blockingTask: Reminder?
+    @Relationship(deleteRule: .nullify, inverse: \Reminder.dependencies) var blockedTask: Reminder?
     
     init(blockingTask: Reminder, blockedTask: Reminder) {
         self.blockingTask = blockingTask

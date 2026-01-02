@@ -80,6 +80,9 @@ struct RootView: View {
     @State private var syncManager = SyncProgressManager.shared
     @State private var isInitialSyncComplete = false
     
+    @State private var showMorningBriefing = false
+    @State private var isThoughtStreamActive = false
+    
     var body: some View {
         LaunchScreenWrapper {
             if let container = container {
@@ -96,7 +99,14 @@ struct RootView: View {
                         .modelContainer(container)
                         .environment(router)
                         .onOpenURL { url in router.handle(url: url) }
-                        .task { router.checkGroupDeeplinkFlag() }
+                        .task { 
+                            router.checkGroupDeeplinkFlag() 
+                            checkMorningBriefingStatus()
+                        }
+                        .fullScreenCover(isPresented: $showMorningBriefing) {
+                            MorningBriefingView()
+                                .modelContainer(container)
+                        }
                 }
             } else {
                 // Show loading state while container initializes
@@ -105,6 +115,31 @@ struct RootView: View {
                         // Initialize container on background thread
                         container = AppContainer.shared.getContainer()
                     }
+                }
+        
+            if isThoughtStreamActive {
+                if EntitlementManager.shared.isProUser {
+                    ThoughtStreamView(isActive: $isThoughtStreamActive)
+                } else {
+                    // Fallback locked state if somehow triggered
+                    ZStack {
+                        Color.black.opacity(0.4).ignoresSafeArea()
+                        VStack(spacing: 20) {
+                            Image(systemName: "lock.fill")
+                                .font(.largeTitle)
+                                .foregroundStyle(.white)
+                            Text("Thought Stream is a Pro Feature")
+                                .foregroundStyle(.white)
+                            Button("Dismiss") {
+                                isThoughtStreamActive = false
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                    }
+                }
             }
         }
         .onChange(of: syncManager.isInitialSyncInProgress) { _, inProgress in
@@ -112,6 +147,20 @@ struct RootView: View {
                 isInitialSyncComplete = true
             }
         }
+    }
+    
+    private func checkMorningBriefingStatus() {
+        guard EntitlementManager.shared.isProUser else { return }
+        
+        let manager = MorningBriefingManager.shared
+        let calendar = Calendar.current
+        
+        if let lastDate = manager.lastGeneratedDate,
+           calendar.isDateInToday(lastDate) {
+            return
+        }
+        
+        showMorningBriefing = true
     }
     
     private func performInitialSync(container: ModelContainer) async {

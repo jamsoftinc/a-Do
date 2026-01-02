@@ -29,9 +29,19 @@ final class BackupManager {
     
     // Configuration
     private var configuration: BackupConfiguration?
-    
+
+    // Timer for periodic backup - must be retained
+    private var backupTimer: Timer?
+
     private init() {
         setupPeriodicBackup()
+    }
+
+    /// Call this method to clean up resources when the manager is no longer needed
+    func cleanup() {
+        backupTimer?.invalidate()
+        backupTimer = nil
+        configuration = nil
     }
     
     // MARK: - Configuration Management
@@ -466,9 +476,10 @@ final class BackupManager {
     }
     
     // MARK: - Periodic Backup
-    
+
     private func setupPeriodicBackup() {
-        Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
+        backupTimer?.invalidate()
+        backupTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 await self?.checkAndPerformScheduledBackup()
             }
@@ -518,40 +529,74 @@ final class BackupManager {
     }
     
     private func encryptData(_ data: Data, userId: String) throws -> Data {
-        // Implementation would encrypt data using user-specific key
-        // For now, return original data
-        return data
+        // Generate a symmetric key from the userId
+        let keyData = Data(userId.utf8)
+        let hashedKey = SHA256.hash(data: keyData)
+        let symmetricKey = SymmetricKey(data: hashedKey)
+
+        // Encrypt using AES-GCM
+        let sealedBox = try AES.GCM.seal(data, using: symmetricKey)
+
+        guard let combined = sealedBox.combined else {
+            throw BackupError.encryptionFailed
+        }
+
+        return combined
     }
-    
+
     private func decryptData(_ data: Data, userId: String) throws -> Data {
-        // Implementation would decrypt data using user-specific key
-        // For now, return original data
-        return data
+        // Recreate the symmetric key from the userId
+        let keyData = Data(userId.utf8)
+        let hashedKey = SHA256.hash(data: keyData)
+        let symmetricKey = SymmetricKey(data: hashedKey)
+
+        // Decrypt using AES-GCM
+        let sealedBox = try AES.GCM.SealedBox(combined: data)
+        let decryptedData = try AES.GCM.open(sealedBox, using: symmetricKey)
+
+        return decryptedData
+    }
+
+    /// Errors that can occur during backup operations
+    enum BackupError: Error {
+        case encryptionFailed
+        case decryptionFailed
+        case fileProtectionFailed
     }
     
     private func saveBackupToFile(content: Data, fileName: String) throws -> URL {
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let backupsPath = documentsPath.appendingPathComponent("Backups", isDirectory: true)
-        
-        // Create backups directory if it doesn't exist
+
+        // Create backups directory with protection if it doesn't exist
         try FileManager.default.createDirectory(at: backupsPath, withIntermediateDirectories: true)
-        
+
         let fileURL = backupsPath.appendingPathComponent(fileName)
         try content.write(to: fileURL)
-        
+
+        // Apply file protection to backup files
+        try FileManager.default.setAttributes([
+            .protectionKey: FileProtectionType.completeUntilFirstUserAuthentication
+        ], ofItemAtPath: fileURL.path)
+
         return fileURL
     }
     
     private func saveExportToFile(content: Data, fileName: String, format: BackupFormat) throws -> URL {
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let exportsPath = documentsPath.appendingPathComponent("Exports", isDirectory: true)
-        
-        // Create exports directory if it doesn't exist
+
+        // Create exports directory with protection if it doesn't exist
         try FileManager.default.createDirectory(at: exportsPath, withIntermediateDirectories: true)
-        
+
         let fileURL = exportsPath.appendingPathComponent(fileName)
         try content.write(to: fileURL)
-        
+
+        // Apply file protection to export files
+        try FileManager.default.setAttributes([
+            .protectionKey: FileProtectionType.completeUntilFirstUserAuthentication
+        ], ofItemAtPath: fileURL.path)
+
         return fileURL
     }
     

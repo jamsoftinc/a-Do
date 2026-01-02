@@ -319,13 +319,253 @@ final class RemindersManager {
     
     func setSyncInterval(_ interval: TimeInterval) {
         syncInterval = interval
-        
+
         if self.autoSyncEnabled {
             stopAutoSync()
             setupAutoSync()
         }
-        
+
         Logger(subsystem: "a-do", category: "Sync").info("Sync interval set to \(interval) seconds")
     }
-    
+
+    // MARK: - Snooze Functionality
+
+    /// Snooze options with smart suggestions
+    enum SnoozeOption: CaseIterable {
+        case fifteenMinutes
+        case oneHour
+        case threeHours
+        case tomorrow
+        case nextWeek
+        case laterToday
+        case thisEvening
+        case custom(Date)
+
+        static var allCases: [SnoozeOption] {
+            [.fifteenMinutes, .oneHour, .threeHours, .tomorrow, .nextWeek, .laterToday, .thisEvening]
+        }
+
+        var displayName: String {
+            switch self {
+            case .fifteenMinutes: return "15 minutes"
+            case .oneHour: return "1 hour"
+            case .threeHours: return "3 hours"
+            case .tomorrow: return "Tomorrow"
+            case .nextWeek: return "Next week"
+            case .laterToday: return "Later today"
+            case .thisEvening: return "This evening"
+            case .custom: return "Custom time"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .fifteenMinutes: return "clock.badge.questionmark"
+            case .oneHour: return "clock"
+            case .threeHours: return "clock.fill"
+            case .tomorrow: return "sun.max"
+            case .nextWeek: return "calendar"
+            case .laterToday: return "clock.arrow.circlepath"
+            case .thisEvening: return "moon"
+            case .custom: return "calendar.badge.clock"
+            }
+        }
+
+        func snoozeDate(from now: Date = Date()) -> Date {
+            let calendar = Calendar.current
+
+            switch self {
+            case .fifteenMinutes:
+                return now.addingTimeInterval(15 * 60)
+            case .oneHour:
+                return now.addingTimeInterval(60 * 60)
+            case .threeHours:
+                return now.addingTimeInterval(3 * 60 * 60)
+            case .tomorrow:
+                let tomorrow = calendar.date(byAdding: .day, value: 1, to: now) ?? now
+                return calendar.date(bySettingHour: 9, minute: 0, second: 0, of: tomorrow) ?? tomorrow
+            case .nextWeek:
+                let nextWeek = calendar.date(byAdding: .weekOfYear, value: 1, to: now) ?? now
+                return calendar.date(bySettingHour: 9, minute: 0, second: 0, of: nextWeek) ?? nextWeek
+            case .laterToday:
+                // 3 hours from now, but not past 6 PM
+                let later = now.addingTimeInterval(3 * 60 * 60)
+                let sixPM = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: now) ?? now
+                return min(later, sixPM)
+            case .thisEvening:
+                return calendar.date(bySettingHour: 18, minute: 0, second: 0, of: now) ?? now
+            case .custom(let date):
+                return date
+            }
+        }
+    }
+
+    /// Snooze a reminder
+    func snoozeReminder(_ reminder: Reminder, option: SnoozeOption, context: ModelContext) {
+        let newDueDate = option.snoozeDate()
+        reminder.dueDate = newDueDate
+        reminder.snoozeCount = (reminder.snoozeCount ?? 0) + 1
+        reminder.lastSnoozedAt = Date()
+
+        do {
+            try context.save()
+
+            // Reschedule notification
+            Task {
+                await NotificationManager.shared.scheduleNotification(for: reminder, at: newDueDate)
+            }
+
+            Logger(subsystem: "a-do", category: "Reminders").info("Snoozed reminder '\(reminder.title)' until \(newDueDate)")
+        } catch {
+            Logger(subsystem: "a-do", category: "Reminders").error("Failed to snooze reminder: \(error.localizedDescription)")
+        }
+    }
+
+    /// Get smart snooze suggestions based on context
+    func getSmartSnoozeSuggestions(for reminder: Reminder) -> [SnoozeOption] {
+        var suggestions: [SnoozeOption] = []
+        let calendar = Calendar.current
+        let now = Date()
+        let hour = calendar.component(.hour, from: now)
+
+        // Quick options always available
+        suggestions.append(.fifteenMinutes)
+        suggestions.append(.oneHour)
+
+        // Time-based suggestions
+        if hour < 12 {
+            // Morning: suggest later today, this afternoon
+            suggestions.append(.laterToday)
+        } else if hour < 17 {
+            // Afternoon: suggest this evening
+            suggestions.append(.thisEvening)
+        }
+
+        // Always offer tomorrow and next week for less urgent items
+        if reminder.priority != .high {
+            suggestions.append(.tomorrow)
+            suggestions.append(.nextWeek)
+        } else {
+            // High priority: shorter snooze times
+            suggestions.append(.threeHours)
+        }
+
+        return suggestions
+    }
+
+    // MARK: - Batch Operations
+
+    /// Complete multiple reminders at once
+    func completeReminders(_ reminders: [Reminder], context: ModelContext) {
+        let now = Date()
+
+        for reminder in reminders {
+            reminder.isCompleted = true
+            reminder.completedAt = now
+        }
+
+        do {
+            try context.save()
+
+            // Cancel notifications for completed reminders
+            for reminder in reminders {
+                NotificationManager.shared.cancelNotification(for: reminder)
+            }
+
+            Logger(subsystem: "a-do", category: "Reminders").info("Batch completed \(reminders.count) reminders")
+
+            // Post notification for UI updates
+            NotificationCenter.default.post(name: NSNotification.Name("RemindersCompleted"), object: nil)
+
+        } catch {
+            Logger(subsystem: "a-do", category: "Reminders").error("Failed to batch complete reminders: \(error.localizedDescription)")
+        }
+    }
+
+    /// Delete multiple reminders at once
+    func deleteReminders(_ reminders: [Reminder], context: ModelContext) {
+        for reminder in reminders {
+            // Cancel notifications
+            NotificationManager.shared.cancelNotification(for: reminder)
+
+            // Delete the reminder
+            context.delete(reminder)
+        }
+
+        do {
+            try context.save()
+            Logger(subsystem: "a-do", category: "Reminders").info("Batch deleted \(reminders.count) reminders")
+
+            // Post notification for UI updates
+            NotificationCenter.default.post(name: NSNotification.Name("RemindersDeleted"), object: nil)
+
+        } catch {
+            Logger(subsystem: "a-do", category: "Reminders").error("Failed to batch delete reminders: \(error.localizedDescription)")
+        }
+    }
+
+    /// Move multiple reminders to a different list
+    func moveReminders(_ reminders: [Reminder], to list: ReminderList, context: ModelContext) {
+        for reminder in reminders {
+            reminder.list = list
+        }
+
+        do {
+            try context.save()
+            Logger(subsystem: "a-do", category: "Reminders").info("Batch moved \(reminders.count) reminders to '\(list.name)'")
+        } catch {
+            Logger(subsystem: "a-do", category: "Reminders").error("Failed to batch move reminders: \(error.localizedDescription)")
+        }
+    }
+
+    /// Reschedule multiple reminders
+    func rescheduleReminders(_ reminders: [Reminder], to newDate: Date, context: ModelContext) {
+        for reminder in reminders {
+            reminder.dueDate = newDate
+
+            // Reschedule notification
+            Task {
+                await NotificationManager.shared.scheduleNotification(for: reminder, at: newDate)
+            }
+        }
+
+        do {
+            try context.save()
+            Logger(subsystem: "a-do", category: "Reminders").info("Batch rescheduled \(reminders.count) reminders to \(newDate)")
+        } catch {
+            Logger(subsystem: "a-do", category: "Reminders").error("Failed to batch reschedule reminders: \(error.localizedDescription)")
+        }
+    }
+
+    /// Set priority for multiple reminders
+    func setPriority(_ priority: Priority, for reminders: [Reminder], context: ModelContext) {
+        for reminder in reminders {
+            reminder.priority = priority
+        }
+
+        do {
+            try context.save()
+            Logger(subsystem: "a-do", category: "Reminders").info("Batch set priority \(priority.title) for \(reminders.count) reminders")
+        } catch {
+            Logger(subsystem: "a-do", category: "Reminders").error("Failed to batch set priority: \(error.localizedDescription)")
+        }
+    }
+
+    /// Add tags to multiple reminders
+    func addTags(_ tags: [Tag], to reminders: [Reminder], context: ModelContext) {
+        for reminder in reminders {
+            for tag in tags {
+                if !(reminder.tags?.contains(where: { $0.id == tag.id }) ?? false) {
+                    reminder.tags?.append(tag)
+                }
+            }
+        }
+
+        do {
+            try context.save()
+            Logger(subsystem: "a-do", category: "Reminders").info("Batch added \(tags.count) tags to \(reminders.count) reminders")
+        } catch {
+            Logger(subsystem: "a-do", category: "Reminders").error("Failed to batch add tags: \(error.localizedDescription)")
+        }
+    }
 }

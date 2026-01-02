@@ -150,7 +150,7 @@ final class HabitViewModel {
     // MARK: - Habit Entry Management
     
     func incrementHabit(_ habit: Habit) {
-        let wasCompleted = habit.isCompletedToday
+        _ = habit.isCompletedToday // Track completion state before increment
         habit.incrementToday()
         let currentTime = Date()
         

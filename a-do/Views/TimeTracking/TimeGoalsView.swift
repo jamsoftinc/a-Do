@@ -12,7 +12,7 @@ import Charts
 struct TimeGoalsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
-    @StateObject private var timeManager = TimeTrackingManager.shared
+    private var timeManager = TimeTrackingManager.shared
     
     @Query private var timeGoals: [TimeGoal]
     @Query private var timeEntries: [TimeEntry]

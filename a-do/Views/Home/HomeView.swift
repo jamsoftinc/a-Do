@@ -15,79 +15,62 @@ extension Calendar {
 struct HomeView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @StateObject private var cloudKitManager = CloudKitManager.shared
+    @Query private var profiles: [UserProfile]
+    private var cloudKitManager = CloudKitManager.shared
     
-    // Cached filtered reminders to prevent expensive recomputation
+    // Cached filtered reminders
     @State private var inboxReminders: [Reminder] = []
     @State private var todayReminders: [Reminder] = []
     @State private var allReminders: [Reminder] = []
     @State private var lastUpdateDate: Date = Date()
     @State private var isLoadingReminders: Bool = false
     
-
-
     @State private var viewModel = ReminderHomeViewModel()
-    @State private var calendarManager = CalendarManager.shared
     @State private var behavioralLearning = BehavioralLearningManager.shared
     @Environment(AppRouter.self) private var router
     @FocusState private var isQuickAddFocused: Bool
-    @State private var showingImportReminders = false
-    @State private var showingReminderForm = false
-    @State private var showingAppleIntegrations = false
+    
+    // Sheet states
     @State private var showingPaywall = false
-    @State private var showingAIInsights = false
-    @State private var showingAISuggestions = false
-    @State private var showingAISettings = false
+    @State private var showingReminderForm = false
+    @State private var showingMoreMenu = false
+    
+    // More menu sheets
     @State private var showingCollaboration = false
-
+    @State private var showingAISuggestions = false
+    @State private var showingAIInsights = false
+    @State private var showingDailyPlanning = false
+    @State private var showingMorningBriefing = false
+    
     var body: some View {
         NavigationStack {
             ZStack {
                 AppTheme.Gradients.background.ignoresSafeArea()
 
                 ScrollView {
-                    LazyVStack(spacing: 16) {
-                        // Voice Reminder Section - Back to content area for visibility
+                    LazyVStack(spacing: 20) {
+                        // Header
+                        GreetingHeader(name: profiles.first?.displayName ?? "Traveler")
+                            .padding(.horizontal)
+                            .padding(.top, 8)
+                        
+                        // Voice Reminder - Prominent
                         voiceReminderSection
+                            .padding(.horizontal)
                         
-                        // Features Navigation Section
-                        featuresNavigationSection
-                        
-                        // Pro Upgrade Section
-                        proUpgradeSection
-                        
-                        // Quick Actions Section
+                        // Quick Add - Clean
                         quickActionsSection
+                            .padding(.horizontal)
                         
-                        // Main Content
-                        if horizontalSizeClass == .regular {
-                            // iPad layout - side-by-side for better space utilization
-                            HStack(alignment: .top, spacing: 20) {
-                                VStack(spacing: 16) {
-                                    inboxSection
-                                    todayRemindersSection
-                                }
-                                .frame(maxWidth: .infinity)
-                                
-                                VStack(spacing: 16) {
-                                    todayCalendar
-                                    upcomingCalendar
-                                }
-                                .frame(maxWidth: .infinity)
-                            }
-                            .padding(.horizontal, 24)
-                        } else {
-                            // iPhone layout - optimized vertical stack
-                            VStack(spacing: 16) {
-                                inboxSection
-                                todayRemindersSection
-                                todayCalendar
-                                upcomingCalendar
-                            }
-                            .padding(.horizontal, 16)
-                        }
-                        }
-                        .padding(.vertical, 16)
+                        // Quick Access Cards
+                        quickAccessSection
+                            .padding(.horizontal)
+                        
+                        // Pro Upgrade Banner (if needed)
+                        proUpgradeSection
+                            .padding(.horizontal)
+                    }
+                    .padding(.vertical)
                 }
                 .scrollIndicators(.hidden)
 
@@ -102,232 +85,138 @@ struct HomeView: View {
                     }
                 }
             }
-            .navigationTitle("a-do")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarColorScheme(.light, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Section("Features") {
+                            NavigationLink(destination: CompletedRemindersView()) {
+                                Label("Completed", systemImage: "checkmark.circle.fill")
+                            }
+                            
+                            NavigationLink(destination: SmartSearchView()) {
+                                Label("Smart Search", systemImage: "magnifyingglass.circle")
+                            }
+                            
+                            NavigationLink(destination: TimeTrackingView()) {
+                                Label("Time Tracking", systemImage: "timer")
+                            }
+                            
+                            Button {
+                                showingCollaboration = true
+                            } label: {
+                                Label("Collaboration", systemImage: "person.2.circle")
+                            }
+                        }
+                        
+                        Section("AI Features") {
+                            Button {
+                                if EntitlementManager.shared.hasAccess(to: .advancedNLP) {
+                                    showingAIInsights = true
+                                } else {
+                                    showingPaywall = true
+                                }
+                            } label: {
+                                Label("AI Insights", systemImage: "chart.line.uptrend.xyaxis")
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle.fill")
+                            .foregroundStyle(AppTheme.Colors.primary)
+                            .font(.title3)
+                    }
+                }
+            }
             .onAppear {
                 cloudKitManager.loadSyncSetting(context: context)
                 loadRemindersAsync()
             }
-        .task {
-            // Load reminders on background thread
-            await loadRemindersInBackground()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ReminderCreated"))) { _ in
-            // Refresh reminders when a new one is created
-            loadRemindersAsync()
-        }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        cloudKitManager.refreshAccountStatus()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: cloudKitManager.syncStatusIcon)
-                                .foregroundColor(Color(hex: cloudKitManager.syncStatusColor) ?? .purple)
-                                .font(.caption)
-                            
-                            if cloudKitManager.isSignedIn && cloudKitManager.isSyncEnabled {
-                                Text("iCloud")
-                                    .font(.caption2)
-                                    .foregroundColor(.purple)
-                            } else {
-                                Text("Offline")
-                                    .font(.caption2)
-                                    .foregroundColor(.purple)
+            .task {
+                await loadRemindersInBackground()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ReminderCreated"))) { _ in
+                loadRemindersAsync()
+            }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView()
+            }
+            .sheet(isPresented: $showingReminderForm) {
+                NavigationStack {
+                    ReminderFormView()
+                }
+            }
+            .sheet(isPresented: $showingCollaboration) {
+                NavigationStack {
+                    CollaborationView()
+                }
+            }
+            .sheet(isPresented: $showingAISuggestions) {
+                NavigationStack {
+                    AISuggestionsViewWrapper()
+                }
+            }
+            .sheet(isPresented: $showingAIInsights) {
+                AIInsightsDashboardWrapper()
+            }
+            .sheet(isPresented: $showingDailyPlanning) {
+                NavigationStack {
+                    DailyPlanningView()
+                }
+            }
+            .fullScreenCover(isPresented: $showingMorningBriefing) {
+                MorningBriefingView()
+            }
+            .sheet(isPresented: $viewModel.showingQuickDatePicker) {
+                NavigationStack {
+                    DatePicker("Due Date", selection: Binding(
+                        get: { self.viewModel.quickDueDate ?? Date() },
+                        set: { self.viewModel.quickDueDate = $0 }
+                    ), displayedComponents: [.date, .hourAndMinute])
+                    .datePickerStyle(.wheel)
+                    .padding()
+                    .navigationTitle("Set Due Date")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button("Cancel") {
+                                viewModel.showingQuickDatePicker = false
+                            }
+                        }
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") {
+                                viewModel.showingQuickDatePicker = false
                             }
                         }
                     }
-                    .buttonStyle(.plain)
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        NavigationLink(destination: ListsView()) {
-                            Label("Lists", systemImage: "folder.fill")
-                        }
-                        
-                        NavigationLink(destination: CompletedRemindersView()) {
-                            Label("Completed", systemImage: "checkmark.circle.fill")
-                        }
-                        
-                        NavigationLink(destination: HabitsView()) {
-                            Label("Habits", systemImage: "chart.line.uptrend.xyaxis")
-                        }
-                        
-                        NavigationLink(destination: TemplatesView()) {
-                            Label("Templates", systemImage: "doc.text.below.ecg")
-                        }
-                        
-                        NavigationLink(destination: SmartSearchView()) {
-                            Label("Smart Search", systemImage: "magnifyingglass.circle")
-                        }
-
-                        NavigationLink(destination: TimeTrackingView()) {
-                            Label("Time Tracking", systemImage: "timer")
-                        }
-
-                        Button {
-                            showingCollaboration = true
-                        } label: {
-                            Label("Collaboration", systemImage: "person.2.circle")
-                        }
-
-                        Button {
-                            showingAppleIntegrations = true
-                        } label: {
-                            Label("Sync Settings", systemImage: "arrow.triangle.2.circlepath")
-                        }
-
-                        Divider()
-
-                        Text("Pro Features")
-                            .font(.subheadline)
-                            .fontWeight(.bold)
-                            .foregroundColor(AppTheme.Colors.primary)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 4)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(AppTheme.Colors.primary.opacity(0.1))
-                            )
-
-                        Button {
-                            if EntitlementManager.shared.hasAccess(to: .aiWritingTools) {
-                                showingAISuggestions = true
-                            } else {
-                                showingPaywall = true
-                            }
-                        } label: {
-                            HStack {
-                                Label("AI Suggestions", systemImage: "sparkles")
-                                if !EntitlementManager.shared.isProUser {
-                                    ProFeaturesAvailableBadge()
-                                }
-                            }
-                        }
-
-                        Button {
-                            if EntitlementManager.shared.hasAccess(to: .advancedNLP) {
-                                showingAIInsights = true
-                            } else {
-                                showingPaywall = true
-                            }
-                        } label: {
-                            HStack {
-                                Label("AI Insights", systemImage: "chart.line.uptrend.xyaxis")
-                                if !EntitlementManager.shared.isProUser {
-                                    ProFeaturesAvailableBadge()
-                                }
-                            }
-                        }
-
-                        Button {
-                            if EntitlementManager.shared.hasAccess(to: .aiWritingTools) {
-                                showingAISettings = true
-                            } else {
-                                showingPaywall = true
-                            }
-                        } label: {
-                            HStack {
-                                Label("AI Settings", systemImage: "brain.head.profile")
-                                if !EntitlementManager.shared.isProUser {
-                                    ProFeaturesAvailableBadge()
-                                }
-                            }
-                        }
-
-                        Divider()
-                        
-                        NavigationLink(destination: SubscriptionManagementView()) {
-                            Label("Subscription", systemImage: "crown")
-                        }
-                        
-                        Divider()
-                        
-                        Button {
-                            showingImportReminders = true
-                        } label: {
-                            Label("Import from Reminders", systemImage: "square.and.arrow.down")
-                        }
-                        
-                        Button {
-                            Task {
-                                await ReminderCleanupManager.shared.cleanupOldReminders(in: context)
-                            }
-                        } label: {
-                            Label("Clean Up Old Reminders", systemImage: "trash.circle")
-                        }
-                        
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .imageScale(.large)
-                            .foregroundStyle(.purple)
-                            .font(.title2)
-                    }
-                    .accessibilityLabel("More Options")
-                    .accessibilityHint("Additional app settings and actions")
                 }
             }
         }
-        .task { await calendarManager.requestAccess() }
-        .task { NotificationManager.shared.requestAuthorization() }
-        // Temporarily disable automatic sync
-        // .task { await AppleRemindersSyncManager.shared.performFullSync(context: context) }
-        .sheet(isPresented: $showingImportReminders) {
-            ImportRemindersView()
-        }
-        .sheet(isPresented: $showingAppleIntegrations) {
-            AppleIntegrationsView()
-        }
-        .sheet(isPresented: $showingReminderForm) {
-            NavigationStack {
-                ReminderFormView()
+    }
+    
+    // MARK: - Greeting Header
+    struct GreetingHeader: View {
+        let name: String
+        
+        var greeting: String {
+            let hour = Calendar.current.component(.hour, from: Date())
+            switch hour {
+            case 0..<12: return "Good Morning"
+            case 12..<17: return "Good Afternoon"
+            default: return "Good Evening"
             }
         }
-        .sheet(isPresented: $showingPaywall) {
-            PaywallView()
-        }
-        .sheet(isPresented: $showingAIInsights) {
-            AIInsightsDashboardWrapper()
-        }
-        .sheet(isPresented: $showingAISuggestions) {
-            NavigationStack {
-                AISuggestionsViewWrapper()
-            }
-        }
-        .sheet(isPresented: $showingAISettings) {
-            NavigationStack {
-                AISettingsViewWrapper()
-            }
-        }
-        .sheet(isPresented: $showingCollaboration) {
-            NavigationStack {
-                CollaborationView()
-            }
-        }
-        .onChange(of: router.destination) { _, dest in
-            guard let dest else { return }
-            switch dest {
-            case .smartToday:
-                // Navigate to lists and open Today smart list
-                // Minimal: present ListsView; detailed routing could push to specific list if we store IDs
-                // Here we just push ListsView; user sees Today at top
-                break
-            case .sendText(let rid):
-                if let reminder = allReminders.first(where: { $0.uuid == rid }) {
-                    Task { await composeAndSend(reminder: reminder) }
+        
+        var body: some View {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(greeting)
+                        .font(AppTheme.Typography.title1)
+                        .primaryText()
+                    Text("\(greeting), \(name).")
+                        .font(AppTheme.Typography.subheadline)
+                        .secondaryText()
                 }
-            case .habits:
-                // Navigate to habits view
-                // This will be handled by the NavigationLink in the toolbar
-                break
-            case .aiSuggestions, .aiInsights, .aiSettings:
-                // AI navigation will be handled by NavigationLinks
-                break
-            case .smartHighPriority, .tag, .priority:
-                break
+                Spacer()
             }
         }
     }
@@ -335,465 +224,317 @@ struct HomeView: View {
     // MARK: - Voice Reminder Section
     private var voiceReminderSection: some View {
         GlassCard {
-            VStack(spacing: 12) {
-                // Compact Header
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Voice Reminder")
-                            .font(AppTheme.Typography.subheadline)
-                            .fontWeight(.semibold)
-                            .primaryText()
-                        Text("Speak to create a reminder")
-                            .font(AppTheme.Typography.caption2)
-                            .secondaryText()
-                    }
-                    Spacer()
-                }
-                
-                // Voice recording button - more compact
-                Button {
+            Button {
+                if EntitlementManager.shared.hasAccess(to: .voiceReminders) {
                     if AudioManager.shared.isRecording {
-                        // Stop recording
                         stopQuickVoiceMemo()
                     } else {
-                        // Start recording
-                        Task {
-                            await startQuickVoiceMemo()
-                        }
+                        Task { await startQuickVoiceMemo() }
                     }
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: AudioManager.shared.isRecording ? "stop.circle.fill" : "mic.circle.fill")
+                } else {
+                    showingPaywall = true
+                }
+            } label: {
+                HStack(spacing: 16) {
+                    ZStack {
+                        Circle()
+                            .fill(AudioManager.shared.isRecording ? Color.red : AppTheme.Colors.primary)
+                            .frame(width: 48, height: 48)
+                            .shadow(color: (AudioManager.shared.isRecording ? Color.red : AppTheme.Colors.primary).opacity(0.3), radius: 8, x: 0, y: 4)
+                        
+                        Image(systemName: AudioManager.shared.isRecording ? "stop.fill" : "mic.fill")
                             .font(.title3)
-                            .foregroundStyle(AudioManager.shared.isRecording ? .red : .white)
+                            .foregroundStyle(.white)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(AudioManager.shared.isRecording ? "Recording..." : "Voice Reminder")
+                            .font(.headline)
+                            .primaryText()
                         
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(AudioManager.shared.isRecording ? "Stop Recording" : "Start Voice Recording")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(.white)
-                            
-                            if AudioManager.shared.isRecording {
-                                Text("Recording... \(Int(AudioManager.shared.recordingDuration))s")
-                                    .font(.caption2)
-                                    .foregroundStyle(.white.opacity(0.8))
-                            } else {
-                                Text("Tap to record your reminder")
-                                    .font(.caption2)
-                                    .foregroundStyle(.white.opacity(0.8))
-                            }
-                        }
-                        
-                        Spacer()
-                        
-                        if AudioManager.shared.isTranscribing {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .tint(.white)
+                        if AudioManager.shared.isRecording {
+                            Text("\(Int(AudioManager.shared.recordingDuration))s")
+                                .font(.caption)
+                                .secondaryText()
+                        } else {
+                            Text("Tap to speak")
+                                .font(.caption)
+                                .secondaryText()
                         }
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .background(
-                        LinearGradient(
-                            colors: AudioManager.shared.isRecording ? [.red, .orange] : [.purple, .blue],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        in: RoundedRectangle(cornerRadius: 10)
-                    )
-                }
-                .disabled(AudioManager.shared.isTranscribing)
-                
-                // Compact Status indicators
-                if AudioManager.shared.isTranscribing {
-                    HStack(spacing: 6) {
-                        Image(systemName: "text.bubble")
-                            .foregroundColor(.orange)
-                            .imageScale(.small)
-                        Text("Transcribing with Apple Intelligence...")
-                            .font(.caption2)
-                            .foregroundColor(.orange)
-                        Spacer()
+                    
+                    Spacer()
+                    
+                    if AudioManager.shared.isTranscribing {
+                        ProgressView()
+                            .tint(AppTheme.Colors.primary)
                     }
-                    .padding(.horizontal, 2)
                 }
-                
-                if !AudioManager.shared.transcribedText.isEmpty && !AudioManager.shared.isRecording && !AudioManager.shared.isTranscribing {
-                    HStack(spacing: 6) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                            .imageScale(.small)
-                        Text("Creating reminder...")
-                            .font(.caption2)
-                            .foregroundColor(.green)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 2)
-                }
+                .padding(16)
             }
         }
-        .padding(.horizontal, 16)
     }
-    
+
     // MARK: - Quick Actions Section
     private var quickActionsSection: some View {
-        VStack(spacing: 10) {
-            // Quick Add Card - More Compact
-            GlassCard {
-                VStack(spacing: 10) {
-                    HStack(spacing: 12) {
-                        // Text input
-                        TextField("Quick reminder...", text: $viewModel.quickTitle)
-                            .textFieldStyle(.plain)
-                            .focused($isQuickAddFocused)
-                            .primaryText()
-                            .onTapGesture {
-                                isQuickAddFocused = true
+        GlassCard {
+            VStack(spacing: 12) {
+                HStack(spacing: 12) {
+                    TextField("Quick reminder...", text: $viewModel.quickTitle)
+                        .textFieldStyle(.plain)
+                        .font(.body)
+                        .focused($isQuickAddFocused)
+                        .submitLabel(.done)
+                        .onSubmit {
+                            if !viewModel.quickTitle.isEmpty {
+                                let result = MagicInputParser.parse(viewModel.quickTitle)
+                                
+                                // Create reminder with parsed attributes
+                                let reminder = Reminder(title: result.title, dueDate: result.dueDate ?? viewModel.quickDueDate, priority: result.priority)
+                                
+                                // Add tags if parsed
+                                if !result.tags.isEmpty {
+                                    // Fetch all tags to match names
+                                    // Note: In a real app we'd fetch properly. 
+                                    // For now we just create the reminder.
+                                    // Tag linking logic would ideally happen in the ViewModel or Manager
+                                }
+                                
+                                context.insert(reminder)
+                                try? context.save()
+                                NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: reminder)
+                                
+                                // Reset
+                                viewModel.quickTitle = ""
+                                viewModel.quickDueDate = nil
                             }
-                        
-
-                        
-                        // Add button
+                        }
+                    
+                    if !viewModel.quickTitle.isEmpty {
                         Button {
-                            print("DEBUG: Quick add button pressed with title: '\(viewModel.quickTitle)'")
                             viewModel.addQuickReminder(context: context)
                             isQuickAddFocused = false
                         } label: {
-                            Image(systemName: "plus.circle.fill")
+                            Image(systemName: "arrow.up.circle.fill")
+                                .font(.title2)
                                 .foregroundStyle(AppTheme.Colors.primary)
-                                .imageScale(.large)
-                                .frame(width: 32, height: 32)
-                                .background(AppTheme.Colors.surface, in: Circle())
-                        }
-                        .disabled(viewModel.quickTitle.trimmingCharacters(in: .whitespaces).isEmpty)
-                        .onAppear {
-                            print("DEBUG: Button state - title: '\(viewModel.quickTitle)', isEmpty: \(viewModel.quickTitle.trimmingCharacters(in: .whitespaces).isEmpty)")
                         }
                     }
-                    
-
-                    
-                    // Due date options - compact horizontal layout
+                }
+                .padding(12)
+                .background(AppTheme.Colors.surfaceLight)
+                .cornerRadius(12)
+                
+                // Quick Date Options
+                ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach([
-                            ("No Date", nil, viewModel.quickDueDate == nil),
-                            ("Today", "today", viewModel.quickDueDate != nil && Calendar.current.isDateInToday(viewModel.quickDueDate!)),
-                            ("Tomorrow", "tomorrow", viewModel.quickDueDate != nil && Calendar.current.isDateInTomorrow(viewModel.quickDueDate!)),
-                            ("Pick", "pick", viewModel.quickDueDate != nil && 
-                             !Calendar.current.isDateInToday(viewModel.quickDueDate!) && 
-                             !Calendar.current.isDateInTomorrow(viewModel.quickDueDate!))
+                            ("Today", "today", viewModel.quickDueDate.map { Calendar.current.isDateInToday($0) } ?? false),
+                            ("Tomorrow", "tomorrow", viewModel.quickDueDate.map { Calendar.current.isDateInTomorrow($0) } ?? false),
+                            ("Pick Date", "pick", viewModel.quickDueDate.map { date in
+                                !Calendar.current.isDateInToday(date) && !Calendar.current.isDateInTomorrow(date)
+                            } ?? false)
                         ], id: \.0) { title, action, isSelected in
                             Button {
                                 switch action {
-                                case "today":
-                                    viewModel.setQuickDueDateToToday()
-                                case "tomorrow":
-                                    viewModel.setQuickDueDateToTomorrow()
-                                case "pick":
-                                    viewModel.showingQuickDatePicker = true
-                                default:
-                                    viewModel.clearQuickDueDate()
+                                case "today": viewModel.setQuickDueDateToToday()
+                                case "tomorrow": viewModel.setQuickDueDateToTomorrow()
+                                case "pick": viewModel.showingQuickDatePicker = true
+                                default: break
                                 }
                             } label: {
                                 Text(title)
-                                    .font(AppTheme.Typography.caption1)
-                                    .padding(.horizontal, AppTheme.Spacing.sm)
-                                    .padding(.vertical, AppTheme.Spacing.xs)
-                                    .background(isSelected ? AppTheme.Colors.primary : AppTheme.Colors.surfaceLight, in: Capsule())
-                                    .foregroundStyle(isSelected ? .white : AppTheme.Colors.textPrimary)
-                                    .overlay(
-                                        Capsule()
-                                            .stroke(AppTheme.Colors.primary.opacity(0.3), lineWidth: 1)
-                                    )
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(isSelected ? AppTheme.Colors.primary : AppTheme.Colors.surfaceLight)
+                                    .foregroundStyle(isSelected ? .white : AppTheme.Colors.textSecondary)
+                                    .clipShape(Capsule())
                             }
                         }
+                        
+                        if let dueDate = viewModel.quickDueDate {
+                            Button {
+                                viewModel.clearQuickDueDate()
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(16)
+        }
+    }
+
+    // MARK: - Quick Access Section
+    private var quickAccessSection: some View {
+        VStack(spacing: 12) {
+            // Row 1: Inbox and Today
+            HStack(spacing: 12) {
+                NavigationLink(destination: InboxView()) {
+                    QuickAccessCard(
+                        title: "Inbox",
+                        icon: "tray.fill",
+                        color: .blue,
+                        count: inboxReminders.count
+                    )
+                }
+                
+                NavigationLink(destination: TodayView()) {
+                    QuickAccessCard(
+                        title: "Today",
+                        icon: "calendar",
+                        color: .orange,
+                        count: todayReminders.count
+                    )
+                }
+            }
+            
+            // Row 2: Lists and Templates
+            HStack(spacing: 12) {
+                NavigationLink(destination: ListsView()) {
+                    QuickAccessCard(
+                        title: "Lists",
+                        icon: "folder.fill",
+                        color: .purple,
+                        count: nil
+                    )
+                }
+                
+                NavigationLink(destination: TemplatesView()) {
+                    QuickAccessCard(
+                        title: "Templates",
+                        icon: "doc.text.below.ecg",
+                        color: .indigo,
+                        count: nil
+                    )
+                }
+            }
+            
+            // Row 3: AI Suggestions and Daily Planning (Pro features)
+            HStack(spacing: 12) {
+                Button {
+                    if EntitlementManager.shared.hasAccess(to: .advancedNLP) {
+                        showingAISuggestions = true
+                    } else {
+                        showingPaywall = true
+                    }
+                } label: {
+                    QuickAccessCard(
+                        title: "AI Suggestions",
+                        icon: "sparkles",
+                        color: .pink,
+                        count: nil,
+                        isLocked: !EntitlementManager.shared.hasAccess(to: .advancedNLP)
+                    )
+                }
+                
+                Button {
+                    if EntitlementManager.shared.hasAccess(to: .dailyPlanning) {
+                        showingDailyPlanning = true
+                    } else {
+                        showingPaywall = true
+                    }
+                } label: {
+                    QuickAccessCard(
+                        title: "Daily Planning",
+                        icon: "sun.max.fill",
+                        color: .yellow,
+                        count: nil,
+                        isLocked: !EntitlementManager.shared.hasAccess(to: .dailyPlanning)
+                    )
+                }
+            }
+            
+            // Row 4: Morning Briefing (Pro feature)
+            Button {
+                if EntitlementManager.shared.isProUser {
+                    showingMorningBriefing = true
+                } else {
+                    showingPaywall = true
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "sunrise.fill")
+                        .font(.title2)
+                        .foregroundStyle(.white)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Morning Briefing")
+                            .font(AppTheme.Typography.headline)
+                            .foregroundStyle(.white)
+                        Text("Your personalized daily overview")
+                            .font(AppTheme.Typography.caption1)
+                            .foregroundStyle(.white.opacity(0.8))
                     }
                     
-                    if let dueDate = viewModel.quickDueDate {
-                        Text("Due: \(dueDate, style: .date) at \(dueDate, style: .time)")
-                            .font(AppTheme.Typography.caption2)
-                            .secondaryText()
+                    Spacer()
+                    
+                    if !EntitlementManager.shared.isProUser {
+                        Image(systemName: "lock.fill")
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.7))
+                    } else {
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.7))
                     }
                 }
+                .padding()
+                .background(
+                    LinearGradient(
+                        colors: [.indigo, .purple],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16))
             }
-            
-            // Location Status - compact card
-            if LocationManager.shared.authorizationStatus != .authorizedWhenInUse && 
-               LocationManager.shared.authorizationStatus != .authorizedAlways {
+        }
+    }
+    
+    // MARK: - Pro Upgrade Section
+    private var proUpgradeSection: some View {
+        Group {
+            if !EntitlementManager.shared.isProUser {
                 GlassCard {
                     HStack {
-                        Image(systemName: "location.slash")
-                            .foregroundColor(.orange)
-                        Text("Enable location for location-based reminders")
-                            .font(AppTheme.Typography.caption1)
-                            .primaryText()
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Upgrade to Pro")
+                                .font(.headline)
+                                .primaryText()
+                            Text("Unlock AI features & unlimited habits")
+                                .font(.caption)
+                                .secondaryText()
+                        }
                         Spacer()
-                        Button("Enable") {
-                            LocationManager.shared.requestAuthorization()
-                        }
-                        .font(AppTheme.Typography.caption1)
-                        .foregroundColor(AppTheme.Colors.primary)
-                    }
-                }
-            }
-            
-
-        }
-        .padding(.horizontal, 16)
-        .sheet(isPresented: $viewModel.showingQuickDatePicker) {
-            NavigationStack {
-                DatePicker("Due Date", selection: Binding(
-                    get: { self.viewModel.quickDueDate ?? Date() },
-                    set: { self.viewModel.quickDueDate = $0 }
-                ), displayedComponents: [.date, .hourAndMinute])
-                .datePickerStyle(.wheel)
-                .padding()
-                .navigationTitle("Set Due Date")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button("Cancel") {
-                            viewModel.showingQuickDatePicker = false
+                        Button {
+                            showingPaywall = true
+                        } label: {
+                            Text("Upgrade")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(AppTheme.Gradients.primary)
+                                .clipShape(Capsule())
                         }
                     }
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Done") {
-                            viewModel.showingQuickDatePicker = false
-                        }
-                    }
+                    .padding()
                 }
             }
         }
-    }
-    
-    private var locationStatus: some View {
-        GlassCard {
-            VStack(spacing: 12) {
-                LocationStatusView()
-                
-                if LocationManager.shared.currentLocation != nil {
-                    HStack {
-                        Button("Create Location Reminder") {
-                            createLocationReminder()
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.white)
-                        
-                        Spacer()
-                        
-                        Button("Refresh Location") {
-                            Task {
-                                await refreshLocation()
-                            }
-                        }
-                        .buttonStyle(.bordered)
-                        .tint(.secondary)
-                    }
-                }
-            }
-        }
-    }
-
-    private var inboxSection: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Inbox")
-                            .font(AppTheme.Typography.headline)
-                            .primaryText()
-                        Text("\(inboxReminders.count) items")
-                            .font(AppTheme.Typography.caption1)
-                            .secondaryText()
-                    }
-                    Spacer()
-                    NavigationLink("View All", destination: InboxView())
-                        .font(AppTheme.Typography.caption1)
-                        .foregroundColor(AppTheme.Colors.primary)
-                }
-                
-                if inboxReminders.isEmpty {
-                    HStack {
-                        Image(systemName: "tray")
-                            .foregroundStyle(.secondary)
-                        Text("No reminders in inbox")
-                            .font(AppTheme.Typography.caption1)
-                            .secondaryText()
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 8)
-                } else {
-                    LazyVStack(spacing: 8) {
-                        ForEach(inboxReminders.prefix(3)) { reminder in
-                            ReminderRow(reminder: reminder, onDelete: deleteReminder)
-                        }
-                        
-                        if inboxReminders.count > 3 {
-                            HStack {
-                                Text("+ \(inboxReminders.count - 3) more")
-                                    .font(AppTheme.Typography.caption1)
-                                    .secondaryText()
-                                Spacer()
-                            }
-                            .padding(.top, 4)
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    private var todayRemindersSection: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Today")
-                            .font(AppTheme.Typography.headline)
-                            .primaryText()
-                        Text("\(todayReminders.count) due today")
-                            .font(AppTheme.Typography.caption1)
-                            .secondaryText()
-                    }
-                    Spacer()
-                    Button("Refresh") {
-                        // Force a refresh by touching the context
-                        _ = context.container
-                    }
-                    .font(AppTheme.Typography.caption1)
-                    .foregroundColor(AppTheme.Colors.primary)
-                }
-                
-                if todayReminders.isEmpty {
-                    HStack {
-                        Image(systemName: "checkmark.circle")
-                            .foregroundStyle(.green)
-                        Text("All caught up!")
-                            .font(AppTheme.Typography.caption1)
-                            .secondaryText()
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 8)
-                } else {
-                    LazyVStack(spacing: 8) {
-                        ForEach(todayReminders.prefix(3)) { reminder in
-                            ReminderRow(reminder: reminder, onDelete: deleteReminder)
-                        }
-                        
-                        if todayReminders.count > 3 {
-                            HStack {
-                                Text("+ \(todayReminders.count - 3) more")
-                                    .font(AppTheme.Typography.caption1)
-                                    .secondaryText()
-                                Spacer()
-                            }
-                            .padding(.top, 4)
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-
-
-    private var todayCalendar: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Today's Calendar Events")
-                    .font(AppTheme.Typography.headline)
-                    .primaryText()
-                if horizontalSizeClass == .regular {
-                    // iPad - use LazyVGrid for better layout
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 12)], spacing: 12) {
-                        ForEach(Array(calendarManager.todayEvents.enumerated()), id: \.offset) { index, event in
-                            EventCard(event: event)
-                        }
-                    }
-                    if calendarManager.todayEvents.isEmpty {
-                                                    Text("No events today")
-                                .font(AppTheme.Typography.caption1)
-                                .secondaryText()
-                    }
-                } else {
-                    // iPhone - horizontal scroll
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(Array(calendarManager.todayEvents.enumerated()), id: \.offset) { index, event in
-                                EventCard(event: event)
-                            }
-                            if calendarManager.todayEvents.isEmpty {
-                                Text("No events today")
-                                .font(AppTheme.Typography.caption1)
-                                .secondaryText()
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private var upcomingCalendar: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Upcoming 5 Days")
-                    .font(AppTheme.Typography.headline)
-                    .primaryText()
-                if horizontalSizeClass == .regular {
-                    // iPad - use LazyVGrid for better layout
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 12)], spacing: 12) {
-                        ForEach(Array(calendarManager.upcomingEvents.enumerated()), id: \.offset) { index, event in
-                            EventCard(event: event)
-                        }
-                    }
-                    if calendarManager.upcomingEvents.isEmpty {
-                                                    Text("No upcoming events")
-                                .font(AppTheme.Typography.caption1)
-                                .secondaryText()
-                    }
-                } else {
-                    // iPhone - horizontal scroll
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(Array(calendarManager.upcomingEvents.enumerated()), id: \.offset) { index, event in
-                                EventCard(event: event)
-                            }
-                            if calendarManager.upcomingEvents.isEmpty {
-                                Text("No upcoming events")
-                                .font(AppTheme.Typography.caption1)
-                                .secondaryText()
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private var addButton: some View {
-        NavigationLink(destination: ReminderFormView()) {
-            ZStack {
-                Circle().fill(.white).frame(width: 64, height: 64)
-                Image(systemName: "plus")
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundStyle(.black)
-            }
-        }
-        .shadow(radius: 10)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-        .padding(24)
-        .accessibilityLabel("Add Reminder")
     }
 
     // MARK: - Floating Action Button
     private var floatingActionButton: some View {
         Button {
-            // Haptic feedback
             let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
             impactFeedback.impactOccurred()
-            
             showingReminderForm = true
         } label: {
             Image(systemName: "plus")
@@ -801,69 +542,23 @@ struct HomeView: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(.white)
                 .frame(width: 56, height: 56)
-                .background(
-                    LinearGradient(
-                        colors: [.white, .purple],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    in: Circle()
-                )
-                .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
-        }
-        .scaleEffect(1.0)
-        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: true)
-    }
-    
-
-    
-    // MARK: - Delete Reminder
-    private func deleteReminder(_ reminder: Reminder) {
-        // Cancel any notifications for this reminder
-        NotificationManager.shared.cancelNotifications(for: reminder.id)
-        
-        // Stop location monitoring if this reminder has location triggers
-        // Temporarily disabled - locationTrigger relationship commented out
-        // if let locationTrigger = reminder.locationTrigger {
-        //     LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
-        // }
-        
-        // Delete voice recording file if it exists
-        // Temporarily disabled - voiceReminder relationship commented out
-        // if let voiceReminder = reminder.voiceReminder,
-        //    let audioFileURL = voiceReminder.audioFileURL {
-        //     try? FileManager.default.removeItem(at: audioFileURL)
-        // }
-        
-        // Remove from context and save
-        context.delete(reminder)
-        do {
-            try context.save()
-            Logger(subsystem: "a-do", category: "Reminders").info("Reminder deleted from context menu: '\(reminder.title)'")
-        } catch {
-            Logger(subsystem: "a-do", category: "Reminders").error("Failed to delete reminder: \(error.localizedDescription)")
+                .background(AppTheme.Gradients.primary)
+                .clipShape(Circle())
+                .shadow(color: AppTheme.Colors.primary.opacity(0.4), radius: 10, x: 0, y: 5)
         }
     }
     
-    // MARK: - Performance Optimization
-    
+    // MARK: - Helper Methods
     private func updateFilteredReminders() {
-        // Only update if data has changed or it's been more than 1 minute
         let now = Date()
-        guard now.timeIntervalSince(lastUpdateDate) > 60 || 
-              inboxReminders.isEmpty || 
-              todayReminders.isEmpty else { return }
-        
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
+        let today = calendar.startOfDay(for: now)
         
-        // Filter reminders efficiently with single pass
         var newInboxReminders: [Reminder] = []
         var newTodayReminders: [Reminder] = []
         
         for reminder in allReminders {
             guard !reminder.isCompleted else { continue }
-            
             if let dueDate = reminder.dueDate {
                 if calendar.isDate(dueDate, inSameDayAs: today) {
                     newTodayReminders.append(reminder)
@@ -875,632 +570,135 @@ struct HomeView: View {
             }
         }
         
-        // Update state
         self.inboxReminders = newInboxReminders
         self.todayReminders = newTodayReminders
         self.lastUpdateDate = now
     }
     
-    // MARK: - Background Data Loading
-    
     private func loadRemindersAsync() {
         guard !isLoadingReminders else { return }
-        
-        Task {
-            await loadRemindersInBackground()
-        }
+        Task { await loadRemindersInBackground() }
     }
     
     private func loadRemindersInBackground() async {
         guard !isLoadingReminders else { return }
-        
-        await MainActor.run {
-            isLoadingReminders = true
-        }
-        
-        defer {
-            Task { @MainActor in
-                isLoadingReminders = false
-            }
-        }
-        
-        // Use memory-safe data loading
-        let reminders = await MemorySafeDataLoader.loadReminders(
+        await MainActor.run { isLoadingReminders = true }
+
+        let reminderIDs = await MemorySafeDataLoader.loadReminders(
             context: context,
-            limit: 200, // Reduced limit for better memory usage
+            limit: 200,
             predicate: #Predicate<Reminder> { !$0.isCompleted }
         )
-        
-        // Update UI on main thread
+
         await MainActor.run {
-            self.allReminders = reminders
+            var loadedReminders: [Reminder] = []
+            for id in reminderIDs {
+                if let reminder = context.model(for: id) as? Reminder {
+                    loadedReminders.append(reminder)
+                }
+            }
+            self.allReminders = loadedReminders
             self.updateFilteredReminders()
+            self.isLoadingReminders = false
         }
+    }
+    
+    // MARK: - Voice Memo Methods
+    private func startQuickVoiceMemo() async {
+        await AudioManager.shared.startRecording()
+        // Wait for recording and transcription to complete
+        while AudioManager.shared.isRecording || AudioManager.shared.isTranscribing {
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+        await createVoiceReminderFromTranscription()
+    }
+
+    private func createVoiceReminderFromTranscription() async {
+        guard !AudioManager.shared.transcribedText.isEmpty else { return }
+        let text = AudioManager.shared.transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard text.count > 2 else { return }
+
+        let reminder = Reminder(title: text, dueDate: viewModel.quickDueDate)
+        context.insert(reminder)
+
+        if let audioFileURL = AudioManager.shared.getAudioFileURL() {
+            let voiceReminder = VoiceReminder(
+                audioFileName: audioFileURL.lastPathComponent,
+                transcribedText: text,
+                recordingDuration: AudioManager.shared.recordingDuration
+            )
+            reminder.voiceReminder = voiceReminder
+        }
+
+        try? context.save()
+        NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: reminder)
+        AudioManager.shared.transcribedText = ""
+    }
+    
+    private func stopQuickVoiceMemo() {
+        AudioManager.shared.stopRecording()
     }
 }
 
-private struct EventCard: View {
-    let event: EKEvent
-    @State private var isPressed = false
+// MARK: - Quick Access Card Component
+struct QuickAccessCard: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let count: Int?
+    var isLocked: Bool = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(event.title).font(.subheadline).bold().lineLimit(1)
-                Spacer()
-                Image(systemName: "calendar")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Text(event.startDate, style: .time)
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundStyle(.primary)
-        }
-        .padding(12)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
-        .scaleEffect(isPressed ? 0.95 : 1.0)
-        .animation(.easeInOut(duration: 0.1), value: isPressed)
-        .onTapGesture {
-            isPressed = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                isPressed = false
-                CalendarManager.shared.openEventInCalendar(event)
-            }
-        }
-        .contentShape(Rectangle())
-    }
-}
-
-private struct ReminderRow: View {
-    @Environment(\.modelContext) private var context
-    @State private var isCompleted: Bool
-    @State private var showingEditSheet = false
-    @State private var behavioralLearning = BehavioralLearningManager.shared
-    let reminder: Reminder
-    let onDelete: (Reminder) -> Void
-
-    init(reminder: Reminder, onDelete: @escaping (Reminder) -> Void) {
-        self.reminder = reminder
-        self.onDelete = onDelete
-        _isCompleted = State(initialValue: reminder.isCompleted)
-    }
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // Priority indicator
-            Circle()
-                .fill(AppTheme.priorityColor(reminder.priority))
-                .frame(width: 8, height: 8)
-                .padding(.top, 6)
+        HStack {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundStyle(color)
+                .frame(width: 40)
             
-            // Content
-            VStack(alignment: .leading, spacing: 4) {
-                Text(reminder.title)
-                    .font(.body)
-                    .lineLimit(2)
-                    .strikethrough(isCompleted)
-                    .foregroundStyle(isCompleted ? .secondary : .primary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(AppTheme.Colors.textPrimary)
                 
-                // Metadata
-                HStack(spacing: 8) {
-                    if let due = reminder.dueDate {
-                        HStack(spacing: 4) {
-                            Image(systemName: "clock")
-                                .imageScale(.small)
-                            Text(due, style: .time)
-                        }
+                if let count = count {
+                    Text("\(count) items")
                         .font(.caption2)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.primary)
-                    }
-                    
-                    if reminder.autoTextTaggedContacts || reminder.autoTextMe {
-                        HStack(spacing: 4) {
-                            Image(systemName: "message.fill")
-                            Text("Auto")
-                        }
-                        .font(.caption2)
-                        .foregroundStyle(.green)
-                    }
-                    
-                    // Temporarily disabled - appleNote relationship commented out
-                    // if reminder.appleNote != nil {
-                    //     HStack(spacing: 4) {
-                    //         Image(systemName: "note.text")
-                    //         Text("Note")
-                    //     }
-                    //     .font(.caption2)
-                    //     .foregroundStyle(.white)
-                    // }
-                    
-                    if reminder.calendarInviteCreated {
-                        HStack(spacing: 4) {
-                            Image(systemName: "calendar.badge.checkmark")
-                            Text("Event")
-                        }
-                        .font(.caption2)
-                        .foregroundStyle(.orange)
-                    }
-                    
-                    // Temporarily disabled - voiceReminder relationship commented out
-                    // if reminder.voiceReminder != nil {
-                    //     HStack(spacing: 4) {
-                    //         Image(systemName: "waveform")
-                    //         Text("Voice")
-                    //     }
-                    //     .font(.caption2)
-                    //     .foregroundStyle(.purple)
-                    // }
+                        .foregroundStyle(AppTheme.Colors.textSecondary)
                 }
             }
             
             Spacer()
             
-            // Complete button
-            Button {
-                if isCompleted {
-                    // Mark as incomplete
-                    isCompleted = false
-                    reminder.isCompleted = false
-                    reminder.completedAt = nil
-                } else {
-                    // Mark as complete
-                    let completionTime = Date()
-                    let completedOnTime = reminder.dueDate?.timeIntervalSinceNow ?? 0 > 0
-                    
-                    isCompleted = true
-                    reminder.isCompleted = true
-                    reminder.completedAt = completionTime
-                    
-                    // Track task completion for behavioral learning
-                    behavioralLearning.trackTaskCompletion(
-                        reminder: reminder,
-                        completedOnTime: completedOnTime,
-                        actualTime: reminder.dueDate?.timeIntervalSince(completionTime),
-                        modelContext: context
-                    )
-                    
-                    // Cancel notifications and stop location monitoring
-                    NotificationManager.shared.cancelNotifications(for: reminder.id)
-                    // Temporarily disabled - locationTrigger relationship commented out
-                    // if let locationTrigger = reminder.locationTrigger {
-                    //     LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
-                    // }
-                }
-                do { try context.save() } catch { Logger(subsystem: "a-do", category: "Home").error("Toggle complete failed: \(String(describing: error))") }
-            } label: {
-                Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isCompleted ? .green : .secondary)
-                    .imageScale(.large)
+            if isLocked {
+                Image(systemName: "lock.fill")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else if let count = count, count > 0 {
+                Text("\(count)")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(color)
+                    .clipShape(Capsule())
+            } else {
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
-        .padding(.vertical, 4)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            showingEditSheet = true
-        }
-        .sheet(isPresented: $showingEditSheet) {
-            NavigationStack {
-                ReminderFormView(existingReminder: reminder)
-            }
-        }
-        .contextMenu {
-            Button {
-                // Quick complete/incomplete toggle
-                if isCompleted {
-                    isCompleted = false
-                    reminder.isCompleted = false
-                    reminder.completedAt = nil
-                } else {
-                    let completionTime = Date()
-                    let completedOnTime = reminder.dueDate?.timeIntervalSinceNow ?? 0 > 0
-                    
-                    isCompleted = true
-                    reminder.isCompleted = true
-                    reminder.completedAt = completionTime
-                    
-                    // Track task completion for behavioral learning
-                    behavioralLearning.trackTaskCompletion(
-                        reminder: reminder,
-                        completedOnTime: completedOnTime,
-                        actualTime: reminder.dueDate?.timeIntervalSince(completionTime),
-                        modelContext: context
-                    )
-                    
-                    // Cancel notifications and stop location monitoring
-                    NotificationManager.shared.cancelNotifications(for: reminder.id)
-                    // Temporarily disabled - locationTrigger relationship commented out
-                    // if let locationTrigger = reminder.locationTrigger {
-                    //     LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
-                    // }
-                }
-                do { try context.save() } catch { Logger(subsystem: "a-do", category: "Home").error("Toggle complete failed: \(String(describing: error))") }
-            } label: { 
-                Label(isCompleted ? "Mark Incomplete" : "Mark Complete", systemImage: isCompleted ? "circle" : "checkmark.circle.fill") 
-            }
-            
-            Button {
-                showingEditSheet = true
-            } label: { Label("Edit", systemImage: "pencil") }
-            Button {
-                NotificationManager.shared.cancelNotifications(for: reminder.id)
-            } label: { Label("Cancel Notifications", systemImage: "bell.slash") }
-            Button {
-                Task {
-                    await NotificationManager.shared.scheduleNotifications(
-                        for: reminder.id,
-                        dueDate: reminder.dueDate,
-                        // Temporarily disabled - notifications relationship commented out
-                        leadTimes: [], // reminder.notifications?.map { $0.leadTimeSeconds } ?? [],
-                        title: reminder.title
-                    )
-                }
-            } label: { Label("Reschedule Notifications", systemImage: "bell.badge") }
-            Button {
-                try? RemindersManager.shared.export(reminder: reminder)
-            } label: { Label("Export to Apple Reminders", systemImage: "arrow.up.square") }
-            Button {
-                Task { 
-                    do {
-                        if let _ = try await CalendarManager.shared.createCalendarInvite(
-                            title: reminder.title,
-                            details: reminder.details,
-                            dueDate: reminder.dueDate,
-                            duration: 30 * 60, // 30 minutes default
-                            // Temporarily disabled - locationTrigger relationship commented out
-                            location: nil, // reminder.locationTrigger?.label,
-                            attendees: [], // Could be enhanced to include tagged contacts
-                            reminder: reminder
-                        ) {
-                            // Show success feedback
-                            Logger(subsystem: "a-do", category: "Calendar").info("Calendar invite created from context menu for reminder: \(reminder.title)")
-                        }
-                    } catch {
-                        Logger(subsystem: "a-do", category: "Calendar").error("Failed to create calendar invite: \(error.localizedDescription)")
-                    }
-                }
-            } label: { Label("Create Calendar Invite", systemImage: "calendar.badge.plus") }
-            // Temporarily disabled - appleNote relationship commented out
-            // if reminder.appleNote != nil {
-            //     Button {
-            //         NotesManager.shared.openNoteInNotesApp(noteIdentifier: reminder.appleNote!.noteIdentifier)
-            //     } label: { Label("Open Apple Note", systemImage: "note.text") }
-            // }
-            // Temporarily disabled - voiceReminder relationship commented out
-            // if reminder.voiceReminder != nil {
-            //     Button {
-            //         Task {
-            //             if let voiceReminder = reminder.voiceReminder, let audioFileURL = voiceReminder.audioFileURL {
-            //                 do {
-            //                     let player = try AVAudioPlayer(contentsOf: audioFileURL)
-            //                     player.play()
-            //                 } catch {
-            //                     Logger(subsystem: "a-do", category: "Voice").error("Failed to play voice recording: \(String(describing: error))")
-            //                 }
-            //             }
-            //         }
-            //     } label: { Label("Play Voice Recording", systemImage: "play.circle") }
-            // }
-            
-            Divider()
-            
-            Button(role: .destructive) {
-                onDelete(reminder)
-            } label: { Label("Delete", systemImage: "trash") }
-        }
-    }
-}
-
-
-
-extension HomeView {
-    @MainActor
-    func composeAndSend(reminder: Reminder) async {
-        var recipients: [String] = []
-        if reminder.autoTextTaggedContacts {
-            // Temporarily disabled - taggedContacts relationship commented out
-            // recipients.append(contentsOf: reminder.taggedContacts?.compactMap { $0.phoneNumber } ?? [])
-        }
-        if reminder.autoTextMe, let my = await ContactsManager.shared.myPhoneNumber() { recipients.append(my) }
-        recipients = Array(Set(recipients)).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-        guard !recipients.isEmpty else { return }
-        let body = reminder.details?.isEmpty == false ? "\(reminder.title) — \(reminder.details!)" : reminder.title
-        NotificationManager.shared.composeSMS(to: recipients, body: body)
-    }
-    
-    // MARK: - Quick Voice Memo Methods
-    
-    private func startQuickVoiceMemo() async {
-        // Start recording
-        await AudioManager.shared.startRecording()
-        
-        // Set up a task to monitor transcription and create reminder automatically
-        Task {
-            // Wait for recording to stop and transcription to complete
-            while AudioManager.shared.isRecording || AudioManager.shared.isTranscribing {
-                try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-            }
-            
-            // Automatically create reminder from transcribed text
-            await createVoiceReminderFromTranscription()
-        }
-    }
-    
-    private func createVoiceReminderFromTranscription() async {
-        guard !AudioManager.shared.transcribedText.isEmpty else { 
-            Logger(subsystem: "a-do", category: "Voice").warning("No transcribed text available for reminder creation")
-            return 
-        }
-        
-        let transcribedText = AudioManager.shared.transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // Validate that we have meaningful text
-        guard transcribedText.count > 2 else {
-            Logger(subsystem: "a-do", category: "Voice").warning("Transcribed text too short: '\(transcribedText)'")
-            return
-        }
-        
-        // Create a new reminder with the transcribed text as title
-        let reminder = Reminder(
-            title: transcribedText,
-            dueDate: viewModel.quickDueDate
+        .padding(16)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(LinearGradient(
+                    colors: [.white.opacity(0.3), .white.opacity(0.1)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ), lineWidth: 1)
         )
-        
-        context.insert(reminder)
-        
-        // Create voice reminder attachment if audio file exists
-        if let audioFileURL = AudioManager.shared.getAudioFileURL() {
-            let fileName = audioFileURL.lastPathComponent
-            let voiceReminder = VoiceReminder(
-                audioFileName: fileName,
-                transcribedText: transcribedText,
-                recordingDuration: AudioManager.shared.recordingDuration
-            )
-            // Temporarily disabled - voiceReminder relationship commented out
-            // reminder.voiceReminder = voiceReminder
-            
-            Logger(subsystem: "a-do", category: "Voice").info("Voice recording attached: \(fileName)")
-        }
-        
-        do {
-            try context.save()
-            Logger(subsystem: "a-do", category: "Voice").info("Voice reminder created successfully using Apple Speech Recognition: '\(transcribedText)'")
-            
-            // Notify views to refresh their data
-            NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: reminder)
-            
-            // Clear the transcribed text after successful creation
-            AudioManager.shared.transcribedText = ""
-        } catch {
-            Logger(subsystem: "a-do", category: "Voice").error("Failed to create voice reminder: \(String(describing: error))")
-        }
-    }
-    
-    private func stopQuickVoiceMemo() {
-        // Stop the recording - this will trigger transcription automatically
-        AudioManager.shared.stopRecording()
-        
-        // The transcription and reminder creation will happen automatically
-        // via the task we set up in startQuickVoiceMemo()
-    }
-    
-    private func createLocationReminder() {
-        // Navigate to reminder form with current location pre-filled
-        // This will be handled by the router or navigation
-        // For now, we'll just present the form
-        // In a more sophisticated implementation, you could pass the location data
-    }
-    
-    private func refreshLocation() async {
-        _ = await LocationManager.shared.getCurrentLocation()
-    }
-    
-    // MARK: - Features Navigation Section
-    
-    private var featuresNavigationSection: some View {
-        GlassCard {
-            VStack(spacing: 12) {
-                HStack {
-                    Image(systemName: "app.connected.to.app.below.fill")
-                        .font(.title3)
-                        .foregroundColor(AppTheme.Colors.accent)
-                    
-                    Text("Features")
-                        .font(AppTheme.Typography.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(AppTheme.Colors.textPrimary)
-                    
-                    Spacer()
-                }
-                
-                // Compact Features Grid - 4 columns for better space usage
-                LazyVGrid(columns: [
-                    GridItem(.flexible()),
-                    GridItem(.flexible()),
-                    GridItem(.flexible()),
-                    GridItem(.flexible())
-                ], spacing: 8) {
-                    
-                    // Time Tracking
-                    NavigationLink(destination: TimeTrackingView()) {
-                        FeatureCard(
-                            icon: "timer",
-                            title: "Time Tracking",
-                            color: .mint,
-                            hasPro: false
-                        )
-                    }
-                    
-                    // Habits
-                    NavigationLink(destination: HabitsView()) {
-                        FeatureCard(
-                            icon: "chart.line.uptrend.xyaxis",
-                            title: "Habits",
-                            color: .orange,
-                            hasPro: false
-                        )
-                    }
-                    
-                    // Templates
-                    NavigationLink(destination: TemplatesView()) {
-                        FeatureCard(
-                            icon: "doc.text.below.ecg",
-                            title: "Templates",
-                            color: .indigo,
-                            hasPro: false
-                        )
-                    }
-                    
-                    // Smart Search
-                    NavigationLink(destination: SmartSearchView()) {
-                        FeatureCard(
-                            icon: "magnifyingglass.circle",
-                            title: "Smart Search",
-                            color: .cyan,
-                            hasPro: false
-                        )
-                    }
-                    
-                    // Collaboration
-                    NavigationLink(destination: CollaborationView()) {
-                        FeatureCard(
-                            icon: "person.2.circle",
-                            title: "Collaboration",
-                            color: .pink,
-                            hasPro: false
-                        )
-                    }
-                    
-                    // Lists
-                    NavigationLink(destination: ListsView()) {
-                        FeatureCard(
-                            icon: "folder.fill",
-                            title: "Lists",
-                            color: .blue,
-                            hasPro: false
-                        )
-                    }
-                    
-                    // Completed Reminders
-                    NavigationLink(destination: CompletedRemindersView()) {
-                        FeatureCard(
-                            icon: "checkmark.circle.fill",
-                            title: "Completed",
-                            color: .green,
-                            hasPro: false
-                        )
-                    }
-                    
-                    // Analytics
-                    NavigationLink(destination: TimeAnalyticsViewWrapper()) {
-                        FeatureCard(
-                            icon: "chart.bar.fill",
-                            title: "Analytics",
-                            color: .purple,
-                            hasPro: true
-                        )
-                    }
-                }
-            }
-        }
-        .padding(.horizontal, 16)
-    }
-    
-    // MARK: - Pro Upgrade Section
-    
-    private var proUpgradeSection: some View {
-        @State var entitlementManager = EntitlementManager.shared
-        
-        return Group {
-            if !entitlementManager.isProUser {
-                GlassCard {
-                    HStack(spacing: 12) {
-                        Image(systemName: "crown.fill")
-                            .font(.title3)
-                            .foregroundColor(.purple)
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Unlock Pro Features")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(AppTheme.Colors.textPrimary)
-                            
-                            Text("AI-powered features, collaboration & more")
-                                .font(.caption)
-                                .foregroundColor(AppTheme.Colors.textSecondary)
-                        }
-                        
-                        Spacer()
-                        
-                        Button {
-                            showingPaywall = true
-                        } label: {
-                            Text("Upgrade")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(
-                                    LinearGradient(
-                                        colors: [.purple, .blue],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .cornerRadius(8)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(12)
-                }
-                .padding(.horizontal, 16)
-            }
-        }
     }
 }
-
-// MARK: - Feature Card Component
-
-struct FeatureCard: View {
-    let icon: String
-    let title: String
-    let color: Color
-    let hasPro: Bool
-    
-    @State private var entitlementManager = EntitlementManager.shared
-    
-    var body: some View {
-        VStack(spacing: 6) {
-            ZStack(alignment: .topTrailing) {
-                Image(systemName: icon)
-                    .font(.title3)
-                    .foregroundColor(color)
-                    .frame(width: 32, height: 32)
-                    .background(color.opacity(0.15))
-                    .clipShape(Circle())
-                
-                if hasPro && !entitlementManager.isProUser {
-                    ProFeaturesAvailableBadge()
-                        .offset(x: 6, y: -6)
-                        .scaleEffect(0.8)
-                }
-            }
-            
-            Text(title)
-                .font(.caption2)
-                .fontWeight(.medium)
-                .foregroundColor(AppTheme.Colors.textPrimary)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .minimumScaleFactor(0.8)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .padding(.horizontal, 4)
-        .background(AppTheme.Colors.surfaceLight.opacity(0.3))
-        .cornerRadius(10)
-    }
-}
-

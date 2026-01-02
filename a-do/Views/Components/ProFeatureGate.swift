@@ -171,13 +171,13 @@ struct ProFeatureCard: View {
 #Preview {
     VStack(spacing: 20) {
         ProFeatureButton(
-            feature: .aiWritingTools,
-            title: "AI Writing Tools",
+            feature: .advancedNLP,
+            title: "AI Features",
             icon: "sparkles"
         ) {
-            print("AI Writing Tools tapped")
+            print("AI Features tapped")
         }
-        
+
         ProFeatureCard(
             feature: .liveActivities,
             title: "Live Activities",

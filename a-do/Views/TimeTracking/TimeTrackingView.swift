@@ -11,7 +11,7 @@ import Charts
 
 struct TimeTrackingView: View {
     @Environment(\.modelContext) private var context
-    @StateObject private var timeManager = TimeTrackingManager.shared
+    private var timeManager = TimeTrackingManager.shared
     @State private var timeEntries: [TimeEntry] = []
     @State private var timeGoals: [TimeGoal] = []
     @State private var categories: [TimeCategory] = []
@@ -306,7 +306,7 @@ struct TimeTrackingView: View {
     private func getTodayEntries() -> [TimeEntry] {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) ?? Date().addingTimeInterval(86400)
         
         return timeEntries.filter { entry in
             entry.startTime >= today && entry.startTime < tomorrow

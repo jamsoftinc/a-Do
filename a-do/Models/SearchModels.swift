@@ -528,6 +528,12 @@ final class OrganizationRule {
     }
     
     func updateSuccessRate(successful: Bool) {
+        // Guard against division by zero - triggerCount must be at least 1
+        guard triggerCount > 0 else {
+            successRate = successful ? 1.0 : 0.0
+            return
+        }
+
         let newSuccess = successful ? 1.0 : 0.0
         successRate = (successRate * Double(triggerCount - 1) + newSuccess) / Double(triggerCount)
     }

@@ -192,11 +192,29 @@ struct ReminderFormView: View {
                 
                 // Voice Recording
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Voice Recording")
-                        .font(AppTheme.Typography.subheadline)
-                        .primaryText()
-                    
-                    if let voiceReminder = viewModel.voiceReminder {
+                    HStack {
+                        Text("Voice Recording")
+                            .font(AppTheme.Typography.subheadline)
+                            .primaryText()
+                        if !EntitlementManager.shared.isProUser {
+                            ProFeaturesAvailableBadge()
+                        }
+                    }
+
+                    if !EntitlementManager.shared.hasAccess(to: .voiceReminders) {
+                        // Pro feature locked
+                        Button {
+                            // Show paywall - need to add state
+                        } label: {
+                            HStack {
+                                Image(systemName: "lock.fill")
+                                    .foregroundColor(.secondary)
+                                Text("Upgrade to Pro to use voice recording")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    } else if let voiceReminder = viewModel.voiceReminder {
                         // Show existing voice reminder
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
@@ -305,13 +323,27 @@ struct ReminderFormView: View {
                     .font(AppTheme.Typography.headline)
                     .primaryText()
                 
-                // Calendar Invite
+                // Calendar Invite / Time Blocking
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Calendar Invite")
-                        .font(AppTheme.Typography.subheadline)
-                        .primaryText()
-                    
-                    if viewModel.calendarInviteCreated {
+                    HStack {
+                        Text("Calendar Blocking")
+                            .font(AppTheme.Typography.subheadline)
+                            .primaryText()
+                        if !EntitlementManager.shared.isProUser {
+                            ProFeaturesAvailableBadge()
+                        }
+                    }
+
+                    if !EntitlementManager.shared.hasAccess(to: .calendarBlocking) {
+                        // Pro feature locked
+                        HStack {
+                            Image(systemName: "lock.fill")
+                                .foregroundColor(.secondary)
+                            Text("Upgrade to Pro to block calendar time")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    } else if viewModel.calendarInviteCreated {
                         HStack {
                             Image(systemName: "calendar.badge.checkmark")
                                 .foregroundColor(.orange)
@@ -321,7 +353,7 @@ struct ReminderFormView: View {
                         }
                     } else {
                         Toggle("Create Calendar Event", isOn: $viewModel.createCalendarInvite)
-                        
+
                         if viewModel.createCalendarInvite {
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack {
@@ -336,13 +368,13 @@ struct ReminderFormView: View {
                                     }
                                     .pickerStyle(MenuPickerStyle())
                                 }
-                                
+
                                 TextField("Location (optional)", text: $viewModel.calendarLocation)
                                     .textFieldStyle(.plain)
                                     .padding(AppTheme.Spacing.sm)
                                     .background(AppTheme.Colors.surfaceLight, in: RoundedRectangle(cornerRadius: AppTheme.CornerRadius.small))
                                     .primaryText()
-                                
+
                                 TextField("Attendees (comma-separated emails)", text: $viewModel.calendarAttendees)
                                     .textFieldStyle(.plain)
                                     .padding(AppTheme.Spacing.sm)
@@ -616,7 +648,7 @@ struct ReminderFormView: View {
             viewModel.dueDate = existing.dueDate
             viewModel.priority = existing.priority
             // Temporarily disabled - tags relationship commented out
-            viewModel.selectedTags = [] // existing.tags ?? []
+            viewModel.selectedTags = existing.tags ?? []
             // Temporarily disabled - notifications relationship commented out
             viewModel.leadTimes = [] // existing.notifications?.map { $0.leadTimeSeconds } ?? []
             viewModel.autoTextTaggedContacts = existing.autoTextTaggedContacts

@@ -35,7 +35,9 @@ final class MemoryMonitor {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.handleMemoryWarning()
+            Task { @MainActor [weak self] in
+                self?.handleMemoryWarning()
+            }
         }
     }
     
@@ -92,7 +94,7 @@ struct MemorySafeDataLoader {
         context: ModelContext,
         limit: Int = 100,
         predicate: Predicate<Reminder>? = nil
-    ) async -> [Reminder] {
+    ) async -> [PersistentIdentifier] {
         return await Task.detached {
             let backgroundContext = ModelContext(context.container)
             var descriptor = FetchDescriptor<Reminder>(
@@ -100,55 +102,87 @@ struct MemorySafeDataLoader {
                 sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
             )
             descriptor.fetchLimit = limit
-            return (try? backgroundContext.fetch(descriptor)) ?? []
+            // Include pending changes to show newly created reminders
+            descriptor.includePendingChanges = true
+            
+            do {
+                let reminders = try backgroundContext.fetch(descriptor)
+                return reminders.map { $0.persistentModelID }
+            } catch {
+                return []
+            }
         }.value
     }
     
     static func loadLists(
         context: ModelContext,
         limit: Int = 50
-    ) async -> [ReminderList] {
+    ) async -> [PersistentIdentifier] {
         return await Task.detached {
             let backgroundContext = ModelContext(context.container)
             var descriptor = FetchDescriptor<ReminderList>()
             descriptor.fetchLimit = limit
-            return (try? backgroundContext.fetch(descriptor)) ?? []
+            
+            do {
+                let lists = try backgroundContext.fetch(descriptor)
+                return lists.map { $0.persistentModelID }
+            } catch {
+                return []
+            }
         }.value
     }
     
     static func loadHabits(
         context: ModelContext,
         limit: Int = 50
-    ) async -> [Habit] {
+    ) async -> [PersistentIdentifier] {
         return await Task.detached {
             let backgroundContext = ModelContext(context.container)
             var descriptor = FetchDescriptor<Habit>()
             descriptor.fetchLimit = limit
-            return (try? backgroundContext.fetch(descriptor)) ?? []
+            
+            do {
+                let habits = try backgroundContext.fetch(descriptor)
+                return habits.map { $0.persistentModelID }
+            } catch {
+                return []
+            }
         }.value
     }
     
     static func loadTimeEntries(
         context: ModelContext,
         limit: Int = 100
-    ) async -> [TimeEntry] {
+    ) async -> [PersistentIdentifier] {
         return await Task.detached {
             let backgroundContext = ModelContext(context.container)
             var descriptor = FetchDescriptor<TimeEntry>()
             descriptor.fetchLimit = limit
-            return (try? backgroundContext.fetch(descriptor)) ?? []
+            
+            do {
+                let entries = try backgroundContext.fetch(descriptor)
+                return entries.map { $0.persistentModelID }
+            } catch {
+                return []
+            }
         }.value
     }
     
     static func loadSharedReminders(
         context: ModelContext,
         limit: Int = 100
-    ) async -> [SharedReminder] {
+    ) async -> [PersistentIdentifier] {
         return await Task.detached {
             let backgroundContext = ModelContext(context.container)
             var descriptor = FetchDescriptor<SharedReminder>()
             descriptor.fetchLimit = limit
-            return (try? backgroundContext.fetch(descriptor)) ?? []
+            
+            do {
+                let shared = try backgroundContext.fetch(descriptor)
+                return shared.map { $0.persistentModelID }
+            } catch {
+                return []
+            }
         }.value
     }
 }

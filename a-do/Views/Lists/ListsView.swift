@@ -8,12 +8,20 @@ struct ListsView: View {
     @State private var sections: [ListSection] = []
     @State private var lists: [ReminderList] = []
     @State private var allReminders: [Reminder] = []
+    @State private var allTags: [Tag] = []
     @State private var newListName: String = ""
     @State private var selectedSection: ListSection?
     @State private var showingSectionSheet = false
+    @State private var showingSmartListSheet = false
     @State private var newSectionName = ""
     @State private var selectedList: ReminderList?
     @State private var isCreatingSection = false
+
+    // Smart list creation state
+    @State private var smartListName: String = ""
+    @State private var smartListRuleType: SmartListRule.RuleType = .tag
+    @State private var selectedTagName: String = ""
+    @State private var selectedPriority: Priority = .high
 
     var body: some View {
         Group {
@@ -50,8 +58,8 @@ struct ListsView: View {
                     .fontWeight(.bold)
                 Spacer()
                 
-                // Separate buttons for New List and New Section
-                HStack(spacing: 12) {
+                // Menu for creating lists, smart lists, and sections
+                Menu {
                     Button {
                         newListName = ""
                         newSectionName = ""
@@ -59,39 +67,33 @@ struct ListsView: View {
                         isCreatingSection = false
                         showingSectionSheet = true
                     } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "plus")
-                                .font(.caption)
-                            Text("New List")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(AppTheme.Colors.accent)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
+                        Label("New List", systemImage: "plus")
                     }
-                    
+
+                    Button {
+                        smartListName = ""
+                        smartListRuleType = .tag
+                        selectedTagName = ""
+                        selectedPriority = .high
+                        showingSmartListSheet = true
+                    } label: {
+                        Label("New Smart List", systemImage: "sparkles")
+                    }
+
+                    Divider()
+
                     Button {
                         newListName = ""
                         newSectionName = ""
                         isCreatingSection = true
                         showingSectionSheet = true
                     } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "folder.badge.plus")
-                                .font(.caption)
-                            Text("New Section")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(AppTheme.Colors.primary)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
+                        Label("New Section", systemImage: "folder.badge.plus")
                     }
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(AppTheme.Colors.primary)
                 }
             }
             .padding()
@@ -212,16 +214,224 @@ struct ListsView: View {
             }
             .presentationDetents([.medium])
         }
+        .sheet(isPresented: $showingSmartListSheet) {
+            smartListCreationSheet
+        }
     }
-    
+
+    // MARK: - Smart List Creation Sheet
+    private var smartListCreationSheet: some View {
+        NavigationStack {
+            Form {
+                Section("Smart List Name") {
+                    TextField("Enter name", text: $smartListName)
+                }
+
+                Section("Filter By") {
+                    Picker("Rule Type", selection: $smartListRuleType) {
+                        Text("Tag").tag(SmartListRule.RuleType.tag)
+                        Text("Priority").tag(SmartListRule.RuleType.priority)
+                        Text("Due Today").tag(SmartListRule.RuleType.dueToday)
+                        Text("Overdue").tag(SmartListRule.RuleType.overdue)
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                if smartListRuleType == .tag {
+                    Section("Select Tag") {
+                        if allTags.isEmpty {
+                            Text("No tags available")
+                                .foregroundColor(.secondary)
+                                .italic()
+                        } else {
+                            Picker("Tag", selection: $selectedTagName) {
+                                Text("Select a tag").tag("")
+                                ForEach(allTags, id: \.name) { tag in
+                                    HStack {
+                                        Circle()
+                                            .fill(Color(hex: tag.colorHex) ?? .blue)
+                                            .frame(width: 12, height: 12)
+                                        Text(tag.name)
+                                    }
+                                    .tag(tag.name)
+                                }
+                            }
+                        }
+
+                        // Quick tag creation
+                        HStack {
+                            TextField("Or create new tag", text: $selectedTagName)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                    }
+                }
+
+                if smartListRuleType == .priority {
+                    Section("Select Priority") {
+                        Picker("Priority", selection: $selectedPriority) {
+                            ForEach(Priority.allCases) { priority in
+                                Text(priority.title).tag(priority)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                }
+
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Preview")
+                            .font(.headline)
+
+                        Text(smartListPreviewDescription)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            .navigationTitle("New Smart List")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        showingSmartListSheet = false
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Create") {
+                        createSmartList()
+                        showingSmartListSheet = false
+                    }
+                    .disabled(smartListName.isEmpty || (smartListRuleType == .tag && selectedTagName.isEmpty))
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    private var smartListPreviewDescription: String {
+        switch smartListRuleType {
+        case .tag:
+            if selectedTagName.isEmpty {
+                return "Select a tag to filter reminders"
+            }
+            return "Shows all reminders tagged with \"\(selectedTagName)\""
+        case .priority:
+            return "Shows all \(selectedPriority.title.lowercased()) priority reminders"
+        case .dueToday:
+            return "Shows all reminders due today"
+        case .overdue:
+            return "Shows all overdue reminders"
+        }
+    }
+
+    private func createSmartList() {
+        guard !smartListName.isEmpty else { return }
+
+        var rules: [SmartListRule] = []
+
+        switch smartListRuleType {
+        case .tag:
+            guard !selectedTagName.isEmpty else { return }
+            rules.append(SmartListRule(type: .tag, tagName: selectedTagName))
+        case .priority:
+            rules.append(SmartListRule(type: .priority, priority: selectedPriority))
+        case .dueToday:
+            rules.append(SmartListRule(type: .dueToday))
+        case .overdue:
+            rules.append(SmartListRule(type: .overdue))
+        }
+
+        let smartList = ReminderList(name: smartListName, isSmart: true, rules: rules)
+        context.insert(smartList)
+
+        do {
+            try context.save()
+            // Reload lists to show the new smart list
+            Task { await loadListData() }
+        } catch {
+            Logger(subsystem: "a-do", category: "SmartLists").error("Failed to create smart list: \(String(describing: error))")
+        }
+    }
+
     private func listRow(for list: ReminderList) -> some View {
         Group {
             if horizontalSizeClass == .regular {
-                Text(list.name)
+                smartListRowContent(for: list)
                     .tag(list)
             } else {
-                NavigationLink(list.name) { ListDetailView(list: list, allReminders: allReminders) }
+                NavigationLink { ListDetailView(list: list, allReminders: allReminders) } label: {
+                    smartListRowContent(for: list)
+                }
             }
+        }
+    }
+
+    private func smartListRowContent(for list: ReminderList) -> some View {
+        HStack(spacing: 12) {
+            // Icon
+            Image(systemName: list.isSmart ? smartListIcon(for: list) : "list.bullet")
+                .foregroundColor(list.isSmart ? .purple : .blue)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(list.name)
+                    .font(.body)
+
+                if list.isSmart, let description = smartListDescription(for: list) {
+                    Text(description)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Spacer()
+
+            // Count badge
+            let count = SmartListEngine.reminders(for: list, from: allReminders).count
+            if count > 0 {
+                Text("\(count)")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(list.isSmart ? Color.purple : Color.blue)
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .background(Color(.systemBackground))
+        .cornerRadius(10)
+    }
+
+    private func smartListIcon(for list: ReminderList) -> String {
+        guard let rule = list.rules.first else { return "sparkles" }
+        switch rule.type {
+        case .tag: return "tag.fill"
+        case .priority: return "exclamationmark.3"
+        case .dueToday: return "calendar"
+        case .overdue: return "clock.badge.exclamationmark"
+        }
+    }
+
+    private func smartListDescription(for list: ReminderList) -> String? {
+        guard let rule = list.rules.first else { return nil }
+        switch rule.type {
+        case .tag:
+            if let tagName = rule.tagName {
+                return "Tagged: \(tagName)"
+            }
+            return nil
+        case .priority:
+            if let priority = rule.priority {
+                return "\(priority.title) priority"
+            }
+            return nil
+        case .dueToday:
+            return "Due today"
+        case .overdue:
+            return "Overdue items"
         }
     }
     
@@ -263,36 +473,51 @@ struct ListsView: View {
     }
     
     // MARK: - Data Loading
-    
+
     private func loadListData() async {
-        // Load data on background thread
-        let (loadedSections, loadedLists, loadedReminders) = await Task.detached {
-            let backgroundContext = ModelContext(self.context.container)
-            
-            // Load sections
+        // Capture container for background context
+        let container = context.container
+
+        // Load persistent IDs on background thread to avoid blocking UI
+        let (sectionIDs, listIDs, reminderIDs, tagIDs) = await Task.detached {
+            let backgroundContext = ModelContext(container)
+
+            // Load section IDs
             let sectionsDescriptor = FetchDescriptor<ListSection>(
                 sortBy: [SortDescriptor(\.order)]
             )
             let sections = (try? backgroundContext.fetch(sectionsDescriptor)) ?? []
-            
-            // Load lists
+            let sectionIDs = sections.map { $0.persistentModelID }
+
+            // Load list IDs
             let listsDescriptor = FetchDescriptor<ReminderList>()
             let lists = (try? backgroundContext.fetch(listsDescriptor)) ?? []
-            
-            // Load only incomplete reminders
+            let listIDs = lists.map { $0.persistentModelID }
+
+            // Load only incomplete reminder IDs
             var remindersDescriptor = FetchDescriptor<Reminder>(
                 predicate: #Predicate<Reminder> { !$0.isCompleted }
             )
             remindersDescriptor.fetchLimit = 300
             let reminders = (try? backgroundContext.fetch(remindersDescriptor)) ?? []
-            
-            return (sections, lists, reminders)
+            let reminderIDs = reminders.map { $0.persistentModelID }
+
+            // Load tag IDs
+            let tagsDescriptor = FetchDescriptor<Tag>(
+                sortBy: [SortDescriptor(\.name)]
+            )
+            let tags = (try? backgroundContext.fetch(tagsDescriptor)) ?? []
+            let tagIDs = tags.map { $0.persistentModelID }
+
+            return (sectionIDs, listIDs, reminderIDs, tagIDs)
         }.value
-        
+
+        // Re-fetch objects on main context to ensure relationships are properly loaded
         await MainActor.run {
-            self.sections = loadedSections
-            self.lists = loadedLists
-            self.allReminders = loadedReminders
+            self.sections = sectionIDs.compactMap { context.model(for: $0) as? ListSection }
+            self.lists = listIDs.compactMap { context.model(for: $0) as? ReminderList }
+            self.allReminders = reminderIDs.compactMap { context.model(for: $0) as? Reminder }
+            self.allTags = tagIDs.compactMap { context.model(for: $0) as? Tag }
         }
     }
 }
@@ -301,43 +526,43 @@ struct ListDetailView: View {
     let list: ReminderList
     let allReminders: [Reminder]
     @Environment(\.modelContext) private var context
-    @State private var showingEditSheet = false
-    
+    @State private var selectedReminder: Reminder?
+
     var body: some View {
         List {
             ForEach(listReminders) { reminder in
                 ReminderRowView(reminder: reminder)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        selectedReminder = reminder
+                    }
                     .swipeActions(edge: .trailing) {
                         Button("Delete", role: .destructive) {
                             deleteReminder(reminder)
                         }
                         Button("Edit") {
-                            showingEditSheet = true
+                            selectedReminder = reminder
                         }
                         .tint(.blue)
                     }
             }
         }
         .navigationTitle(list.name)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Edit") {
-                    showingEditSheet = true
-                }
-            }
-        }
-        .sheet(isPresented: $showingEditSheet) {
+        .sheet(item: $selectedReminder) { reminder in
             NavigationStack {
-                ReminderFormView(existingReminder: listReminders.first)
+                ReminderFormView(existingReminder: reminder)
             }
         }
     }
     
     private var listReminders: [Reminder] {
-        // Temporarily disabled - list relationship commented out
-        // allReminders.filter { $0.list == list }
-        // Return all reminders for now
-        return allReminders
+        if list.isSmart {
+            // Use SmartListEngine to filter reminders based on smart list rules
+            return SmartListEngine.reminders(for: list, from: allReminders)
+        } else {
+            // For regular lists, return reminders directly associated with the list
+            return list.reminders ?? []
+        }
     }
     
     private func deleteReminder(_ reminder: Reminder) {
@@ -383,8 +608,8 @@ struct ReminderRowView: View {
                     Text(dueDate, style: .date)
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    
-                    if reminder.dueDate! < Date() && !reminder.isCompleted {
+
+                    if dueDate < Date() && !reminder.isCompleted {
                         Text("Overdue")
                             .font(.caption)
                             .foregroundColor(.red)

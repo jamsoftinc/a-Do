@@ -6,7 +6,7 @@ final class AppGroupDefaults {
     static let shared = AppGroupDefaults()
     
     // MARK: - Constants
-    private let appGroupIdentifier = "group.JAMSoft.a-do"
+    private let appGroupIdentifier = "group.com.ado.app"
     private let logger = Logger(subsystem: "a-do", category: "AppGroupDefaults")
     
     // MARK: - Private Properties
@@ -89,8 +89,7 @@ final class AppGroupDefaults {
         let currentDefaults = defaults
         currentDefaults.set(value, forKey: key)
         
-        // Synchronize to ensure data is written immediately
-        currentDefaults.synchronize()
+        // Note: synchronize() is deprecated - iOS handles this automatically
         
         logger.debug("Set value for key '\(key)' in \(currentDefaults == .standard ? "standard" : "app group") UserDefaults")
     }
@@ -178,10 +177,15 @@ final class AppGroupDefaults {
         guard let appGroupDefaults = UserDefaults(suiteName: appGroupIdentifier) else {
             return false
         }
-        
-        // Test accessibility by trying to read a value
-        let testValue = appGroupDefaults.object(forKey: "test_accessibility")
-        return testValue != nil || appGroupDefaults.object(forKey: "test_accessibility") == nil
+
+        // Test accessibility by writing and reading a test value
+        let testKey = "a_do_accessibility_test"
+        let testValue = UUID().uuidString
+        appGroupDefaults.set(testValue, forKey: testKey)
+        let readValue = appGroupDefaults.string(forKey: testKey)
+        appGroupDefaults.removeObject(forKey: testKey)
+
+        return readValue == testValue
         #endif
     }
     

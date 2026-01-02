@@ -142,8 +142,10 @@ struct GetTodayRemindersIntent: AppIntent {
         }
 
         let count = reminders.count
-        let firstReminder = reminders.first!.title
-        
+        guard let firstReminder = reminders.first?.title else {
+            return .result(dialog: "You have no reminders for today")
+        }
+
         if count == 1 {
             return .result(dialog: "You have 1 reminder today: \(firstReminder)")
         } else {
@@ -284,6 +286,49 @@ struct ADOAppShortcutsProvider: AppShortcutsProvider {
             ],
             shortTitle: "Start Focus",
             systemImageName: "target"
+        )
+
+        // Visual Intelligence shortcuts
+        AppShortcut(
+            intent: SearchRemindersVisually(),
+            phrases: [
+                "Search \(.applicationName) for this",
+                "Find reminders like this in \(.applicationName)",
+                "Look up this in \(.applicationName)"
+            ],
+            shortTitle: "Search Reminders",
+            systemImageName: "magnifyingglass"
+        )
+
+        AppShortcut(
+            intent: CreateReminderFromVisual(),
+            phrases: [
+                "Create reminder from this in \(.applicationName)",
+                "Add this to \(.applicationName)",
+                "Make a reminder in \(.applicationName) from this"
+            ],
+            shortTitle: "Create from Visual",
+            systemImageName: "plus.circle"
+        )
+
+        AppShortcut(
+            intent: ScanBusinessCardIntent(),
+            phrases: [
+                "Scan business card with \(.applicationName)",
+                "Add contact from card in \(.applicationName)"
+            ],
+            shortTitle: "Scan Business Card",
+            systemImageName: "person.crop.rectangle"
+        )
+
+        AppShortcut(
+            intent: ScanDocumentIntent(),
+            phrases: [
+                "Scan document for tasks with \(.applicationName)",
+                "Extract tasks from this document in \(.applicationName)"
+            ],
+            shortTitle: "Scan Document",
+            systemImageName: "doc.text.viewfinder"
         )
     }
 }

@@ -39,12 +39,13 @@ final class RealNotesManager {
     
     func createNote(title: String, content: String) async -> Note? {
         guard authorizationStatus == .authorized else { return nil }
-        
+
         // Create note using Notes URL scheme
         let noteContent = "\(title)\n\n\(content)"
+        let encodedTitle = title.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         let encodedContent = noteContent.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        
-        if let createURL = URL(string: "mobilenotes://note/create?title=\(title)&content=\(encodedContent)") {
+
+        if let createURL = URL(string: "mobilenotes://note/create?title=\(encodedTitle)&content=\(encodedContent)") {
             await UIApplication.shared.open(createURL)
         }
         

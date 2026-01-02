@@ -363,60 +363,6 @@ final class GamificationManager {
         context.insert(reward)
     }
     
-    // MARK: - Leaderboard System
-    
-    func updateLeaderboards(for profile: UserProfile, context: ModelContext) async {
-        let activeLeaderboards = getActiveLeaderboards(context: context)
-        
-        for leaderboard in activeLeaderboards {
-            await updateLeaderboardEntry(leaderboard, profile: profile, context: context)
-        }
-        
-        do {
-            try context.save()
-        } catch {
-            logger.error("Failed to update leaderboards: \(error.localizedDescription)")
-        }
-    }
-    
-    private func updateLeaderboardEntry(_ leaderboard: Leaderboard, profile: UserProfile, context: ModelContext) async {
-        let score = calculateLeaderboardScore(leaderboard.type, profile: profile)
-        
-        // Find existing entry or create new one
-        let existingEntry = leaderboard.entries?.first { $0.userId == profile.userId }
-        
-        if let entry = existingEntry {
-            entry.updateScore(score)
-        } else {
-            let newEntry = LeaderboardEntry(
-                userId: profile.userId,
-                displayName: profile.displayName,
-                score: score,
-                leaderboard: leaderboard
-            )
-            newEntry.userProfile = profile
-            leaderboard.addEntry(newEntry)
-            context.insert(newEntry)
-        }
-    }
-    
-    private func calculateLeaderboardScore(_ type: LeaderboardType, profile: UserProfile) -> Int {
-        switch type {
-        case .experience:
-            return profile.totalExperience
-        case .streaks:
-            return profile.longestStreak
-        case .reminders:
-            return profile.totalRemindersCompleted
-        case .habits:
-            return profile.totalHabitsCompleted
-        case .focusTime:
-            return Int(profile.totalFocusTime / 3600) // Hours
-        case .achievements:
-            return profile.achievementsUnlocked
-        }
-    }
-    
     // MARK: - Reward System
     
     func purchaseReward(_ reward: Reward, profile: UserProfile, context: ModelContext) -> Bool {
@@ -532,14 +478,27 @@ final class GamificationManager {
         // Implementation would depend on the notification system
     }
     
+    // Timer for periodic updates - must be retained
+    private var updateTimer: Timer?
+
     // MARK: - Periodic Updates
-    
+
     private func setupPeriodicUpdates() {
-        Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
+        updateTimer?.invalidate()
+        updateTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 await self?.performPeriodicUpdates()
             }
         }
+    }
+
+    /// Call this method to clean up resources when the manager is no longer needed
+    func cleanup() {
+        updateTimer?.invalidate()
+        updateTimer = nil
+        currentProfile = nil
+        recentAchievements.removeAll()
+        pendingRewards.removeAll()
     }
     
     private func performPeriodicUpdates() async {
@@ -718,14 +677,6 @@ final class GamificationManager {
         }
         
         return achievements
-    }
-    
-    private func getActiveLeaderboards(context: ModelContext) -> [Leaderboard] {
-        let descriptor = FetchDescriptor<Leaderboard>(
-            predicate: #Predicate { $0.isActive && !$0.isExpired }
-        )
-        
-        return (try? context.fetch(descriptor)) ?? []
     }
     
     private func getPerfectDayBadge(context: ModelContext) -> Badge? {

@@ -124,9 +124,9 @@ final class ReminderHomeViewModel {
     func markReminderComplete(_ reminder: Reminder, context: ModelContext) {
         reminder.isCompleted = true
         reminder.completedAt = Date()
-        
+
         // Cancel any pending notifications for this reminder
-        NotificationManager.shared.cancelNotifications(for: reminder.id)
+        NotificationManager.shared.cancelNotification(for: reminder)
         
         // Stop location monitoring if this reminder has location triggers
         // if let locationTrigger = reminder.locationTrigger {
@@ -250,8 +250,43 @@ final class ReminderFormViewModel {
         target.details = details.isEmpty ? nil : details
         target.dueDate = dueDate
         target.priority = priority
-        // Temporarily commented out relationship assignments
-        // target.tags = selectedTags.isEmpty ? nil : Array(selectedTags)
+        
+        // Extract tags from title and details using NLP
+        let textToAnalyze = "\(title) \(details)"
+        var extractedTags: Set<String> = []
+        
+        // Use simple regex for immediate tag extraction (NLP might be async/slower)
+        let tagPattern = #"#(\w+)"#
+        if let regex = try? NSRegularExpression(pattern: tagPattern, options: []) {
+            let matches = regex.matches(in: textToAnalyze, options: [], range: NSRange(textToAnalyze.startIndex..., in: textToAnalyze))
+            for match in matches {
+                if let range = Range(match.range(at: 1), in: textToAnalyze) {
+                    let extractedTag = String(textToAnalyze[range])
+                    extractedTags.insert(extractedTag)
+                    Logger(subsystem: "a-do", category: "NLP").info("Extracted tag: \(extractedTag)")
+                }
+            }
+        }
+        
+        // Fetch existing tags to avoid duplicates
+        let tagDescriptor = FetchDescriptor<Tag>()
+        let existingTags = (try? context.fetch(tagDescriptor)) ?? []
+        var finalTags = Set(selectedTags)
+        
+        // Process extracted tags
+        for tagName in extractedTags {
+            if let existingTag = existingTags.first(where: { $0.name.lowercased() == tagName.lowercased() }) {
+                finalTags.insert(existingTag)
+            } else {
+                // Create new tag
+                let newTag = Tag(name: tagName)
+                context.insert(newTag)
+                finalTags.insert(newTag)
+            }
+        }
+        
+        target.tags = finalTags.isEmpty ? nil : Array(finalTags)
+        
         // target.notifications = leadTimes.isEmpty ? nil : leadTimes.map { ReminderNotification(leadTimeSeconds: $0) }
         // if !locationLabel.isEmpty && hasValidCoordinates {
         //     target.locationTrigger = LocationTrigger(label: locationLabel, latitude: self.locationLatitude, longitude: self.locationLongitude, radius: locationRadius, type: locationType)
@@ -333,15 +368,23 @@ final class ReminderFormViewModel {
     func startVoiceRecording() async {
         isRecordingVoice = true
         voiceRecordingError = nil
-        
+
         // Start recording - this method handles errors internally and doesn't throw
         await AudioManager.shared.startRecording()
-        
-        // Monitor recording state
+
+        // Monitor recording state with timeout (max 5 minutes)
+        let maxRecordingTime: UInt64 = 5 * 60 * 1_000_000_000 // 5 minutes in nanoseconds
+        let startTime = DispatchTime.now().uptimeNanoseconds
         while AudioManager.shared.isRecording {
             try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+
+            // Safety timeout to prevent infinite loop
+            if DispatchTime.now().uptimeNanoseconds - startTime > maxRecordingTime {
+                await AudioManager.shared.stopRecording()
+                break
+            }
         }
-        
+
         isRecordingVoice = false
         
         // Check for errors

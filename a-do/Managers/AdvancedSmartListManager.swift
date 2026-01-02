@@ -66,7 +66,12 @@ final class AdvancedSmartListManager {
         duplicate.showSubtasks = smartList.showSubtasks
         duplicate.autoRefresh = smartList.autoRefresh
         duplicate.refreshInterval = smartList.refreshInterval
-        
+
+        // Initialize rules array if nil
+        if duplicate.rules == nil {
+            duplicate.rules = []
+        }
+
         // Duplicate rules
         for rule in smartList.rules ?? [] {
             let duplicateRule = EnhancedSmartListRule(
@@ -80,7 +85,7 @@ final class AdvancedSmartListManager {
             duplicateRule.useRegex = rule.useRegex
             duplicateRule.invertCondition = rule.invertCondition
             duplicateRule.smartList = duplicate
-            
+
             duplicate.rules?.append(duplicateRule)
         }
         
@@ -201,44 +206,60 @@ final class AdvancedSmartListManager {
             }
         }
         
+        // Capture ID to fetch in background
+        let smartListID = smartList.persistentModelID
+        
         // Perform heavy database operations on background thread
-        return await Task.detached {
+        let resultIDs = await Task.detached {
             // Create background context for database operations
             let backgroundContext = ModelContext(context.container)
             
+            // Fetch the smart list in the background context
+            guard let backgroundSmartList = backgroundContext.model(for: smartListID) as? EnhancedSmartList else {
+                return [PersistentIdentifier]()
+            }
+            
             // Use memory-safe data loading with smaller limits
-            let allReminders = await MemorySafeDataLoader.loadReminders(
+            let reminderIDs = await MemorySafeDataLoader.loadReminders(
                 context: backgroundContext,
                 limit: 500 // Reduced from 1000
             )
             
-            let timeEntries = await MemorySafeDataLoader.loadTimeEntries(
+            let timeEntryIDs = await MemorySafeDataLoader.loadTimeEntries(
                 context: backgroundContext,
                 limit: 500 // Reduced from 1000
             )
             
-            let sharedReminders = await MemorySafeDataLoader.loadSharedReminders(
+            let sharedReminderIDs = await MemorySafeDataLoader.loadSharedReminders(
                 context: backgroundContext,
                 limit: 200 // New limit for shared reminders
             )
             
+            // Fetch actual objects on background context
+            let allReminders = reminderIDs.compactMap { backgroundContext.model(for: $0) as? Reminder }
+            let timeEntries = timeEntryIDs.compactMap { backgroundContext.model(for: $0) as? TimeEntry }
+            let sharedReminders = sharedReminderIDs.compactMap { backgroundContext.model(for: $0) as? SharedReminder }
+            
             // Evaluate the smart list
-            let results = smartList.evaluate(
+            let results = backgroundSmartList.evaluate(
                 reminders: allReminders,
                 timeEntries: timeEntries,
                 sharedReminders: sharedReminders
             )
             
-            // Update cache and state on main actor
-            await MainActor.run {
-                self.cachedResults[smartList.id] = results
-                self.cacheTimestamps[smartList.id] = Date()
-                self.lastRefreshDate = Date()
-                self.logger.info("Evaluated smart list '\(smartList.name)': \(results.count) results")
-            }
-            
-            return results
+            return results.map { $0.persistentModelID }
         }.value
+        
+        // Fetch result objects on main context
+        let results = resultIDs.compactMap { context.model(for: $0) as? Reminder }
+        
+        // Update cache and state on main actor
+        self.cachedResults[smartList.id] = results
+        self.cacheTimestamps[smartList.id] = Date()
+        self.lastRefreshDate = Date()
+        self.logger.info("Evaluated smart list '\(smartList.name)': \(results.count) results")
+        
+        return results
     }
     
     func refreshAllSmartLists(context: ModelContext) async {

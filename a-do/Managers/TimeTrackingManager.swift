@@ -22,14 +22,19 @@ final class TimeTrackingManager: ObservableObject {
     var currentEntry: TimeEntry?
     var isTracking: Bool = false
     var elapsedTime: TimeInterval = 0
-    
+
     // Timer for updating elapsed time
-    nonisolated(unsafe) private var timer: Timer?
-    
+    // Timer is managed on MainActor - cleanup called before deallocation
+    private var timer: Timer?
+
     private init() {}
-    
-    nonisolated deinit {
-        stopTimer()
+
+    /// Call this method before the manager is deallocated to clean up resources
+    func cleanup() {
+        timer?.invalidate()
+        timer = nil
+        currentEntry = nil
+        isTracking = false
     }
     
     // MARK: - Time Tracking
@@ -110,13 +115,13 @@ final class TimeTrackingManager: ObservableObject {
     private func startTimer() {
         stopTimer()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.updateElapsedTime()
             }
         }
     }
-    
-    nonisolated private func stopTimer() {
+
+    private func stopTimer() {
         timer?.invalidate()
         timer = nil
     }
@@ -134,7 +139,10 @@ final class TimeTrackingManager: ObservableObject {
         
         let calendar = Calendar.current
         let endDate = Date()
-        let startDate = calendar.date(byAdding: .day, value: -days, to: endDate)!
+        guard let startDate = calendar.date(byAdding: .day, value: -days, to: endDate) else {
+            logger.error("Failed to calculate start date for analytics")
+            return ProductivityAnalytics.empty
+        }
         
         let filteredEntries = entries.filter { entry in
             entry.startTime >= startDate && entry.startTime <= endDate

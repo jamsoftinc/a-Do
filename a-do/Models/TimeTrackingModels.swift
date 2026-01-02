@@ -110,8 +110,10 @@ final class TimeCategory {
     func totalTimeToday() -> TimeInterval {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
-        
+        guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) else {
+            return 0
+        }
+
         return (entries ?? []).filter { entry in
             entry.startTime >= today && entry.startTime < tomorrow
         }.reduce(0) { $0 + $1.actualDuration }
@@ -130,14 +132,19 @@ final class TimeCategory {
     }
     
     func averageTimePerDay(days: Int = 7) -> TimeInterval {
+        // Guard against invalid days parameter
+        guard days > 0 else { return 0 }
+
         let calendar = Calendar.current
         let endDate = Date()
-        let startDate = calendar.date(byAdding: .day, value: -days, to: endDate)!
-        
+        guard let startDate = calendar.date(byAdding: .day, value: -days, to: endDate) else {
+            return 0
+        }
+
         let totalTime = (entries ?? []).filter { entry in
             entry.startTime >= startDate && entry.startTime <= endDate
         }.reduce(0) { $0 + $1.actualDuration }
-        
+
         return totalTime / Double(days)
     }
 }
@@ -201,21 +208,61 @@ final class TimeGoal {
     func progressToday(entries: [TimeEntry]) -> Double {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
-        
+        guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) else {
+            return 0
+        }
+
+        // Guard against division by zero
+        guard targetDuration > 0 else { return 0 }
+
         let todayTime = entries.filter { entry in
             entry.category == category &&
             entry.startTime >= today &&
             entry.startTime < tomorrow
         }.reduce(0) { $0 + $1.actualDuration }
-        
+
         return min(1.0, todayTime / targetDuration)
     }
     
+    /// Current progress based on goal frequency
+    /// Note: This requires entries to be passed in for accurate calculation
+    /// Use progressToday(entries:) or progressThisPeriod(entries:) for accurate results
     var currentProgress: Double {
-        // For now, return a default progress value
-        // In a real implementation, this would calculate based on actual time entries
-        return 0.5
+        // Without context, we return 0 - use progressToday/progressThisPeriod methods with entries
+        return 0.0
+    }
+
+    /// Progress for current period based on frequency
+    func progressThisPeriod(entries: [TimeEntry]) -> Double {
+        let calendar = Calendar.current
+        let now = Date()
+
+        let periodStart: Date
+        let periodEnd: Date
+
+        switch frequency {
+        case .daily, .none:
+            // Default to daily if frequency is not set
+            periodStart = calendar.startOfDay(for: now)
+            periodEnd = calendar.date(byAdding: .day, value: 1, to: periodStart) ?? now
+        case .weekly:
+            let weekday = calendar.component(.weekday, from: now)
+            periodStart = calendar.date(byAdding: .day, value: -(weekday - 1), to: calendar.startOfDay(for: now)) ?? now
+            periodEnd = calendar.date(byAdding: .day, value: 7, to: periodStart) ?? now
+        case .monthly:
+            var components = calendar.dateComponents([.year, .month], from: now)
+            periodStart = calendar.date(from: components) ?? now
+            components.month = (components.month ?? 1) + 1
+            periodEnd = calendar.date(from: components) ?? now
+        }
+
+        let periodTime = entries.filter { entry in
+            entry.category == category &&
+            entry.startTime >= periodStart &&
+            entry.startTime < periodEnd
+        }.reduce(0) { $0 + $1.actualDuration }
+
+        return min(1.0, periodTime / targetDuration)
     }
 }
 
@@ -233,32 +280,48 @@ enum TimeGoalFrequency: String, CaseIterable, Codable {
     }
 }
 
-// MARK: - Extensions
+// MARK: - Time Tracking Extensions
 
 extension Reminder {
-    var totalTimeSpent: TimeInterval {
-        // This would need to be computed by querying TimeEntry objects
-        // For now, return 0 as a placeholder
-        return 0
+    /// Calculate total time spent on this reminder from time entries
+    func totalTimeSpent(entries: [TimeEntry]) -> TimeInterval {
+        return entries.filter { $0.reminder?.uuid == self.uuid }
+            .reduce(0) { $0 + $1.actualDuration }
     }
-    
-    var averageCompletionTime: TimeInterval {
-        // This would need to be computed by querying TimeEntry objects
-        // For now, return 0 as a placeholder
-        return 0
+
+    /// Calculate average time spent per session on this reminder
+    func averageSessionTime(entries: [TimeEntry]) -> TimeInterval {
+        let reminderEntries = entries.filter { $0.reminder?.uuid == self.uuid }
+        guard !reminderEntries.isEmpty else { return 0 }
+        let totalTime = reminderEntries.reduce(0) { $0 + $1.actualDuration }
+        return totalTime / Double(reminderEntries.count)
     }
 }
 
 extension Habit {
-    var averageTimePerEntry: TimeInterval {
-        // This would need to be computed by querying TimeEntry objects related to this habit
-        // For now, return 0 as a placeholder
-        return 0
+    /// Calculate average time per habit entry from time tracking data
+    func averageTimePerEntry(entries: [TimeEntry]) -> TimeInterval {
+        let habitEntries = entries.filter { $0.habit?.id == self.id }
+        guard !habitEntries.isEmpty else { return 0 }
+        let totalTime = habitEntries.reduce(0) { $0 + $1.actualDuration }
+        return totalTime / Double(habitEntries.count)
     }
-    
-    var totalTimeInvested: TimeInterval {
-        // This would need to be computed by querying TimeEntry objects related to this habit
-        // For now, return 0 as a placeholder
-        return 0
+
+    /// Calculate total time invested in this habit
+    func totalTimeInvested(entries: [TimeEntry]) -> TimeInterval {
+        return entries.filter { $0.habit?.id == self.id }
+            .reduce(0) { $0 + $1.actualDuration }
+    }
+
+    /// Get time tracked this week for the habit
+    func timeThisWeek(entries: [TimeEntry]) -> TimeInterval {
+        let calendar = Calendar.current
+        let now = Date()
+        let weekday = calendar.component(.weekday, from: now)
+        let weekStart = calendar.date(byAdding: .day, value: -(weekday - 1), to: calendar.startOfDay(for: now)) ?? now
+
+        return entries.filter { entry in
+            entry.habit?.id == self.id && entry.startTime >= weekStart
+        }.reduce(0) { $0 + $1.actualDuration }
     }
 }

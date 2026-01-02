@@ -12,21 +12,29 @@ struct TemplatesView: View {
     @Environment(\.modelContext) private var context
     @State private var recurringManager = RecurringRemindersManager.shared
     
-    @State private var templates: [ReminderTemplate] = []
-    @State private var recurringReminders: [RecurringReminder] = []
+    @Query(sort: \ReminderTemplate.usageCount, order: .reverse) private var templates: [ReminderTemplate]
+    @Query(sort: \RecurringReminder.createdAt, order: .reverse) private var recurringReminders: [RecurringReminder]
     
     @State private var selectedTab = 0
     @State private var showingCreateTemplate = false
     @State private var showingCreateRecurring = false
+    @State private var showingPaywall = false
     @State private var searchText = ""
-    
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 // Tab Picker
                 Picker("View", selection: $selectedTab) {
                     Text("Templates").tag(0)
-                    Text("Recurring").tag(1)
+                    HStack {
+                        Text("Recurring")
+                        if !EntitlementManager.shared.isProUser {
+                            Image(systemName: "crown.fill")
+                                .foregroundColor(.orange)
+                                .font(.caption2)
+                        }
+                    }.tag(1)
                 }
                 .pickerStyle(.segmented)
                 .padding()
@@ -49,7 +57,11 @@ struct TemplatesView: View {
                         if selectedTab == 0 {
                             showingCreateTemplate = true
                         } else {
-                            showingCreateRecurring = true
+                            if EntitlementManager.shared.hasAccess(to: .recurringReminders) {
+                                showingCreateRecurring = true
+                            } else {
+                                showingPaywall = true
+                            }
                         }
                     } label: {
                         Image(systemName: "plus")
@@ -62,6 +74,9 @@ struct TemplatesView: View {
         }
         .sheet(isPresented: $showingCreateRecurring) {
             CreateRecurringReminderView()
+        }
+        .sheet(isPresented: $showingPaywall) {
+            PaywallView()
         }
         .onAppear {
             recurringManager.ensureDefaultTemplates(context: context)
@@ -127,33 +142,91 @@ struct TemplatesView: View {
             Text("All Templates")
                 .font(AppTheme.Typography.headline)
                 .primaryText()
-            
-            let filteredTemplates = searchText.isEmpty ? templates : 
+
+            let filteredTemplates = searchText.isEmpty ? templates :
                 recurringManager.searchTemplates(query: searchText, context: context)
-            
-            LazyVStack(spacing: 8) {
-                ForEach(filteredTemplates, id: \.id) { template in
-                    TemplateRow(template: template)
+
+            if filteredTemplates.isEmpty {
+                ContentUnavailableView(
+                    searchText.isEmpty ? "No Templates" : "No Results",
+                    systemImage: "doc.text",
+                    description: Text(searchText.isEmpty ? "Create your first template to get started" : "Try a different search term")
+                )
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+            } else {
+                LazyVStack(spacing: 8) {
+                    ForEach(filteredTemplates, id: \.id) { template in
+                        TemplateRow(template: template)
+                    }
                 }
             }
         }
     }
     
     // MARK: - Recurring Tab
-    
+
     private var recurringTab: some View {
-        ScrollView {
-            LazyVStack(spacing: 16) {
-                // Stats Card
-                recurringStatsCard
-                
-                // Active Recurring Reminders
-                activeRecurringSection
-                
-                // Upcoming Reminders
-                upcomingSection
+        Group {
+            if EntitlementManager.shared.hasAccess(to: .recurringReminders) {
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        // Stats Card
+                        recurringStatsCard
+
+                        // Active Recurring Reminders
+                        activeRecurringSection
+
+                        // Upcoming Reminders
+                        upcomingSection
+                    }
+                    .padding()
+                }
+            } else {
+                // Pro feature locked
+                VStack(spacing: 24) {
+                    Spacer()
+
+                    Image(systemName: "arrow.clockwise.circle.fill")
+                        .font(.system(size: 60))
+                        .foregroundStyle(.linearGradient(colors: [.purple, .blue], startPoint: .topLeading, endPoint: .bottomTrailing))
+
+                    Text("Advanced Recurring Reminders")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .primaryText()
+
+                    Text("Create smart recurring reminders with advanced patterns, auto-generation, and skip/pause functionality.")
+                        .font(.body)
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 32)
+
+                    Button {
+                        showingPaywall = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "crown.fill")
+                            Text("Unlock with Pro")
+                        }
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 14)
+                        .background(
+                            LinearGradient(
+                                colors: [.purple, .blue],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ),
+                            in: RoundedRectangle(cornerRadius: 12)
+                        )
+                    }
+
+                    Spacer()
+                }
+                .padding()
             }
-            .padding()
         }
     }
     
@@ -308,8 +381,8 @@ struct QuickTemplateCard: View {
         impactFeedback.impactOccurred()
         
         // Create the reminder
-        let reminder = recurringManager.createReminderFromTemplate(template, context: context)
-        
+        _ = recurringManager.createReminderFromTemplate(template, context: context)
+
         // Show success feedback
         showSuccess = true
         

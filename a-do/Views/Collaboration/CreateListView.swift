@@ -11,7 +11,7 @@ import SwiftData
 struct CreateListView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var collaborationManager = CollaborationManager.shared
+    private var collaborationManager = CollaborationManager.shared
     
     @State private var listName: String = ""
     @State private var listDescription: String = ""
@@ -21,7 +21,11 @@ struct CreateListView: View {
     @State private var isCreating = false
     
     var workspace: Workspace
-    
+
+    init(workspace: Workspace) {
+        self.workspace = workspace
+    }
+
     private let icons = [
         "list.bullet", "list.bullet.rectangle", "list.number", "list.star",
         "folder", "folder.fill", "doc.text", "doc.text.fill",
@@ -188,8 +192,8 @@ struct CreateListView: View {
     }
 }
 
-#Preview {
-    let workspace = Workspace(name: "Sample Workspace", ownerID: "user123", ownerName: "John Doe")
-    return CreateListView(workspace: workspace)
-        .modelContainer(for: [Workspace.self, ReminderList.self, SharedList.self])
-}
+// Preview disabled - requires model context setup
+// #Preview {
+//     CreateListView(workspace: Workspace(name: "Sample Workspace", ownerID: "user123", ownerName: "John Doe"))
+//         .modelContainer(for: [Workspace.self, ReminderList.self, SharedList.self])
+// }

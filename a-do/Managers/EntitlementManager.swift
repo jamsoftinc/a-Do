@@ -48,11 +48,7 @@ final class EntitlementManager {
     }
     
     // MARK: - Feature Gate Helpers
-    
-    func requirePro<T>(for feature: ProFeature, fallback: T) -> T {
-        return hasAccess(to: feature) ? feature as! T : fallback
-    }
-    
+
     func canAccess<T>(feature: ProFeature, action: @escaping () -> T) -> T? {
         return hasAccess(to: feature) ? action() : nil
     }
@@ -74,53 +70,104 @@ final class EntitlementManager {
 // MARK: - Pro Feature Gating
 
 extension EntitlementManager {
-    
-    // Check individual features
-    var canUseAIWritingTools: Bool {
-        return hasAccess(to: .aiWritingTools)
-    }
-    
+
+    // Core Pro Features
     var canUseAdvancedNLP: Bool {
         return hasAccess(to: .advancedNLP)
     }
-    
+
     var canUseLiveActivities: Bool {
         return hasAccess(to: .liveActivities)
     }
-    
-    var canUseVisualIntelligence: Bool {
-        return hasAccess(to: .visualIntelligence)
-    }
-    
+
     var canUseInteractiveWidgets: Bool {
         return hasAccess(to: .interactiveWidgets)
     }
-    
+
     var canUseEnhancedSiri: Bool {
         return hasAccess(to: .enhancedSiri)
     }
-    
+
     var canUseJournalIntegration: Bool {
         return hasAccess(to: .journalIntegration)
     }
 
-    var canUseSharePlay: Bool {
-        return hasAccess(to: .sharePlay)
-    }
-    
     var canUseSubtasks: Bool {
         return hasAccess(to: .subtasks)
     }
-    
+
     var canUseApplePencilPro: Bool {
         return hasAccess(to: .applePencilPro)
     }
-    
+
     var canUseTranslation: Bool {
         return hasAccess(to: .translation)
     }
-    
+
     var canUseAdvancedFocus: Bool {
         return hasAccess(to: .advancedFocus)
+    }
+
+    // New Pro Features
+    var canUseCalendarBlocking: Bool {
+        return hasAccess(to: .calendarBlocking)
+    }
+
+    var canUseDailyPlanning: Bool {
+        return hasAccess(to: .dailyPlanning)
+    }
+
+    var canUseBatchOperations: Bool {
+        return hasAccess(to: .batchOperations)
+    }
+
+    var canUseVoiceReminders: Bool {
+        return hasAccess(to: .voiceReminders)
+    }
+
+    var canUseSmartSnooze: Bool {
+        return hasAccess(to: .smartSnooze)
+    }
+
+    var canUseRecurringReminders: Bool {
+        return hasAccess(to: .recurringReminders)
+    }
+
+    var canUseSmartNotifications: Bool {
+        return hasAccess(to: .smartNotifications)
+    }
+
+    // MARK: - Apple Intelligence Features
+
+    var canUseAppleIntelligence: Bool {
+        return hasAccess(to: .appleIntelligence)
+    }
+
+    var canUseFoundationModels: Bool {
+        return hasAccess(to: .foundationModels)
+    }
+
+    var canUseVisualIntelligence: Bool {
+        return hasAccess(to: .visualIntelligence)
+    }
+
+    var canUseWritingTools: Bool {
+        return hasAccess(to: .writingTools)
+    }
+
+    var canUseAIWritingTools: Bool {
+        return hasAccess(to: .writingTools)
+    }
+
+    var canUseSiriIntelligence: Bool {
+        return hasAccess(to: .siriIntelligence)
+    }
+
+    var canUseSmartSuggestions: Bool {
+        return hasAccess(to: .smartSuggestions)
+    }
+
+    var canUseContextualActions: Bool {
+        return hasAccess(to: .contextualActions)
     }
 }

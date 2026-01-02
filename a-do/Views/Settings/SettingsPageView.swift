@@ -1,0 +1,129 @@
+import SwiftUI
+import SwiftData
+
+struct SettingsPageView: View {
+    @Environment(\.modelContext) private var context
+    @Query private var profiles: [UserProfile]
+    
+    @State private var showingAppleIntegrations = false
+    @State private var showingImportReminders = false
+    @State private var showingAISettings = false
+    @State private var showingSubscription = false
+    @State private var showingEditName = false
+    @State private var newName = ""
+
+    var body: some View {
+        List {
+            // Profile
+            if let profile = profiles.first {
+                Section("Profile") {
+                    Button {
+                        newName = profile.displayName
+                        showingEditName = true
+                    } label: {
+                        HStack {
+                            Text("Name")
+                                .foregroundStyle(AppTheme.Colors.textPrimary)
+                            Spacer()
+                            Text(profile.displayName)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+            
+            // Configuration Settings
+            Section("Configuration") {
+                Button {
+                    if EntitlementManager.shared.hasAccess(to: .advancedNLP) {
+                        showingAISettings = true
+                    } else {
+                        showingSubscription = true
+                    }
+                } label: {
+                    HStack {
+                        Label("AI Settings", systemImage: "brain.head.profile")
+                        if !EntitlementManager.shared.isProUser {
+                            Spacer()
+                            Image(systemName: "lock.fill").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Button {
+                    showingAppleIntegrations = true
+                } label: {
+                    Label("Sync Settings", systemImage: "arrow.triangle.2.circlepath")
+                }
+            }
+            
+            // Data Management
+            Section("Data") {
+                Button {
+                    showingImportReminders = true
+                } label: {
+                    Label("Import from Reminders", systemImage: "square.and.arrow.down")
+                }
+                
+                Button {
+                    Task {
+                        await ReminderCleanupManager.shared.cleanupOldReminders(in: context)
+                    }
+                } label: {
+                    Label("Clean Up Old Reminders", systemImage: "trash")
+                }
+            }
+            
+            // Subscription
+            Section {
+                NavigationLink(destination: SubscriptionManagementView()) {
+                    Label("Subscription", systemImage: "crown.fill")
+                        .foregroundStyle(.purple)
+                }
+            }
+            
+            // App Info
+            Section {
+                HStack {
+                    Spacer()
+                    VStack(spacing: 4) {
+                        Text("a-do")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                        Text("Version 1.0.0")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+            }
+            .listRowBackground(Color.clear)
+        }
+        .navigationTitle("Settings")
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showingAppleIntegrations) {
+            AppleIntegrationsView()
+        }
+        .sheet(isPresented: $showingImportReminders) {
+            ImportRemindersView()
+        }
+        .sheet(isPresented: $showingAISettings) {
+            NavigationStack {
+                AISettingsViewWrapper()
+            }
+        }
+        .sheet(isPresented: $showingSubscription) {
+            PaywallView()
+        }
+        .alert("Change Name", isPresented: $showingEditName) {
+            TextField("Name", text: $newName)
+            Button("Cancel", role: .cancel) { }
+            Button("Save") {
+                if let profile = profiles.first {
+                    profile.displayName = newName
+                    try? context.save()
+                }
+            }
+        }
+    }
+}

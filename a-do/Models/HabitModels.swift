@@ -39,12 +39,13 @@ final class Habit {
     @Relationship var tags: [Tag]? = []
     @Relationship(deleteRule: .cascade) var timeEntries: [TimeEntry]? = []
     
-    @Relationship(inverse: \HealthMetric.habit) var healthMetrics: [HealthMetric]? = []
-    @Relationship(inverse: \HealthGoal.linkedHabit) var healthGoals: [HealthGoal]? = []
-    @Relationship(inverse: \WorkoutIntegration.linkedHabit) var workoutIntegrations: [WorkoutIntegration]? = []
-    @Relationship(inverse: \SleepIntegration.linkedHabit) var sleepIntegrations: [SleepIntegration]? = []
-    @Relationship(inverse: \MindfulnessIntegration.linkedHabit) var mindfulnessIntegrations: [MindfulnessIntegration]? = []
+    @Relationship(inverse: \HealthMetric.habit) var healthMetrics: [HealthMetric]?
+    @Relationship(inverse: \HealthGoal.linkedHabit) var healthGoals: [HealthGoal]?
+    @Relationship(inverse: \WorkoutIntegration.linkedHabit) var workoutIntegrations: [WorkoutIntegration]?
+    @Relationship(inverse: \SleepIntegration.linkedHabit) var sleepIntegrations: [SleepIntegration]?
+    @Relationship(inverse: \MindfulnessIntegration.linkedHabit) var mindfulnessIntegrations: [MindfulnessIntegration]?
     @Relationship(deleteRule: .nullify) var aiSuggestions: [AISuggestion]? = []
+    @Relationship(deleteRule: .nullify) var smartNotifications: [SmartNotification]?
     
     init(title: String, description: String = "", icon: String = "star.fill", color: String = "#007AFF", frequency: HabitFrequency? = .daily, targetCount: Int = 1, unit: String = "times") {
         self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)

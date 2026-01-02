@@ -53,6 +53,11 @@ enum SmartListCondition: String, CaseIterable, Codable, Identifiable {
     case completedWithinHour = "completed_within_hour"
     case longRunningTasks = "long_running_tasks"
     
+    // Tag conditions
+    case hasTag = "has_tag"
+    case hasAnyTag = "has_any_tag"
+    case hasNoTags = "has_no_tags"
+
     // Custom conditions
     case customFilter = "custom_filter"
     
@@ -91,6 +96,9 @@ enum SmartListCondition: String, CaseIterable, Codable, Identifiable {
         case .lowPriorityOld: return "Low Priority Old"
         case .completedWithinHour: return "Completed Within Hour"
         case .longRunningTasks: return "Long Running Tasks"
+        case .hasTag: return "Has Tag"
+        case .hasAnyTag: return "Has Any Tag"
+        case .hasNoTags: return "Has No Tags"
         case .customFilter: return "Custom Filter"
         }
     }
@@ -122,13 +130,16 @@ enum SmartListCondition: String, CaseIterable, Codable, Identifiable {
         case .lowPriorityOld: return "clock.badge.questionmark"
         case .completedWithinHour: return "checkmark.circle.fill"
         case .longRunningTasks: return "hourglass"
+        case .hasTag: return "tag.fill"
+        case .hasAnyTag: return "tag"
+        case .hasNoTags: return "tag.slash"
         case .customFilter: return "slider.horizontal.3"
         }
     }
     
     var requiresValue: Bool {
         switch self {
-        case .titleContains, .detailsContain, .timeSpentGreaterThan, .timeSpentLessThan, .customFilter:
+        case .titleContains, .detailsContain, .timeSpentGreaterThan, .timeSpentLessThan, .customFilter, .hasTag:
             return true
         default:
             return false
@@ -141,6 +152,8 @@ enum SmartListCondition: String, CaseIterable, Codable, Identifiable {
             return .text
         case .timeSpentGreaterThan, .timeSpentLessThan:
             return .duration
+        case .hasTag:
+            return .tag
         default:
             return .none
         }
@@ -328,6 +341,18 @@ final class EnhancedSmartListRule {
             let monthAgo = calendar.date(byAdding: .month, value: -1, to: now) ?? now
             return reminder.createdAt < monthAgo && !reminder.isCompleted
             
+        // Tag conditions
+        case .hasTag:
+            guard !value.isEmpty else { return false }
+            guard let tags = reminder.tags, !tags.isEmpty else { return false }
+            return tags.contains(where: { $0.name.lowercased() == value.lowercased() })
+
+        case .hasAnyTag:
+            return !(reminder.tags?.isEmpty ?? true)
+
+        case .hasNoTags:
+            return reminder.tags?.isEmpty ?? true
+
         // Placeholder conditions
         case .habitRelated, .recurringReminder, .fromTemplate, .customFilter:
             return false // These would need additional implementation

@@ -301,7 +301,7 @@ final class MLPatternRecognitionManager {
         
         // Session length patterns
         let sessionLengths = entries.map(\.actualDuration)
-        let averageSessionLength = sessionLengths.reduce(0, +) / Double(sessionLengths.count)
+        let averageSessionLength = sessionLengths.isEmpty ? 0.0 : sessionLengths.reduce(0, +) / Double(sessionLengths.count)
         let optimalSessionLength = calculateOptimalSessionLength(sessionLengths)
         
         return TimeUsagePatterns(

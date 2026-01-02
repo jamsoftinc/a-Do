@@ -11,7 +11,7 @@ import SwiftData
 struct ShareReminderView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var collaborationManager = CollaborationManager.shared
+    private var collaborationManager = CollaborationManager.shared
     
     @State private var selectedReminder: Reminder?
     @State private var participantEmails: [String] = []

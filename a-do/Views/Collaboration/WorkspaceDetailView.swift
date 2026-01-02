@@ -365,30 +365,20 @@ struct MemberRowView: View {
 
 struct SharedListRowView: View {
     let list: SharedList
-    
+
     var body: some View {
         HStack {
             Image(systemName: "list.bullet.rectangle")
                 .foregroundColor(AppTheme.Colors.accent)
                 .frame(width: 24)
-            
+
             VStack(alignment: .leading, spacing: 2) {
-                Text((list as AnyObject).value(forKey: "title") as? String ?? String(describing: list))
+                Text(list.list?.name ?? "Untitled List")
                     .font(AppTheme.Typography.body)
                     .foregroundColor(AppTheme.Colors.textPrimary)
-                
-                let reminderCount: Int = {
-                    // Try to access a likely reminders array via KVC without tightly coupling to a specific property name.
-                    if let array = (list as AnyObject).value(forKey: "reminders") as? [Any] {
-                        return array.count
-                    }
-                    if let set = (list as AnyObject).value(forKey: "reminders") as? Set<AnyHashable> {
-                        return set.count
-                    }
-                    // Fallback if no accessible collection is found
-                    return 0
-                }()
-                
+
+                let reminderCount = list.list?.reminders?.count ?? 0
+
                 Text("\(reminderCount) reminders")
                     .font(AppTheme.Typography.caption1)
                     .foregroundColor(AppTheme.Colors.textSecondary)

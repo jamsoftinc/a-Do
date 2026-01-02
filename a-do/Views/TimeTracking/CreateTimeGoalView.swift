@@ -11,7 +11,7 @@ import SwiftData
 struct CreateTimeGoalView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
-    @StateObject private var timeManager = TimeTrackingManager.shared
+    private var timeManager = TimeTrackingManager.shared
     
     @State private var goalName = ""
     @State private var selectedCategory = "Work"

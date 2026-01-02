@@ -1,19 +1,26 @@
-//
-//  ContentView.swift
-//  a-do
-//
-//  Created by Ahmad Hamilton on 8/10/25.
-//
-
 import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    @Query private var profiles: [UserProfile]
+    @State private var showingOnboarding = false
+    
     var body: some View {
-        HomeView()
+        MainTabView()
+            .task {
+                if profiles.isEmpty {
+                    showingOnboarding = true
+                }
+            }
+            .fullScreenCover(isPresented: $showingOnboarding) {
+                OnboardingNameView {
+                    showingOnboarding = false
+                }
+            }
     }
 }
 
 #Preview {
     ContentView()
+        .modelContainer(for: UserProfile.self, inMemory: true)
 }

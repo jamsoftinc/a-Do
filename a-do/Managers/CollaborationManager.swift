@@ -474,20 +474,29 @@ final class CollaborationManager: ObservableObject {
     
     func canUserEdit(_ reminder: Reminder, context: ModelContext) -> Bool {
         guard let userID = currentUserID else { return false }
-        
-        // Check if user is owner
-        if let sharedReminder = getSharedReminder(for: reminder, context: context) {
-            if sharedReminder.ownerID == userID {
-                return true
+
+        // Check if this is a shared reminder
+        let hasSharedReminders = !(reminder.sharedReminders?.isEmpty ?? true)
+
+        if hasSharedReminders {
+            // This is a shared reminder - verify permissions
+            if let sharedReminder = getSharedReminder(for: reminder, context: context) {
+                // User is owner
+                if sharedReminder.ownerID == userID {
+                    return true
+                }
+
+                // Check participant permissions
+                if let participant = sharedReminder.participants?.first(where: { $0.userID == userID }) {
+                    return participant.permission.canEdit && participant.status.isActive
+                }
             }
-            
-            // Check participant permissions
-            if let participant = sharedReminder.participants?.first(where: { $0.userID == userID }) {
-                return participant.permission.canEdit && participant.status.isActive
-            }
+            // Shared reminder exists but user not found in permissions - deny access
+            return false
         }
-        
-        return true // Default to true for non-shared reminders
+
+        // Non-shared (personal) reminder - allow edit
+        return true
     }
     
     // MARK: - Workspace Management

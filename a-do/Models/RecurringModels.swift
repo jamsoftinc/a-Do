@@ -186,7 +186,10 @@ final class RecurrenceRule {
         case .daily, .weekly:
             return interval > 0
         case .monthly:
-            return interval > 0 && (dayOfMonth == nil || (dayOfMonth! >= 1 && dayOfMonth! <= 31))
+            if let day = dayOfMonth {
+                return interval > 0 && day >= 1 && day <= 31
+            }
+            return interval > 0
         case .yearly:
             return interval > 0
         case .weekdays, .weekends:
@@ -216,7 +219,7 @@ final class RecurringReminder {
     
     // Relationships
     @Relationship(deleteRule: .cascade) var recurrenceRule: RecurrenceRule?
-    @Relationship(deleteRule: .cascade) var generatedReminders: [Reminder]? = []
+    @Relationship(deleteRule: .cascade) var generatedReminders: [Reminder]?
     @Relationship(deleteRule: .cascade) var templateNotifications: [ReminderNotification]? = []
     
     init(title: String, details: String? = nil, priority: Priority = .none, recurrenceRule: RecurrenceRule? = nil) {
@@ -263,14 +266,14 @@ final class RecurringReminder {
         )
         
         // Copy template notifications
-        // TODO: Re-enable when notifications relationship is restored
-        // for templateNotification in templateNotifications ?? [] {
-        //     let notification = ReminderNotification(
-        //         leadTimeSeconds: templateNotification.leadTimeSeconds,
-        //         customSoundName: templateNotification.customSoundName
-        //     )
-        //     reminder.notifications?.append(notification)
-        // }
+        // Copy template notifications
+        for templateNotification in templateNotifications ?? [] {
+            let notification = ReminderNotification(
+                leadTimeSeconds: templateNotification.leadTimeSeconds,
+                customSoundName: templateNotification.customSoundName
+            )
+            reminder.notifications?.append(notification)
+        }
         
         generatedReminders?.append(reminder)
         lastGenerated = Date()
@@ -345,14 +348,14 @@ final class ReminderTemplate {
         )
         
         // Copy template notifications
-        // TODO: Re-enable when notifications relationship is restored
-        // for templateNotification in templateNotifications ?? [] {
-        //     let notification = ReminderNotification(
-        //         leadTimeSeconds: templateNotification.leadTimeSeconds,
-        //         customSoundName: templateNotification.customSoundName
-        //     )
-        //     reminder.notifications?.append(notification)
-        // }
+        // Copy template notifications
+        for templateNotification in templateNotifications ?? [] {
+            let notification = ReminderNotification(
+                leadTimeSeconds: templateNotification.leadTimeSeconds,
+                customSoundName: templateNotification.customSoundName
+            )
+            reminder.notifications?.append(notification)
+        }
         
         // Update usage statistics
         usageCount += 1
@@ -364,7 +367,7 @@ final class ReminderTemplate {
     // MARK: - Template Categories
     
     static let defaultCategories = [
-        "Work", "Personal", "Health", "Finance", "Travel", "Shopping", "Learning", "Social"
+        "Work", "Personal", "Health", "Home", "Finance", "Travel", "Shopping", "Learning", "Social"
     ]
     
     static func defaultTemplates() -> [ReminderTemplate] {

@@ -132,16 +132,16 @@ final class ApplePencilProManager {
 
     private func generateThumbnail(from drawing: PKDrawing) -> Data? {
         let scale: CGFloat = 2.0
-        let thumbnailRect = CGRect(x: 0, y: 0, width: 200, height: 200)
+        let thumbnailSize = CGSize(width: 200, height: 200)
         let image = drawing.image(from: drawing.bounds, scale: scale)
 
-        // Resize to thumbnail
-        UIGraphicsBeginImageContextWithOptions(thumbnailRect.size, false, scale)
-        image.draw(in: thumbnailRect)
-        let thumbnail = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
+        // Resize to thumbnail using modern UIGraphicsImageRenderer
+        let renderer = UIGraphicsImageRenderer(size: thumbnailSize)
+        let thumbnail = renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: thumbnailSize))
+        }
 
-        return thumbnail?.pngData()
+        return thumbnail.pngData()
     }
 
     // MARK: - Squeeze Gesture Handling
@@ -170,6 +170,8 @@ final class ApplePencilProManager {
             context.showColorPicker()
         case .toolPicker:
             context.showToolPicker()
+        case .thoughtStream:
+            context.triggerThoughtStream()
         }
     }
 
@@ -237,6 +239,7 @@ enum SqueezeAction: String, CaseIterable {
     case sketch = "sketch"
     case colorPicker = "color_picker"
     case toolPicker = "tool_picker"
+    case thoughtStream = "thought_stream"
 
     var displayName: String {
         switch self {
@@ -245,6 +248,7 @@ enum SqueezeAction: String, CaseIterable {
         case .sketch: return "Open Sketch Pad"
         case .colorPicker: return "Show Color Picker"
         case .toolPicker: return "Show Tool Picker"
+        case .thoughtStream: return "Thought Stream"
         }
     }
 
@@ -255,6 +259,7 @@ enum SqueezeAction: String, CaseIterable {
         case .sketch: return "scribble"
         case .colorPicker: return "paintpalette"
         case .toolPicker: return "pencil.and.ruler"
+        case .thoughtStream: return "brain.head.profile"
         }
     }
 }
@@ -265,6 +270,7 @@ struct SqueezeContext {
     let openSketchPad: () -> Void
     let showColorPicker: () -> Void
     let showToolPicker: () -> Void
+    let triggerThoughtStream: () -> Void
 }
 
 // MARK: - Sketch Model
@@ -274,8 +280,10 @@ final class Sketch {
     var id: UUID = UUID()
     var drawingData: Data
     var thumbnail: Data?
-    var createdAt: Date
+    var createdAt: Date = Date()
     var modifiedAt: Date?
+    
+    @Relationship(deleteRule: .nullify, inverse: \Reminder.sketches) var reminder: Reminder?
 
     init(drawingData: Data, thumbnail: Data?, createdAt: Date) {
         self.drawingData = drawingData

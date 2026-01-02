@@ -3,19 +3,33 @@
 //  a-do
 //
 //  AI-powered suggestions and insights manager
+//  Enhanced with Apple Intelligence Foundation Models integration
+//
+//  Requires: iOS 26+
 //
 
 import Foundation
 import SwiftData
 import Observation
 import os
+import FoundationModels
 
 @MainActor
 @Observable
 final class AIManager {
     static let shared = AIManager()
-    
+
     private let logger = Logger(subsystem: "a-do", category: "AI")
+
+    // Apple Intelligence integration
+    private var foundationModelsManager: FoundationModelsManager {
+        FoundationModelsManager.shared
+    }
+
+    /// Whether Apple Intelligence (Foundation Models) is available
+    var isAppleIntelligenceAvailable: Bool {
+        foundationModelsManager.isAvailable
+    }
 
     // Pro feature check
     var isProEnabled: Bool {
@@ -521,15 +535,30 @@ final class AIManager {
         context.insert(insight)
     }
     
+    // Timer for periodic analysis - must be retained
+    private var analysisTimer: Timer?
+
     // MARK: - Helper Methods
-    
+
     private func setupPeriodicAnalysis() {
         // Set up periodic analysis based on user preferences
-        Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
+        analysisTimer?.invalidate()
+        analysisTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
+            guard self != nil else { return }
             Task { @MainActor in
                 // This would be called with proper context in a real implementation
             }
         }
+    }
+
+    /// Call this method to clean up resources when the manager is no longer needed
+    func cleanup() {
+        analysisTimer?.invalidate()
+        analysisTimer = nil
+        pendingSuggestions.removeAll()
+        recentInsights.removeAll()
+        analyticsCache.removeAll()
+        configuration = nil
     }
     
     private func clearExpiredSuggestions(context: ModelContext) async {
@@ -625,16 +654,25 @@ final class AIManager {
     
     private func analyzeProductivityPatterns(sessions: [FocusSession]) -> ProductivityAnalysis {
         // Analyze when user is most productive
+        guard !sessions.isEmpty else {
+            return ProductivityAnalysis(
+                mostProductiveTime: nil,
+                confidence: 0.0,
+                needsBreaks: false,
+                optimalSessionLength: 25
+            )
+        }
+
         var hourlyProductivity: [Int: Double] = [:]
-        
+
         for session in sessions {
             let hour = Calendar.current.component(.hour, from: session.startTime)
             hourlyProductivity[hour, default: 0] += session.productivityScore
         }
-        
+
         let bestHour = hourlyProductivity.max(by: { $0.value < $1.value })?.key
         let averageSessionLength = sessions.reduce(0) { $0 + $1.actualDuration } / Double(sessions.count)
-        
+
         return ProductivityAnalysis(
             mostProductiveTime: bestHour.map { "\($0):00" },
             confidence: 0.8,
@@ -755,8 +793,8 @@ final class AIManager {
     
     private func calculateProductivityTrend(sessions: [FocusSession]) -> ProductivityTrendAnalysis {
         let recentSessions = sessions.suffix(7) // Last 7 sessions
-        let averageScore = recentSessions.reduce(0) { $0 + $1.productivityScore } / Double(recentSessions.count)
-        
+        let averageScore = recentSessions.isEmpty ? 0.0 : recentSessions.reduce(0) { $0 + $1.productivityScore } / Double(recentSessions.count)
+
         return ProductivityTrendAnalysis(
             summary: "Your average productivity score this week is \(Int(averageScore))/100",
             detailedAnalysis: "Based on your recent focus sessions, you're maintaining a good productivity level.",
@@ -796,12 +834,319 @@ final class AIManager {
     private func analyzeGoalProgress(goals: [FocusGoal]) -> GoalProgressAnalysis {
         let completedGoals = goals.filter { $0.isCompleted }.count
         let totalGoals = goals.count
-        let averageProgress = goals.reduce(0) { $0 + $1.progress } / Double(totalGoals)
-        
+        let averageProgress = totalGoals > 0 ? goals.reduce(0) { $0 + $1.progress } / Double(totalGoals) : 0.0
+
         return GoalProgressAnalysis(
             summary: "\(completedGoals) out of \(totalGoals) goals completed",
             detailedAnalysis: "Your average goal progress is \(Int(averageProgress * 100))%",
             recommendations: ["Focus on goals with low progress", "Set smaller, achievable milestones"]
+        )
+    }
+
+    // MARK: - Apple Intelligence Enhanced Methods
+
+    /// Parse reminder text using Apple Intelligence (Foundation Models)
+    /// Falls back to basic NLP if Apple Intelligence is not available
+    func parseReminderWithAI(_ text: String) async -> AIReminderParseResult? {
+        guard isProEnabled else {
+            logger.warning("AI parsing requires Pro subscription")
+            return nil
+        }
+
+        // Try Apple Intelligence first
+        if isAppleIntelligenceAvailable {
+            if let parsed = await foundationModelsManager.parseReminderText(text) {
+                return AIReminderParseResult(
+                    title: parsed.title,
+                    dueDate: parsed.suggestedDueDate,
+                    priority: parsed.priority,
+                    tags: parsed.tags,
+                    isRecurring: parsed.isRecurring,
+                    recurringPattern: parsed.recurringPattern,
+                    location: parsed.location,
+                    notes: parsed.notes,
+                    confidence: 0.9
+                )
+            }
+        }
+
+        // Fallback to basic NLP
+        let parsed = await NaturalLanguageProcessor.shared.parseReminderText(text)
+
+        var priorityString: String? = nil
+        if parsed.priority != .none {
+            priorityString = parsed.priority.title.lowercased()
+        }
+
+        var dueDateString: String? = nil
+        if let dueDate = parsed.dueDate {
+            let formatter = ISO8601DateFormatter()
+            dueDateString = formatter.string(from: dueDate)
+        }
+
+        return AIReminderParseResult(
+            title: parsed.finalText,
+            dueDate: dueDateString,
+            priority: priorityString,
+            tags: [],
+            isRecurring: false,
+            confidence: 0.7
+        )
+    }
+
+    /// Generate smart task breakdown using Apple Intelligence
+    func generateSmartTaskBreakdown(for reminder: Reminder) async -> AITaskBreakdown? {
+        guard isProEnabled else {
+            logger.warning("Task breakdown requires Pro subscription")
+            return nil
+        }
+
+        // Try Apple Intelligence first
+        if isAppleIntelligenceAvailable {
+            if let breakdown = await foundationModelsManager.generateTaskBreakdown(
+                for: reminder.title,
+                details: reminder.details
+            ) {
+                return AITaskBreakdown(
+                    subtasks: breakdown.subtasks.map { subtask in
+                        AISubtask(
+                            title: subtask.title,
+                            estimatedMinutes: subtask.estimatedMinutes,
+                            order: subtask.order
+                        )
+                    },
+                    estimatedTotalMinutes: breakdown.estimatedTotalMinutes,
+                    complexity: breakdown.complexity,
+                    reasoning: breakdown.reasoning
+                )
+            }
+        }
+
+        // Fallback to heuristic breakdown
+        let heuristicSubtasks = generateTaskBreakdown(reminder: reminder)
+        let complexityScore = analyzeTaskComplexity(reminder: reminder)
+        let complexityString = complexityScore > 0.7 ? "complex" : "moderate"
+        return AITaskBreakdown(
+            subtasks: heuristicSubtasks.enumerated().map { index, title in
+                AISubtask(
+                    title: title,
+                    estimatedMinutes: 15,
+                    order: index + 1
+                )
+            },
+            estimatedTotalMinutes: heuristicSubtasks.count * 15,
+            complexity: complexityString,
+            reasoning: "Based on task analysis"
+        )
+    }
+
+    /// Generate AI-powered productivity insights
+    func generateAIProductivityInsights(context: ModelContext) async -> AIProductivityInsight? {
+        guard isProEnabled else {
+            logger.warning("AI insights require Pro subscription")
+            return nil
+        }
+
+        // Gather data
+        let reminderDescriptor = FetchDescriptor<Reminder>()
+        let reminders = (try? context.fetch(reminderDescriptor)) ?? []
+        let completedCount = reminders.filter { $0.isCompleted }.count
+
+        let sessionDescriptor = FetchDescriptor<FocusSession>()
+        let sessions = (try? context.fetch(sessionDescriptor)) ?? []
+        let focusMinutes = Int(sessions.reduce(0.0) { $0 + $1.actualDuration } / 60.0)
+
+        let habitDescriptor = FetchDescriptor<Habit>(
+            predicate: #Predicate { $0.isActive }
+        )
+        let habits = (try? context.fetch(habitDescriptor)) ?? []
+        let habitRate = habits.isEmpty ? 0.0 : Double(habits.filter { $0.isCompletedToday }.count) / Double(habits.count)
+
+        // Try Apple Intelligence
+        if isAppleIntelligenceAvailable {
+            if let insights = await foundationModelsManager.generateProductivityInsights(
+                completedTasks: completedCount,
+                totalTasks: reminders.count,
+                focusMinutes: focusMinutes,
+                habitCompletionRate: habitRate,
+                topCategories: ["Work", "Personal", "Health"]
+            ) {
+                return AIProductivityInsight(
+                    summary: insights.summary,
+                    keyFindings: insights.keyFindings,
+                    recommendations: insights.recommendations,
+                    productivityScore: insights.productivityScore,
+                    trend: insights.trend
+                )
+            }
+        }
+
+        // Fallback to basic analysis
+        let completionRate = reminders.isEmpty ? 0.0 : Double(completedCount) / Double(reminders.count)
+        let score = Int((completionRate * 0.4 + habitRate * 0.3 + min(Double(focusMinutes) / 120.0, 1.0) * 0.3) * 100)
+
+        let trendString = completionRate > 0.5 ? "improving" : (completionRate > 0.3 ? "stable" : "declining")
+        return AIProductivityInsight(
+            summary: "You've completed \(completedCount) of \(reminders.count) tasks",
+            keyFindings: [
+                "Task completion rate: \(Int(completionRate * 100))%",
+                "Focus time: \(focusMinutes) minutes",
+                "Habit completion: \(Int(habitRate * 100))%"
+            ],
+            recommendations: [
+                "Try to complete at least 3 more tasks today",
+                "Schedule focused work time in the morning"
+            ],
+            productivityScore: score,
+            trend: trendString
+        )
+    }
+
+    /// Get AI-powered habit optimization suggestions
+    func optimizeHabitWithAI(_ habit: Habit) async -> AIHabitOptimization? {
+        guard isProEnabled else {
+            logger.warning("Habit optimization requires Pro subscription")
+            return nil
+        }
+
+        let entries = habit.entries ?? []
+        let completionTimes = entries.prefix(10).compactMap { entry -> String? in
+            let formatter = DateFormatter()
+            formatter.dateFormat = "h:mm a"
+            return formatter.string(from: entry.date)
+        }
+
+        // Try Apple Intelligence
+        if isAppleIntelligenceAvailable {
+            if let optimization = await foundationModelsManager.optimizeHabit(
+                habitTitle: habit.title,
+                currentStreak: habit.currentStreak,
+                completionTimes: Array(completionTimes),
+                relatedHabits: []
+            ) {
+                return AIHabitOptimization(
+                    optimalTime: optimization.optimalTime,
+                    stackingOpportunities: optimization.stackingOpportunities.map { opp in
+                        AIHabitStack(habitName: opp, timing: "after", reasoning: "Based on your patterns")
+                    },
+                    motivationalTips: optimization.motivationalTips,
+                    predictedSuccessRate: optimization.predictedSuccessRate
+                )
+            }
+        }
+
+        // Fallback to basic analysis
+        let timing = analyzeHabitTiming(habit: habit)
+        return AIHabitOptimization(
+            optimalTime: timing.optimalTime,
+            stackingOpportunities: [],
+            motivationalTips: [
+                "Keep your streak going!",
+                "Set a daily reminder for consistency"
+            ],
+            predictedSuccessRate: Int(timing.confidence * 100)
+        )
+    }
+
+    /// Summarize reminders using Apple Intelligence
+    func summarizeRemindersWithAI(_ reminders: [Reminder]) async -> AISummary? {
+        guard isProEnabled else {
+            logger.warning("AI summarization requires Pro subscription")
+            return nil
+        }
+
+        let titles = reminders.map { $0.title }
+
+        // Try Apple Intelligence
+        if isAppleIntelligenceAvailable {
+            if let summary = await foundationModelsManager.summarizeReminders(titles) {
+                return AISummary(
+                    briefSummary: summary.briefSummary,
+                    keyPoints: summary.keyPoints,
+                    actionItems: summary.actionItems,
+                    urgencyLevel: summary.urgencyLevel
+                )
+            }
+        }
+
+        // Fallback to basic summary
+        let overdueCount = reminders.filter { $0.isOverdue }.count
+        let highPriorityCount = reminders.filter { $0.priority == .high }.count
+
+        var urgencyString = "low"
+        if overdueCount > 0 || highPriorityCount > 2 {
+            urgencyString = "high"
+        } else if highPriorityCount > 0 {
+            urgencyString = "medium"
+        }
+
+        return AISummary(
+            briefSummary: "You have \(reminders.count) tasks, \(overdueCount) overdue",
+            keyPoints: [
+                "\(reminders.count) total tasks",
+                "\(overdueCount) overdue",
+                "\(highPriorityCount) high priority"
+            ],
+            actionItems: reminders.prefix(3).map { $0.title },
+            urgencyLevel: urgencyString
+        )
+    }
+
+    /// Get smart scheduling suggestions using Apple Intelligence
+    func getSmartScheduleSuggestions(
+        for reminder: Reminder,
+        existingEvents: [String]
+    ) async -> AISmartSchedule? {
+        guard isProEnabled else {
+            logger.warning("Smart scheduling requires Pro subscription")
+            return nil
+        }
+
+        // Try Apple Intelligence
+        if isAppleIntelligenceAvailable {
+            if let schedule = await foundationModelsManager.suggestSchedule(
+                taskTitle: reminder.title,
+                estimatedMinutes: 30,
+                existingEvents: existingEvents,
+                preferences: ["Prefer morning for focused work"]
+            ) {
+                return AISmartSchedule(
+                    suggestedTimeSlots: schedule.suggestedTimeSlots.map { slot in
+                        AITimeSlot(
+                            startTime: slot.startTime,
+                            endTime: slot.endTime,
+                            confidence: slot.confidence,
+                            reason: slot.reason
+                        )
+                    },
+                    conflictWarnings: schedule.conflictWarnings,
+                    reasoning: schedule.reasoning
+                )
+            }
+        }
+
+        // Fallback to basic suggestion
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+
+        var suggestedTime = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: Date()) ?? Date()
+        if Date() > suggestedTime {
+            suggestedTime = Calendar.current.date(bySettingHour: 14, minute: 0, second: 0, of: Date()) ?? Date()
+        }
+
+        let endTime = suggestedTime.addingTimeInterval(30 * 60)
+
+        return AISmartSchedule(
+            suggestedTimeSlots: [
+                AITimeSlot(
+                    startTime: formatter.string(from: suggestedTime),
+                    endTime: formatter.string(from: endTime),
+                    confidence: 70,
+                    reason: "Based on typical productivity patterns"
+                )
+            ],
+            conflictWarnings: [],
+            reasoning: "Suggested based on general productivity patterns"
         )
     }
 }

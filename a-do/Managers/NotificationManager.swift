@@ -94,4 +94,43 @@ final class NotificationManager {
             UIApplication.shared.open(url)
         }
     }
+
+    // MARK: - Reminder-based Notifications
+
+    /// Schedule a notification for a reminder at a specific date
+    func scheduleNotification(for reminder: Reminder, at date: Date) async {
+        let center = UNUserNotificationCenter.current()
+
+        let content = UNMutableNotificationContent()
+        content.title = "Reminder"
+        content.body = reminder.title
+        content.sound = .default
+        content.categoryIdentifier = "REMEMBER_CATEGORY"
+
+        // Add user info for handling
+        content.userInfo = ["reminderId": reminder.uuid.uuidString]
+
+        let triggerDate = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+
+        let request = UNNotificationRequest(
+            identifier: "reminder_\(reminder.uuid.uuidString)",
+            content: content,
+            trigger: trigger
+        )
+
+        do {
+            try await center.add(request)
+            Logger(subsystem: "a-do", category: "Notifications").info("Scheduled notification for '\(reminder.title)' at \(date)")
+        } catch {
+            Logger(subsystem: "a-do", category: "Notifications").error("Failed to schedule notification: \(error.localizedDescription)")
+        }
+    }
+
+    /// Cancel all notifications for a reminder
+    func cancelNotification(for reminder: Reminder) {
+        let identifiers = ["reminder_\(reminder.uuid.uuidString)"]
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)
+        Logger(subsystem: "a-do", category: "Notifications").info("Cancelled notifications for '\(reminder.title)'")
+    }
 }

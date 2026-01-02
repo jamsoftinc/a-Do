@@ -17,12 +17,18 @@ enum SmartListEngine {
 
     static func reminders(for list: ReminderList, from all: [Reminder]) -> [Reminder] {
         guard list.isSmart else { return list.reminders ?? [] }
+
+        // If no rules defined, return empty (don't show all items)
+        guard !list.rules.isEmpty else { return [] }
+
         var candidates = all
         for rule in list.rules {
             switch rule.type {
             case .dueToday:
                 let start = Calendar.current.startOfDay(for: Date())
-                let end = Calendar.current.date(byAdding: .day, value: 1, to: start)!
+                guard let end = Calendar.current.date(byAdding: .day, value: 1, to: start) else {
+                    continue
+                }
                 candidates = candidates.filter { rem in
                     guard let due = rem.dueDate else { return false }
                     return due >= start && due < end
@@ -37,10 +43,14 @@ enum SmartListEngine {
                 let p = rule.priority ?? .high
                 candidates = candidates.filter { $0.priority == p }
             case .tag:
-                if let tagName = rule.tagName {
-                    // Temporarily disabled - tags relationship commented out
-                    // candidates = candidates.filter { $0.tags?.contains(where: { $0.name == tagName }) == true }
-                    // For now, return all candidates (no tag filtering)
+                if let tagName = rule.tagName, !tagName.isEmpty {
+                    candidates = candidates.filter { reminder in
+                        guard let tags = reminder.tags, !tags.isEmpty else { return false }
+                        return tags.contains(where: { $0.name.lowercased() == tagName.lowercased() })
+                    }
+                } else {
+                    // If no valid tag name, return empty results (don't show all items)
+                    candidates = []
                 }
             }
         }

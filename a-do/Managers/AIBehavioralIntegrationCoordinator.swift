@@ -32,19 +32,30 @@ final class AIBehavioralIntegrationCoordinator {
     var isIntegrationActive: Bool = true
     var lastLearningUpdate: Date = Date.distantPast
     var learningCycleInterval: TimeInterval = 3600 // 1 hour
-    
+
+    // Timer for periodic learning - must be retained to prevent memory leak
+    private var learningTimer: Timer?
+
     private init() {
         setupPeriodicLearning()
     }
-    
+
     // MARK: - Periodic Learning Cycles
-    
+
     private func setupPeriodicLearning() {
-        Timer.scheduledTimer(withTimeInterval: learningCycleInterval, repeats: true) { [weak self] _ in
+        learningTimer?.invalidate()
+        learningTimer = Timer.scheduledTimer(withTimeInterval: learningCycleInterval, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 await self?.runLearningCycle()
             }
         }
+    }
+
+    /// Call this method to clean up resources when the coordinator is no longer needed
+    func cleanup() {
+        learningTimer?.invalidate()
+        learningTimer = nil
+        isIntegrationActive = false
     }
     
     /// Runs a complete learning cycle that improves AI suggestions based on user behavior
@@ -65,28 +76,23 @@ final class AIBehavioralIntegrationCoordinator {
             return
         }
         
-        do {
-            // Step 1: Analyze user behavior patterns
-            let behaviorPatterns = await mlPatternRecognition.analyzeUserBehaviorPatterns(context: context)
-            
-            // Step 2: Generate personalized insights based on patterns
-            let personalizedInsights = await mlPatternRecognition.generatePersonalizedInsights(context: context)
-            
-            // Step 3: Update AI suggestion algorithms with learned patterns
-            await updateAISuggestionAlgorithms(patterns: behaviorPatterns, context: context)
-            
-            // Step 4: Refresh AI suggestions with improved algorithms
-            await aiManager.generateSuggestions(userId: "current-user", context: context)
-            
-            // Step 5: Create insights from behavioral data
-            await generateBehavioralInsights(insights: personalizedInsights, context: context)
-            
-            lastLearningUpdate = Date()
-            logger.info("Completed AI behavioral learning cycle")
-            
-        } catch {
-            logger.error("Error during learning cycle: \(error.localizedDescription)")
-        }
+        // Step 1: Analyze user behavior patterns
+        let behaviorPatterns = await mlPatternRecognition.analyzeUserBehaviorPatterns(context: context)
+
+        // Step 2: Generate personalized insights based on patterns
+        let personalizedInsights = await mlPatternRecognition.generatePersonalizedInsights(context: context)
+
+        // Step 3: Update AI suggestion algorithms with learned patterns
+        await updateAISuggestionAlgorithms(patterns: behaviorPatterns, context: context)
+
+        // Step 4: Refresh AI suggestions with improved algorithms
+        await aiManager.generateSuggestions(userId: "current-user", context: context)
+
+        // Step 5: Create insights from behavioral data
+        await generateBehavioralInsights(insights: personalizedInsights, context: context)
+
+        lastLearningUpdate = Date()
+        logger.info("Completed AI behavioral learning cycle")
     }
     
     // MARK: - AI Algorithm Updates
@@ -154,56 +160,45 @@ final class AIBehavioralIntegrationCoordinator {
     private func updateProductivitySuggestionTiming(peakHours: [Int], context: ModelContext) async {
         // Update AI configuration for productivity suggestions
         let config = await getOrCreateAIConfiguration(context: context)
-        
+
         // Store peak hours for future productivity suggestions
-        let peakHoursData = peakHours.map { String($0) }.joined(separator: ",")
         // In a real implementation, extend AIConfiguration with parameters dictionary
+        _ = peakHours.map { String($0) }.joined(separator: ",")
         config.lastUpdated = Date()
-        
+
         logger.info("Updated productivity peak hours: \(peakHours)")
     }
-    
+
     private func updateHabitSuggestionWeights(successFactors: [String: Double], context: ModelContext) async {
         let config = await getOrCreateAIConfiguration(context: context)
-        
+
         // Update habit suggestion weights based on success factors
-        for (factor, weight) in successFactors {
-            // In a real implementation, extend AIConfiguration with parameters dictionary
-            // config.setParameter(key: "habit_weight_\(factor)", value: String(weight))
-        }
-        
+        // In a real implementation, extend AIConfiguration with parameters dictionary
+        _ = successFactors // Acknowledge parameter for future implementation
+        config.lastUpdated = Date()
+
         logger.info("Updated habit suggestion weights for \(successFactors.count) factors")
     }
-    
+
     private func updateTaskSchedulingSuggestions(patterns: [String: Any], context: ModelContext) async {
         let config = await getOrCreateAIConfiguration(context: context)
-        
+
         // Extract timing preferences from patterns
-        if let timePreferences = patterns["preferred_completion_times"] as? [String: Double] {
-            for (timeSlot, preference) in timePreferences {
-                // In a real implementation, extend AIConfiguration with parameters dictionary
-                // config.setParameter(key: "task_timing_\(timeSlot)", value: String(preference))
-            }
-        }
-        
+        // In a real implementation, extend AIConfiguration with parameters dictionary
+        _ = patterns["preferred_completion_times"] // Acknowledge for future implementation
+        config.lastUpdated = Date()
+
         logger.info("Updated task scheduling suggestions based on completion patterns")
     }
-    
+
     private func updateFocusSessionRecommendations(factors: [String: Double], context: ModelContext) async {
         let config = await getOrCreateAIConfiguration(context: context)
-        
+
         // Update focus session parameters based on effectiveness factors
-        for (factor, effectiveness) in factors {
-            // In a real implementation, extend AIConfiguration with parameters dictionary
-            // config.setParameter(key: "focus_effectiveness_\(factor)", value: String(effectiveness))
-        }
-        
-        // Update optimal session length recommendation
-        if let optimalLength = factors["optimal_session_length"] {
-            // In a real implementation, extend AIConfiguration with parameters dictionary
-            // config.setParameter(key: "optimal_focus_duration", value: String(optimalLength))
-        }
-        
+        // In a real implementation, extend AIConfiguration with parameters dictionary
+        _ = factors // Acknowledge parameter for future implementation
+        config.lastUpdated = Date()
+
         logger.info("Updated focus session recommendations based on effectiveness factors")
     }
     

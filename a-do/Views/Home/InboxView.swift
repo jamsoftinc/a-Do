@@ -120,6 +120,10 @@ struct InboxView: View {
                     List {
                         ForEach(filteredReminders) { reminder in
                             InboxReminderRowView(reminder: reminder)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    selectedReminder = reminder
+                                }
                                 .swipeActions(edge: .trailing) {
                                     Button("Complete") {
                                         completeReminder(reminder)
@@ -174,6 +178,12 @@ struct InboxView: View {
         .refreshable {
             await loadReminders()
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ReminderCreated"))) { _ in
+            // Refresh reminders when a new one is created
+            Task {
+                await loadReminders()
+            }
+        }
     }
     
     private var filteredReminders: [Reminder] {
@@ -223,19 +233,21 @@ struct InboxView: View {
             }
         }
         
-        let reminders = await Task.detached {
-            let backgroundContext = ModelContext(self.context.container)
-            
-            let descriptor = FetchDescriptor<Reminder>(
-                predicate: #Predicate<Reminder> { !$0.isCompleted },
-                sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
-            )
-            
-            return (try? backgroundContext.fetch(descriptor)) ?? []
-        }.value
+        let reminderIDs = await MemorySafeDataLoader.loadReminders(
+            context: context,
+            limit: 500, // Higher limit for inbox
+            predicate: #Predicate<Reminder> { !$0.isCompleted }
+        )
         
         await MainActor.run {
-            self.allReminders = reminders
+            // Fetch objects on the main context using IDs
+            var loadedReminders: [Reminder] = []
+            for id in reminderIDs {
+                if let reminder = context.model(for: id) as? Reminder {
+                    loadedReminders.append(reminder)
+                }
+            }
+            self.allReminders = loadedReminders
         }
     }
     

@@ -20,22 +20,40 @@ struct SecurityUtils {
     /// - Returns: Sanitized string or nil if invalid
     static func sanitizeTextInput(_ input: String?) -> String? {
         guard let input = input else { return nil }
-        
+
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
         // Check for empty input
         guard !trimmed.isEmpty else { return nil }
-        
+
         // Check for reasonable length limits
         guard trimmed.count <= 10000 else { return nil }
-        
-        // Remove potentially dangerous characters
-        let sanitized = trimmed
-            .replacingOccurrences(of: "<script", with: "", options: .caseInsensitive)
-            .replacingOccurrences(of: "javascript:", with: "", options: .caseInsensitive)
-            .replacingOccurrences(of: "data:", with: "", options: .caseInsensitive)
-            .replacingOccurrences(of: "vbscript:", with: "", options: .caseInsensitive)
-        
+
+        // Dangerous patterns to remove
+        let dangerousPatterns = [
+            "<script", "</script", "javascript:", "data:", "vbscript:",
+            "onclick", "onerror", "onload", "onmouseover", "onfocus"
+        ]
+
+        // Iteratively sanitize to prevent bypass (e.g., "<scr<scriptipt>" -> "<script>")
+        var sanitized = trimmed
+        var previousSanitized = ""
+        var iterations = 0
+        let maxIterations = 10 // Prevent infinite loops
+
+        while sanitized != previousSanitized && iterations < maxIterations {
+            previousSanitized = sanitized
+            for pattern in dangerousPatterns {
+                sanitized = sanitized.replacingOccurrences(of: pattern, with: "", options: .caseInsensitive)
+            }
+            iterations += 1
+        }
+
+        // Encode remaining angle brackets to prevent HTML injection
+        sanitized = sanitized
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+
         return sanitized
     }
     
@@ -143,28 +161,43 @@ struct SecurityUtils {
     }
     
     // MARK: - Secure Random Generation
-    
-    /// Generates a cryptographically secure random string
+
+    /// Generates a cryptographically secure random string using SecRandomCopyBytes
     /// - Parameter length: Length of the random string
-    /// - Returns: Secure random string
+    /// - Returns: Secure random string, or fallback if secure generation fails
     static func generateSecureRandomString(length: Int = 32) -> String {
-        let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+        let characters = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
         var result = ""
-        
-        for _ in 0..<length {
-            let randomIndex = Int.random(in: 0..<characters.count)
-            let character = characters[characters.index(characters.startIndex, offsetBy: randomIndex)]
-            result.append(character)
+
+        // Use SecRandomCopyBytes for cryptographically secure random bytes
+        var randomBytes = [UInt8](repeating: 0, count: length)
+        let status = SecRandomCopyBytes(kSecRandomDefault, length, &randomBytes)
+
+        if status == errSecSuccess {
+            // Use secure random bytes to select characters
+            for byte in randomBytes {
+                let index = Int(byte) % characters.count
+                result.append(characters[index])
+            }
+        } else {
+            // Fallback with warning - should not happen in normal conditions
+            assertionFailure("SecRandomCopyBytes failed with status: \(status)")
+            // Use SystemRandomNumberGenerator as backup (still reasonably secure for most uses)
+            var rng = SystemRandomNumberGenerator()
+            for _ in 0..<length {
+                let randomIndex = Int.random(in: 0..<characters.count, using: &rng)
+                result.append(characters[randomIndex])
+            }
         }
-        
+
         return result
     }
     
     // MARK: - Rate Limiting
-    
+
     private static var rateLimitStore: [String: (count: Int, lastReset: Date)] = [:]
     private static let rateLimitQueue = DispatchQueue(label: "rate-limit", attributes: .concurrent)
-    
+
     /// Checks if an operation is within rate limits
     /// - Parameters:
     ///   - key: Unique key for the operation
@@ -172,21 +205,22 @@ struct SecurityUtils {
     ///   - timeWindow: Time window in seconds
     /// - Returns: True if within rate limits
     static func isWithinRateLimit(key: String, maxAttempts: Int = 10, timeWindow: TimeInterval = 60) -> Bool {
-        return rateLimitQueue.sync {
+        // Use barrier flag for exclusive write access on concurrent queue
+        return rateLimitQueue.sync(flags: .barrier) {
             let now = Date()
-            
+
             if let existing = rateLimitStore[key] {
                 // Reset counter if time window has passed
                 if now.timeIntervalSince(existing.lastReset) > timeWindow {
                     rateLimitStore[key] = (count: 1, lastReset: now)
                     return true
                 }
-                
+
                 // Check if within limits
                 if existing.count >= maxAttempts {
                     return false
                 }
-                
+
                 // Increment counter
                 rateLimitStore[key] = (count: existing.count + 1, lastReset: existing.lastReset)
                 return true

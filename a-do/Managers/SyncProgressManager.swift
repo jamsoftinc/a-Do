@@ -59,7 +59,7 @@ final class SyncProgressManager {
     
     func completeOperation(_ operation: String) {
         completedOperations += 1
-        syncProgress = Double(self.completedOperations) / Double(self.totalOperations)
+        syncProgress = totalOperations > 0 ? Double(self.completedOperations) / Double(self.totalOperations) : 1.0
         currentSyncOperation = operation
         logger.info("Completed operation: \(operation) (\(self.completedOperations)/\(self.totalOperations))")
     }

@@ -145,14 +145,16 @@ final class AIDataService {
     func getProductivityTrendData(context: ModelContext, days: Int = 7) -> [ProductivityDataPoint] {
         let calendar = Calendar.current
         let endDate = Date()
-        let startDate = calendar.date(byAdding: .day, value: -days, to: endDate)!
-        
+        guard let startDate = calendar.date(byAdding: .day, value: -days, to: endDate) else {
+            return []
+        }
+
         var dataPoints: [ProductivityDataPoint] = []
-        
+
         for i in 0..<days {
-            let date = calendar.date(byAdding: .day, value: i, to: startDate)!
+            guard let date = calendar.date(byAdding: .day, value: i, to: startDate) else { continue }
             let dayStart = calendar.startOfDay(for: date)
-            let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart)!
+            guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else { continue }
             
             // Get focus sessions for this day
             let focusDescriptor = FetchDescriptor<FocusSession>(
@@ -233,13 +235,13 @@ final class AIDataService {
         case .day:
             startDate = calendar.startOfDay(for: endDate)
         case .week:
-            startDate = calendar.date(byAdding: .day, value: -7, to: endDate)!
+            startDate = calendar.date(byAdding: .day, value: -7, to: endDate) ?? endDate
         case .month:
-            startDate = calendar.date(byAdding: .month, value: -1, to: endDate)!
+            startDate = calendar.date(byAdding: .month, value: -1, to: endDate) ?? endDate
         case .quarter:
-            startDate = calendar.date(byAdding: .month, value: -3, to: endDate)!
+            startDate = calendar.date(byAdding: .month, value: -3, to: endDate) ?? endDate
         case .year:
-            startDate = calendar.date(byAdding: .year, value: -1, to: endDate)!
+            startDate = calendar.date(byAdding: .year, value: -1, to: endDate) ?? endDate
         }
         
         return (start: startDate, end: endDate)
@@ -379,7 +381,9 @@ final class AIDataService {
     private func calculateHabitCompletionRate(habit: Habit, days: Int) -> Double {
         let calendar = Calendar.current
         let endDate = Date()
-        let startDate = calendar.date(byAdding: .day, value: -days, to: endDate)!
+        guard let startDate = calendar.date(byAdding: .day, value: -days, to: endDate) else {
+            return 0.0
+        }
         
         let recentEntries = habit.entries?.filter { entry in
             entry.date >= startDate && entry.date <= endDate

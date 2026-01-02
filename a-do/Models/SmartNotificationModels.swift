@@ -19,8 +19,8 @@ final class SmartNotificationConfiguration {
     var contextAwareEnabled: Bool = true
     var intelligentGroupingEnabled: Bool = true
     var quietHoursEnabled: Bool = true
-    var quietHoursStart: Date = Calendar.current.date(from: DateComponents(hour: 22, minute: 0))!
-    var quietHoursEnd: Date = Calendar.current.date(from: DateComponents(hour: 8, minute: 0))!
+    var quietHoursStart: Date = Calendar.current.date(from: DateComponents(hour: 22, minute: 0)) ?? Date()
+    var quietHoursEnd: Date = Calendar.current.date(from: DateComponents(hour: 8, minute: 0)) ?? Date()
     var weekendQuietHours: Bool = false
     var locationBasedEnabled: Bool = true
     var activityBasedEnabled: Bool = true
@@ -162,9 +162,9 @@ final class SmartNotification {
     var socialContext: String?
     
     // Relationships
-    @Relationship(deleteRule: .nullify) var reminder: Reminder?
-    @Relationship(deleteRule: .nullify) var habit: Habit?
-    @Relationship(deleteRule: .nullify) var focusSession: FocusSession?
+    @Relationship(deleteRule: .nullify, inverse: \Reminder.smartNotifications) var reminder: Reminder?
+    @Relationship(deleteRule: .nullify, inverse: \Habit.smartNotifications) var habit: Habit?
+    @Relationship(deleteRule: .nullify, inverse: \FocusSession.smartNotifications) var focusSession: FocusSession?
     @Relationship(deleteRule: .nullify) var notificationBatch: NotificationBatch?
     
     init(

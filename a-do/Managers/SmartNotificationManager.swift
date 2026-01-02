@@ -38,19 +38,27 @@ final class SmartNotificationManager: NSObject {
     private var patterns: [NotificationPattern] = []
     private var analytics: [NotificationAnalytics] = []
     
-    // Timers
-    nonisolated(unsafe) private var processingTimer: Timer?
-    nonisolated(unsafe) private var analyticsTimer: Timer?
-    
+    // Timers - managed on MainActor, cleanup called before deallocation
+    private var processingTimer: Timer?
+    private var analyticsTimer: Timer?
+
     override init() {
         super.init()
         setupNotificationCenter()
         setupPeriodicProcessing()
     }
-    
-    nonisolated deinit {
+
+    /// Call this method to clean up resources before the manager is deallocated
+    func cleanup() {
         processingTimer?.invalidate()
+        processingTimer = nil
         analyticsTimer?.invalidate()
+        analyticsTimer = nil
+        pendingNotifications.removeAll()
+        deliveryQueue.removeAll()
+        patterns.removeAll()
+        analytics.removeAll()
+        configuration = nil
     }
     
     // MARK: - Configuration Management
@@ -471,23 +479,104 @@ final class SmartNotificationManager: NSObject {
             },
             sortBy: [SortDescriptor(\.engagementRate, order: .reverse)]
         )
-        
+
         let patterns = (try? modelContext.fetch(descriptor)) ?? []
-        
-        // Find the best time pattern
+
+        // Find the best time pattern from learned data
         if let bestPattern = patterns.first {
-            // Parse time from context value (e.g., "09:30")
             let components = bestPattern.contextValue.split(separator: ":")
             if components.count == 2,
                let hour = Int(components[0]),
                let minute = Int(components[1]) {
-                
                 let calendar = Calendar.current
                 return calendar.date(from: DateComponents(hour: hour, minute: minute))
             }
         }
-        
-        return nil
+
+        // Fallback: Use smart defaults based on notification type and context
+        return getDefaultOptimalTime(for: type, context: context)
+    }
+
+    /// Get smart default optimal time based on notification type and context
+    private func getDefaultOptimalTime(for type: SmartNotificationType, context: NotificationContext) -> Date? {
+        let calendar = Calendar.current
+        var hour: Int
+        var minute: Int = 0
+
+        // Determine optimal hour based on notification type
+        switch type {
+        case .reminder:
+            // Reminders: Morning (9 AM) or afternoon (2 PM) based on context
+            hour = context == .work ? 9 : 14
+        case .habitReminder:
+            // Habits: Early morning for morning routines, evening for daily habits
+            hour = 7
+        case .focusStart:
+            // Focus sessions: Start of work hours
+            hour = 9
+        case .focusBreak:
+            // Focus breaks: After typical focus duration
+            hour = 11
+        case .achievement:
+            // Achievements: Evening when user is relaxed
+            hour = 18
+        case .streak:
+            // Streak reminders: Evening to remind before day ends
+            hour = 20
+        case .aiSuggestion:
+            // AI suggestions: Mid-morning when user is active
+            hour = 10
+        case .backup, .sync:
+            // System notifications: Early morning or late night
+            hour = 6
+        case .workloadWarning:
+            // Workload warnings: During work hours
+            hour = 14
+        case .goalProgress:
+            // Goal progress: Evening to reflect on day
+            hour = 19
+        case .healthMetric:
+            // Health metrics: Morning for awareness
+            hour = 8
+        case .collaboration:
+            // Collaboration: During work hours
+            hour = 10
+        case .deadline:
+            // Deadline reminders: Morning of due day
+            hour = 9
+        case .locationArrival, .locationDeparture:
+            // Location-based: As triggered
+            hour = Calendar.current.component(.hour, from: Date())
+        case .timeBlocking:
+            // Time blocking: Before block starts
+            hour = 9
+        }
+
+        // Adjust based on context
+        switch context {
+        case .work:
+            // Keep within work hours (9 AM - 5 PM)
+            hour = min(max(hour, 9), 17)
+        case .personal:
+            // Avoid early morning and late night
+            hour = min(max(hour, 8), 21)
+        case .health:
+            // Health reminders often better in morning
+            hour = min(hour, 10)
+        case .meeting:
+            // Meeting notifications during work hours
+            hour = min(max(hour, 9), 17)
+        case .commute:
+            // Commute notifications in morning or evening
+            hour = hour < 12 ? 7 : 18
+        default:
+            break
+        }
+
+        // Avoid exact hour times - add some minutes for natural feel
+        minute = [0, 15, 30, 45].randomElement() ?? 0
+
+        return calendar.date(from: DateComponents(hour: hour, minute: minute))
     }
     
     private func applyLocationContext(notification: SmartNotification) async {
@@ -828,7 +917,7 @@ extension SmartNotificationManager: UNUserNotificationCenterDelegate {
         }
         
         let engagement: NotificationEngagement
-        let responseTime = Date().timeIntervalSince(response.notification.date)
+        _ = Date().timeIntervalSince(response.notification.date) // Response time for future analytics
         
         switch response.actionIdentifier {
         case "COMPLETE_ACTION":

@@ -32,20 +32,27 @@ final class FocusModeManager {
     var currentBreak: FocusBreak?
     
     // Timer management
-    nonisolated(unsafe) private var sessionTimer: Timer?
-    nonisolated(unsafe) private var breakTimer: Timer?
-    
+    // Timer is managed on MainActor - cleanup called before deallocation
+    private var sessionTimer: Timer?
+    private var breakTimer: Timer?
+
     // Statistics
     var todaysFocusTime: TimeInterval = 0
     var todaysSessionCount: Int = 0
     var currentStreak: Int = 0
-    
+
     private init() {
         setupNotificationHandling()
     }
-    
-    nonisolated deinit {
-        stopAllTimers()
+
+    /// Call this method to clean up resources before the manager is deallocated
+    func cleanup() {
+        stopSessionTimer()
+        stopBreakTimer()
+        currentSession = nil
+        currentBreak = nil
+        isSessionActive = false
+        isOnBreak = false
     }
     
     // MARK: - Session Management
@@ -259,30 +266,31 @@ final class FocusModeManager {
     
     private func startSessionTimer() {
         stopSessionTimer()
-        
+
         sessionTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.updateSessionTimer()
             }
         }
     }
-    
+
     private func stopSessionTimer() {
         sessionTimer?.invalidate()
         sessionTimer = nil
     }
-    
+
     private func startBreakTimer(duration: TimeInterval) {
         stopBreakTimer()
-        
+
         var remainingTime = duration
-        
+
         breakTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
-            Task { @MainActor in
-                remainingTime -= 1
-                
-                if remainingTime <= 0 {
-                    timer.invalidate()
+            remainingTime -= 1
+
+            if remainingTime <= 0 {
+                timer.invalidate()
+                Task { @MainActor [weak self] in
+                    self?.stopBreakTimer()
                     self?.breakTimerExpired()
                 }
             }
@@ -293,7 +301,7 @@ final class FocusModeManager {
         breakTimer?.invalidate()
         breakTimer = nil
     }
-    
+
     private func updateSessionTimer() {
         guard let session = currentSession, session.isActive else { return }
         
@@ -321,18 +329,11 @@ final class FocusModeManager {
     
     private func breakTimerExpired() {
         logger.info("Break timer expired")
-        
+
         // Send break completion notification
         sendBreakCompletionNotification()
     }
-    
-    nonisolated private func stopAllTimers() {
-        sessionTimer?.invalidate()
-        sessionTimer = nil
-        breakTimer?.invalidate()
-        breakTimer = nil
-    }
-    
+
     // MARK: - Reminder Integration
     
     func selectRemindersForSession(template: FocusTemplate, context: ModelContext) -> [Reminder] {
@@ -450,7 +451,10 @@ final class FocusModeManager {
     func getFocusStatistics(context: ModelContext, days: Int = 30) -> FocusStatistics {
         let calendar = Calendar.current
         let endDate = Date()
-        let startDate = calendar.date(byAdding: .day, value: -days, to: endDate)!
+        guard let startDate = calendar.date(byAdding: .day, value: -days, to: endDate) else {
+            logger.error("Failed to calculate start date for focus statistics")
+            return FocusStatistics.empty
+        }
         
         let descriptor = FetchDescriptor<FocusSession>(
             predicate: #Predicate { session in
@@ -524,7 +528,10 @@ final class FocusModeManager {
         
         while let sessionsForDate = sessionsByDate[currentDate], !sessionsForDate.isEmpty {
             streak += 1
-            currentDate = calendar.date(byAdding: .day, value: -1, to: currentDate)!
+            guard let previousDate = calendar.date(byAdding: .day, value: -1, to: currentDate) else {
+                break
+            }
+            currentDate = previousDate
         }
         
         return streak

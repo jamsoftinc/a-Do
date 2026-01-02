@@ -498,7 +498,9 @@ final class AIModelPerformance {
         self.accuracy = accuracy
         self.precision = precision
         self.recall = recall
-        self.f1Score = 2 * (precision * recall) / (precision + recall)
+        // Guard against division by zero in F1 score calculation
+        let denominator = precision + recall
+        self.f1Score = denominator > 0 ? 2 * (precision * recall) / denominator : 0.0
         self.userSatisfactionScore = userSatisfactionScore
         self.totalPredictions = totalPredictions
         self.correctPredictions = correctPredictions

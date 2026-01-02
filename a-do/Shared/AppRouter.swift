@@ -29,6 +29,7 @@ enum DeepLinkDestination: Identifiable, Equatable {
     }
 }
 
+@MainActor
 @Observable
 final class AppRouter {
     var destination: DeepLinkDestination?

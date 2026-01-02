@@ -209,7 +209,9 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         geocodingTask = nil
 
         // Stop monitoring all regions
-        for region in manager.monitoredRegions {
+        // Create a copy of the set to avoid mutating while iterating
+        let regionsToStop = Array(manager.monitoredRegions)
+        for region in regionsToStop {
             manager.stopMonitoring(for: region)
         }
     }

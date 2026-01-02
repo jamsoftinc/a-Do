@@ -9,7 +9,7 @@ extension UserDefaults {
     /// - Returns: UserDefaults instance, falling back to standard if app group is inaccessible
     static func safeAppGroup(suiteName: String) -> UserDefaults {
         // Check if this is our app group
-        if suiteName == "group.JAMSoft.a-do" {
+        if suiteName == "group.com.ado.app" {
             return AppGroupDefaults.shared.defaults
         }
         
@@ -19,7 +19,7 @@ extension UserDefaults {
     
     /// Override the standard suiteName initializer to catch app group access
     convenience init?(safeSuiteName suiteName: String) {
-        if suiteName == "group.JAMSoft.a-do" {
+        if suiteName == "group.com.ado.app" {
             // Use our safe implementation
             self.init(suiteName: "standard") // This will be overridden
             // We can't actually override the suiteName, but we can ensure safe access

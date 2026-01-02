@@ -438,12 +438,16 @@ final class BehavioralLearningManager {
         logger.info("Generated \(insights.count) learning insights")
     }
     
+    // Timer for periodic processing - must be retained
+    private var processingTimer: Timer?
+
     // MARK: - Utility Methods
-    
+
     private func setupPeriodicProcessing() {
-        Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                guard let self = self else { return }
+        processingTimer?.invalidate()
+        processingTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
                 // Process any remaining actions in buffer
                 if !self.actionBuffer.isEmpty {
                     // Would need context here in real implementation
@@ -451,6 +455,14 @@ final class BehavioralLearningManager {
                 }
             }
         }
+    }
+
+    /// Call this method to clean up resources when the manager is no longer needed
+    func cleanup() {
+        processingTimer?.invalidate()
+        processingTimer = nil
+        actionBuffer.removeAll()
+        feedbackBuffer.removeAll()
     }
     
     private func getCurrentUserId() -> String {

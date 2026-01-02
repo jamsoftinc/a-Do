@@ -41,7 +41,6 @@ final class UserProfile {
     @Relationship(deleteRule: .cascade) var badges: [UserBadge]? = []
     @Relationship(deleteRule: .cascade) var challenges: [UserChallenge]? = []
     @Relationship(deleteRule: .cascade) var rewards: [UserReward]? = []
-    @Relationship(deleteRule: .cascade) var leaderboardEntries: [LeaderboardEntry]? = []
     
     init(userId: String, displayName: String) {
         self.userId = userId
@@ -526,7 +525,7 @@ final class Badge {
     var awardedCount: Int = 0
     
     // Relationships
-    @Relationship(deleteRule: .cascade, inverse: \UserBadge.badge) var userBadges: [UserBadge]? = []
+    @Relationship(deleteRule: .cascade, inverse: \UserBadge.badge) var userBadges: [UserBadge]?
     
     
     init(name: String, description: String, category: BadgeCategory, rarity: BadgeRarity = .common) {
@@ -636,7 +635,7 @@ final class Challenge {
     var createdAt: Date = Date()
     
     // Relationships
-    @Relationship(deleteRule: .cascade, inverse: \UserChallenge.challenge) var userChallenges: [UserChallenge]? = []
+    @Relationship(deleteRule: .cascade, inverse: \UserChallenge.challenge) var userChallenges: [UserChallenge]?
     
     
     init(
@@ -1001,142 +1000,3 @@ final class UserReward {
     }
 }
 
-// MARK: - Leaderboard
-@Model
-final class Leaderboard {
-    var id: UUID = UUID()
-    var name: String = ""
-    var leaderboardDescription: String = ""
-    var typeRaw: String = LeaderboardType.experience.rawValue
-    var periodRaw: String = LeaderboardPeriod.weekly.rawValue
-    
-    var type: LeaderboardType {
-        get { LeaderboardType(rawValue: typeRaw) ?? .experience }
-        set { typeRaw = newValue.rawValue }
-    }
-    
-    var period: LeaderboardPeriod {
-        get { LeaderboardPeriod(rawValue: periodRaw) ?? .weekly }
-        set { periodRaw = newValue.rawValue }
-    }
-    var isActive: Bool = true
-    var startDate: Date = Date()
-    var endDate: Date = Date()
-    var participantCount: Int = 0
-    var createdAt: Date = Date()
-    
-    @Relationship(deleteRule: .cascade) var entries: [LeaderboardEntry]? = []
-    
-    init(name: String, type: LeaderboardType, period: LeaderboardPeriod) {
-        self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.typeRaw = type.rawValue
-        self.periodRaw = period.rawValue
-        self.createdAt = Date()
-        
-        // Set end date based on period
-        let calendar = Calendar.current
-        switch period {
-        case .daily:
-            endDate = calendar.date(byAdding: .day, value: 1, to: startDate) ?? startDate
-        case .weekly:
-            endDate = calendar.date(byAdding: .weekOfYear, value: 1, to: startDate) ?? startDate
-        case .monthly:
-            endDate = calendar.date(byAdding: .month, value: 1, to: startDate) ?? startDate
-        case .allTime:
-            endDate = calendar.date(byAdding: .year, value: 100, to: startDate) ?? startDate
-        }
-    }
-    
-    var isExpired: Bool {
-        return Date() > endDate && period != .allTime
-    }
-    
-    func addEntry(_ entry: LeaderboardEntry) {
-        entries?.append(entry)
-        participantCount = entries?.count ?? 0
-        
-        // Sort entries by score
-        entries?.sort { $0.score > $1.score }
-        
-        // Update ranks
-        for (index, entry) in (entries ?? []).enumerated() {
-            entry.rank = index + 1
-        }
-    }
-}
-
-// MARK: - Leaderboard Enums
-
-enum LeaderboardType: String, CaseIterable, Codable {
-    case experience = "experience"
-    case streaks = "streaks"
-    case reminders = "reminders"
-    case habits = "habits"
-    case focusTime = "focus_time"
-    case achievements = "achievements"
-    
-    var displayName: String {
-        switch self {
-        case .experience: return "Experience"
-        case .streaks: return "Streaks"
-        case .reminders: return "Reminders Completed"
-        case .habits: return "Habits Completed"
-        case .focusTime: return "Focus Time"
-        case .achievements: return "Achievements"
-        }
-    }
-}
-
-enum LeaderboardPeriod: String, CaseIterable, Codable {
-    case daily = "daily"
-    case weekly = "weekly"
-    case monthly = "monthly"
-    case allTime = "all_time"
-    
-    var displayName: String {
-        switch self {
-        case .daily: return "Daily"
-        case .weekly: return "Weekly"
-        case .monthly: return "Monthly"
-        case .allTime: return "All Time"
-        }
-    }
-}
-
-// MARK: - Leaderboard Entry
-@Model
-final class LeaderboardEntry {
-    var id: UUID = UUID()
-    var userId: String = ""
-    var displayName: String = ""
-    var score: Int = 0
-    var rank: Int = 0
-    var previousRank: Int = 0
-    var lastUpdated: Date = Date()
-    
-    @Relationship(inverse: \Leaderboard.entries) var leaderboard: Leaderboard?
-    @Relationship(deleteRule: .nullify) var userProfile: UserProfile?
-    
-    
-    init(userId: String, displayName: String, score: Int, leaderboard: Leaderboard) {
-        self.userId = userId
-        self.displayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.score = score
-        self.leaderboard = leaderboard
-        self.lastUpdated = Date()
-    }
-    
-    func updateScore(_ newScore: Int) {
-        previousRank = rank
-        score = newScore
-        lastUpdated = Date()
-    }
-    
-    var rankChange: Int {
-        return previousRank - rank
-    }
-    
-    var isRankImproved: Bool {
-        return rankChange > 0
-    }
-}

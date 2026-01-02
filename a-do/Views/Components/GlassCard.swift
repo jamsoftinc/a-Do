@@ -19,13 +19,15 @@ struct GlassCard<Content: View>: View {
     var body: some View {
         content
             .padding(adaptivePadding)
-            .background(AppTheme.Gradients.card, in: RoundedRectangle(cornerRadius: adaptiveCornerRadius, style: .continuous))
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: adaptiveCornerRadius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: adaptiveCornerRadius, style: .continuous)
-                    .strokeBorder(AppTheme.Colors.primary.opacity(0.1), lineWidth: 1)
+                    .strokeBorder(LinearGradient(
+                        colors: [.white.opacity(0.5), .white.opacity(0.1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ), lineWidth: 1)
             )
-            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
+            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
     }
 }
-
-

@@ -79,35 +79,55 @@ final class HealthKitManager {
             return false
         }
         
-        let typesToRead: Set<HKObjectType> = [
-            HKQuantityType.quantityType(forIdentifier: .stepCount)!,
-            HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!,
-            HKQuantityType.quantityType(forIdentifier: .flightsClimbed)!,
-            HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!,
-            HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned)!,
-            HKQuantityType.quantityType(forIdentifier: .heartRate)!,
-            HKQuantityType.quantityType(forIdentifier: .bloodPressureSystolic)!,
-            HKQuantityType.quantityType(forIdentifier: .bloodPressureDiastolic)!,
-            HKQuantityType.quantityType(forIdentifier: .bodyMass)!,
-            HKQuantityType.quantityType(forIdentifier: .bodyMassIndex)!,
-            HKQuantityType.quantityType(forIdentifier: .dietaryWater)!,
-            HKObjectType.workoutType(),
-            HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!,
-            HKObjectType.categoryType(forIdentifier: .mindfulSession)!
+        // Build typesToRead set safely without force unwraps
+        var typesToRead: Set<HKObjectType> = [HKObjectType.workoutType()]
+
+        // Add quantity types safely
+        let quantityIdentifiersToRead: [HKQuantityTypeIdentifier] = [
+            .stepCount, .distanceWalkingRunning, .flightsClimbed,
+            .activeEnergyBurned, .basalEnergyBurned, .heartRate,
+            .bloodPressureSystolic, .bloodPressureDiastolic,
+            .bodyMass, .bodyMassIndex, .dietaryWater
         ]
-        
-        let typesToWrite: Set<HKSampleType> = [
-            HKQuantityType.quantityType(forIdentifier: .stepCount)!,
-            HKQuantityType.quantityType(forIdentifier: .dietaryWater)!,
-            HKObjectType.workoutType(),
-            HKObjectType.categoryType(forIdentifier: .mindfulSession)!
-        ]
+        for identifier in quantityIdentifiersToRead {
+            if let quantityType = HKQuantityType.quantityType(forIdentifier: identifier) {
+                typesToRead.insert(quantityType)
+            }
+        }
+
+        // Add category types safely
+        let categoryIdentifiersToRead: [HKCategoryTypeIdentifier] = [.sleepAnalysis, .mindfulSession]
+        for identifier in categoryIdentifiersToRead {
+            if let categoryType = HKObjectType.categoryType(forIdentifier: identifier) {
+                typesToRead.insert(categoryType)
+            }
+        }
+
+        // Build typesToWrite set safely without force unwraps
+        var typesToWrite: Set<HKSampleType> = [HKObjectType.workoutType()]
+
+        // Add quantity types for writing safely
+        let quantityIdentifiersToWrite: [HKQuantityTypeIdentifier] = [.stepCount, .dietaryWater]
+        for identifier in quantityIdentifiersToWrite {
+            if let quantityType = HKQuantityType.quantityType(forIdentifier: identifier) {
+                typesToWrite.insert(quantityType)
+            }
+        }
+
+        // Add category types for writing safely
+        if let mindfulType = HKObjectType.categoryType(forIdentifier: .mindfulSession) {
+            typesToWrite.insert(mindfulType)
+        }
         
         do {
             try await healthStore.requestAuthorization(toShare: typesToWrite, read: typesToRead)
-            
+
             // Check authorization status for key types
-            let stepsAuth = healthStore.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .stepCount)!)
+            guard let stepsType = HKQuantityType.quantityType(forIdentifier: .stepCount) else {
+                logger.error("Failed to get steps quantity type for authorization check")
+                return false
+            }
+            let stepsAuth = healthStore.authorizationStatus(for: stepsType)
             hasPermission = stepsAuth == .sharingAuthorized || stepsAuth == .sharingDenied
             authorizationStatus = stepsAuth
             
@@ -183,7 +203,10 @@ final class HealthKitManager {
     private func syncActivityData(userId: String, context: ModelContext) async {
         let calendar = Calendar.current
         let endDate = Date()
-        let startDate = calendar.date(byAdding: .day, value: -7, to: endDate)! // Last 7 days
+        guard let startDate = calendar.date(byAdding: .day, value: -7, to: endDate) else {
+            logger.error("Failed to calculate start date for activity sync")
+            return
+        }
         
         // Sync steps
         await syncQuantityData(
@@ -309,7 +332,10 @@ final class HealthKitManager {
     private func syncWorkoutData(userId: String, context: ModelContext) async {
         let calendar = Calendar.current
         let endDate = Date()
-        let startDate = calendar.date(byAdding: .day, value: -7, to: endDate)!
+        guard let startDate = calendar.date(byAdding: .day, value: -7, to: endDate) else {
+            logger.error("Failed to calculate start date for workout sync")
+            return
+        }
         
         let predicate = HKQuery.predicateForWorkouts(with: .greaterThanOrEqualTo, duration: 60) // At least 1 minute
         let datePredicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
@@ -384,7 +410,10 @@ final class HealthKitManager {
     private func syncSleepData(userId: String, context: ModelContext) async {
         let calendar = Calendar.current
         let endDate = Date()
-        let startDate = calendar.date(byAdding: .day, value: -7, to: endDate)!
+        guard let startDate = calendar.date(byAdding: .day, value: -7, to: endDate) else {
+            logger.error("Failed to calculate start date for sleep sync")
+            return
+        }
         
         guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return }
         
@@ -460,7 +489,10 @@ final class HealthKitManager {
     private func syncMindfulnessData(userId: String, context: ModelContext) async {
         let calendar = Calendar.current
         let endDate = Date()
-        let startDate = calendar.date(byAdding: .day, value: -7, to: endDate)!
+        guard let startDate = calendar.date(byAdding: .day, value: -7, to: endDate) else {
+            logger.error("Failed to calculate start date for mindfulness sync")
+            return
+        }
         
         guard let mindfulType = HKObjectType.categoryType(forIdentifier: .mindfulSession) else { return }
         
@@ -524,7 +556,10 @@ final class HealthKitManager {
     private func syncVitalSigns(userId: String, context: ModelContext) async {
         let calendar = Calendar.current
         let endDate = Date()
-        let startDate = calendar.date(byAdding: .day, value: -1, to: endDate)! // Last day only for vitals
+        guard let startDate = calendar.date(byAdding: .day, value: -1, to: endDate) else {
+            logger.error("Failed to calculate start date for vital signs sync")
+            return
+        }
         
         // Sync heart rate
         await syncQuantityData(
@@ -603,7 +638,10 @@ final class HealthKitManager {
     private func getCurrentMetricValue(metricType: HealthMetricType, userId: String, context: ModelContext) async -> Double {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
+        guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) else {
+            logger.error("Failed to calculate tomorrow date for metric value")
+            return 0
+        }
         
         let descriptor = FetchDescriptor<HealthMetric>(
             predicate: #Predicate<HealthMetric> { metric in

@@ -10,7 +10,7 @@ import SwiftData
 
 struct SmartSearchView: View {
     @Environment(\.modelContext) private var context
-    @StateObject private var searchManager = AdvancedSearchManager.shared
+    private var searchManager = AdvancedSearchManager.shared
     
     @State private var searchText = ""
     @State private var selectedSearchType: SearchType = .text

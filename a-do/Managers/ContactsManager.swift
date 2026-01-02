@@ -29,31 +29,39 @@ final class ContactsManager {
                     results.append(contact)
                 }
             }
-        } catch {}
+        } catch {
+            Logger(subsystem: "a-do", category: "Contacts").error("Contact search failed: \(error.localizedDescription)")
+        }
         return results
     }
     
     func getEmailForContact(identifier: String) async -> String? {
-        let keys: [CNKeyDescriptor] = [CNContactEmailAddressesKey as CNKeyDescriptor]
+        // Must fetch all keys we access to avoid crashes
+        let keys: [CNKeyDescriptor] = [
+            CNContactEmailAddressesKey as CNKeyDescriptor,
+            CNContactPhoneNumbersKey as CNKeyDescriptor,
+            CNContactIdentifierKey as CNKeyDescriptor
+        ]
         let request = CNContactFetchRequest(keysToFetch: keys)
         var foundEmail: String?
-        
+
         do {
-            try store.enumerateContacts(with: request) { contact, _ in
+            try store.enumerateContacts(with: request) { contact, stop in
                 // Check if this contact matches the identifier
                 // The identifier could be the contact's identifier or phone number
-                if contact.identifier == identifier || 
+                if contact.identifier == identifier ||
                    contact.phoneNumbers.contains(where: { $0.value.stringValue == identifier }) {
                     // Get the first email address
                     if let firstEmail = contact.emailAddresses.first {
                         foundEmail = firstEmail.value as String
+                        stop.pointee = true // Stop enumeration once found
                     }
                 }
             }
         } catch {
             Logger(subsystem: "a-do", category: "Contacts").error("Failed to get email for contact: \(error.localizedDescription)")
         }
-        
+
         return foundEmail
     }
 

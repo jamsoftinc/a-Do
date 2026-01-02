@@ -114,7 +114,6 @@ final class ReminderNotification {
     var leadTimeSeconds: TimeInterval = 0
     var customSoundName: String?
 
-    // @Relationship(inverse: \Reminder.notifications) var reminder: Reminder?
     @Relationship(deleteRule: .nullify) var reminder: Reminder?
     @Relationship(deleteRule: .nullify) var recurringReminder: RecurringReminder?
     @Relationship(deleteRule: .nullify) var reminderTemplate: ReminderTemplate?
@@ -174,10 +173,9 @@ final class ReminderList {
     var encodedSmartRules: Data?
     var order: Int = 0
 
-    // @Relationship(deleteRule: .cascade, inverse: \Reminder.list) var reminders: [Reminder]? = []
-    @Relationship(deleteRule: .cascade) var reminders: [Reminder]? = []
+    @Relationship(deleteRule: .cascade) var reminders: [Reminder]?
     @Relationship(inverse: \ListSection.lists) var section: ListSection?
-    @Relationship(deleteRule: .cascade) var sharedLists: [SharedList]? = []
+    @Relationship(deleteRule: .cascade) var sharedLists: [SharedList]?
     
 
     init(name: String, isSmart: Bool = false, rules: [SmartListRule]? = nil, reminders: [Reminder] = []) {
@@ -222,34 +220,39 @@ final class Reminder {
     var autoTextMe: Bool = false
     // Calendar tracking
     var calendarInviteCreated: Bool = false
+    var calendarEventID: String? // ID of created calendar event for blocking
 
-    // Temporarily comment out relationships to test basic saving
-    // @Relationship(deleteRule: .cascade) var tags: [Tag]? = []
-    // @Relationship(deleteRule: .cascade) var notifications: [ReminderNotification]? = []
-    // @Relationship(deleteRule: .cascade) var locationTrigger: LocationTrigger?
-    // @Relationship(deleteRule: .cascade) var taggedContacts: [TaggedContact]? = []
-    // @Relationship(deleteRule: .cascade) var appleNote: AppleNoteAttachment?
-    // @Relationship(deleteRule: .cascade) var voiceReminder: VoiceReminder?
-    // @Relationship(deleteRule: .nullify) var list: ReminderList?
-    // @Relationship(deleteRule: .cascade) var timeEntries: [TimeEntry]? = []
-    // @Relationship(deleteRule: .cascade) var sharedReminders: [SharedReminder]? = []
+    // Snooze tracking
+    var snoozeCount: Int? = 0
+    var lastSnoozedAt: Date?
+
+    @Relationship(deleteRule: .nullify) var tags: [Tag]?
+    @Relationship(deleteRule: .cascade) var notifications: [ReminderNotification]? = []
+    @Relationship(deleteRule: .cascade) var locationTrigger: LocationTrigger?
+    @Relationship(deleteRule: .cascade) var taggedContacts: [TaggedContact]? = []
+    @Relationship(deleteRule: .cascade) var appleNote: AppleNoteAttachment?
+    @Relationship(deleteRule: .cascade) var voiceReminder: VoiceReminder?
+    @Relationship(deleteRule: .nullify, inverse: \ReminderList.reminders) var list: ReminderList?
+    @Relationship(deleteRule: .cascade) var timeEntries: [TimeEntry]? = []
+    @Relationship(deleteRule: .cascade) var sharedReminders: [SharedReminder]?
     
-    // @Relationship(inverse: \FocusSession.focusedReminders) var focusSessions: [FocusSession]? = []
-    // @Relationship(inverse: \FocusSession.completedReminders) var completedFocusSessions: [FocusSession]? = []
-    // @Relationship(inverse: \HealthMetric.reminder) var healthMetrics: [HealthMetric]? = []
-    // @Relationship(inverse: \HealthGoal.reminders) var healthGoals: [HealthGoal]? = []
-    // @Relationship(inverse: \WorkoutIntegration.reminders) var workoutIntegrations: [WorkoutIntegration]? = []
-    // @Relationship(inverse: \SleepIntegration.reminders) var sleepIntegrations: [SleepIntegration]? = []
-    // @Relationship(inverse: \MindfulnessIntegration.reminders) var mindfulnessIntegrations: [MindfulnessIntegration]? = []
-    // @Relationship(deleteRule: .nullify) var smartNotifications: [SmartNotification]? = []
-    // @Relationship(deleteRule: .nullify) var reminderComments: [ReminderComment]? = []
-    // @Relationship(deleteRule: .nullify) var aiSuggestions: [AISuggestion]? = []
-    // @Relationship(deleteRule: .nullify) var recurringReminder: RecurringReminder?
+    @Relationship(inverse: \FocusSession.focusedReminders) var focusSessions: [FocusSession]?
+    @Relationship(inverse: \FocusSession.completedReminders) var completedFocusSessions: [FocusSession]?
+    @Relationship(inverse: \HealthMetric.reminder) var healthMetrics: [HealthMetric]?
+    @Relationship(inverse: \HealthGoal.reminders) var healthGoals: [HealthGoal]?
+    @Relationship(inverse: \WorkoutIntegration.reminders) var workoutIntegrations: [WorkoutIntegration]?
+    @Relationship(inverse: \SleepIntegration.reminders) var sleepIntegrations: [SleepIntegration]?
+    @Relationship(inverse: \MindfulnessIntegration.reminders) var mindfulnessIntegrations: [MindfulnessIntegration]?
+    @Relationship(deleteRule: .nullify) var smartNotifications: [SmartNotification]? = []
+    @Relationship(deleteRule: .nullify) var reminderComments: [ReminderComment]? = []
+    @Relationship(deleteRule: .nullify) var aiSuggestions: [AISuggestion]? = []
+    @Relationship(deleteRule: .nullify, inverse: \RecurringReminder.generatedReminders) var recurringReminder: RecurringReminder?
     
     // Pro features
-    @Relationship(deleteRule: .cascade) var subtasks: [Subtask]? = []
-    @Relationship(deleteRule: .cascade) var dependencies: [TaskDependency]? = []
-    @Relationship(deleteRule: .cascade) var sketches: [Sketch]? = []
+    @Relationship(deleteRule: .cascade) var subtasks: [Subtask]?
+    @Relationship(deleteRule: .cascade) var dependencies: [TaskDependency]?
+    @Relationship(deleteRule: .cascade) var sketches: [Sketch]?
+    @Relationship(deleteRule: .nullify) var blockingTasks: [TaskDependency]?
 
     // Required parameterless initializer for SwiftData
     init() {
@@ -286,15 +289,14 @@ final class Reminder {
         self.isCompleted = isCompleted
         self.completedAt = completedAt
         self.priorityRaw = priority.rawValue
-        // Temporarily commented out relationship assignments
-        // self.tags = tags.isEmpty ? nil : tags
-        // self.notifications = notifications.isEmpty ? nil : notifications
-        // self.locationTrigger = locationTrigger
-        // self.list = list
+        self.tags = tags.isEmpty ? nil : tags
+        self.notifications = notifications.isEmpty ? nil : notifications
+        self.locationTrigger = locationTrigger
+        self.list = list
         self.autoTextTaggedContacts = autoTextTaggedContacts
         self.autoTextMe = autoTextMe
-        // self.appleNote = appleNote
-        // self.voiceReminder = voiceReminder
+        self.appleNote = appleNote
+        self.voiceReminder = voiceReminder
         self.calendarInviteCreated = calendarInviteCreated
     }
 
@@ -324,18 +326,15 @@ final class Reminder {
     }
     
     var tagNames: [String] {
-        // return tags?.map { $0.name } ?? []
-        return [] // Temporarily disabled
+        return tags?.map { $0.name } ?? []
     }
     
     var hasLocationTrigger: Bool {
-        // return locationTrigger != nil
-        return false // Temporarily disabled
+        return locationTrigger != nil
     }
     
     var hasVoiceReminder: Bool {
-        // return voiceReminder != nil
-        return false // Temporarily disabled
+        return voiceReminder != nil
     }
 }
 

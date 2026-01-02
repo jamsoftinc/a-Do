@@ -150,7 +150,7 @@ struct CompletedRemindersView: View {
     
     private func deleteReminder(_ reminder: Reminder) {
         // Cancel any notifications for this reminder
-        NotificationManager.shared.cancelNotifications(for: reminder.id)
+        NotificationManager.shared.cancelNotification(for: reminder)
         
         // Stop location monitoring if this reminder has location triggers
         // Temporarily disabled - locationTrigger relationship commented out
@@ -178,14 +178,17 @@ struct CompletedRemindersView: View {
     
     private func loadCompletedReminders() async {
         guard !isLoading else { return }
-        
+
         isLoading = true
         defer { isLoading = false }
-        
-        // Load completed reminders on background thread
-        let reminders = await Task.detached {
-            let backgroundContext = ModelContext(self.context.container)
-            
+
+        // Capture container reference for background context
+        let container = context.container
+
+        // Load completed reminder IDs on background thread using PersistentIdentifier pattern
+        let reminderIDs = await Task.detached {
+            let backgroundContext = ModelContext(container)
+
             var descriptor = FetchDescriptor<Reminder>(
                 predicate: #Predicate<Reminder> { reminder in
                     reminder.isCompleted && reminder.completedAt != nil
@@ -193,13 +196,13 @@ struct CompletedRemindersView: View {
                 sortBy: [SortDescriptor(\.completedAt, order: .reverse)]
             )
             descriptor.fetchLimit = 200 // Limit to prevent memory issues
-            
-            return (try? backgroundContext.fetch(descriptor)) ?? []
+
+            let reminders = (try? backgroundContext.fetch(descriptor)) ?? []
+            return reminders.map { $0.persistentModelID }
         }.value
-        
-        await MainActor.run {
-            self.completedReminders = reminders
-        }
+
+        // Fetch reminders on main context using IDs
+        completedReminders = reminderIDs.compactMap { context.model(for: $0) as? Reminder }
     }
     
     private func exportCompletedReminders() {

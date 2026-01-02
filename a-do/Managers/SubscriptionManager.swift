@@ -173,7 +173,11 @@ final class SubscriptionManager {
                 let transaction = try checkVerificationResult(result)
                 
                 // Track the most recent subscription
-                if highestTransaction == nil || transaction.purchaseDate > highestTransaction!.purchaseDate {
+                if let existing = highestTransaction {
+                    if transaction.purchaseDate > existing.purchaseDate {
+                        highestTransaction = transaction
+                    }
+                } else {
                     highestTransaction = transaction
                 }
                 

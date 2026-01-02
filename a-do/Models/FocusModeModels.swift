@@ -53,6 +53,7 @@ final class FocusSession {
     @Relationship(deleteRule: .cascade) var completedReminders: [Reminder]? = []
     @Relationship(deleteRule: .cascade) var interruptions: [FocusInterruption]? = []
     @Relationship(deleteRule: .cascade) var breaks: [FocusBreak]? = []
+    @Relationship(deleteRule: .nullify) var smartNotifications: [SmartNotification]?
     
     
     init(name: String, focusType: FocusType = .work, duration: TimeInterval = 1800) {
@@ -112,16 +113,22 @@ final class FocusSession {
     
     private func calculateProductivityScore() {
         guard plannedDuration > 0 else { return }
-        
+
         // Base score from time completion
         let timeScore = min(1.0, actualDuration / plannedDuration)
-        
-        // Task completion bonus
-        let taskScore = tasksCompleted > 0 ? min(1.0, Double(tasksCompleted) / Double(focusedReminders?.count ?? 0)) : 0.0
-        
+
+        // Task completion bonus - guard against division by zero
+        let focusedCount = focusedReminders?.count ?? 0
+        let taskScore: Double
+        if tasksCompleted > 0 && focusedCount > 0 {
+            taskScore = min(1.0, Double(tasksCompleted) / Double(focusedCount))
+        } else {
+            taskScore = 0.0
+        }
+
         // Interruption penalty
         let interruptionPenalty = min(0.5, Double(interruptionCount) * 0.1)
-        
+
         // Final score (0-100)
         productivityScore = max(0.0, (timeScore * 0.4 + taskScore * 0.6 - interruptionPenalty) * 100)
     }

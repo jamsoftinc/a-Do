@@ -51,10 +51,10 @@ struct SwiftDataUtils {
     }
     
     /// Get a list of extended models (may have dependencies)
-    /// Only include models we know exist based on the files we've seen
+    /// Include ALL models referenced by Reminder relationships to avoid schema conflicts
     static func getExtendedModelTypes() -> [any PersistentModel.Type] {
         var extendedModels: [any PersistentModel.Type] = []
-        
+
         // Add models we know exist from ReminderModels.swift
         let reminderModels: [any PersistentModel.Type] = [
             ReminderNotification.self,
@@ -65,129 +65,240 @@ struct SwiftDataUtils {
             VoiceReminder.self
         ]
         extendedModels.append(contentsOf: reminderModels)
-        
-        // Add models from TimeTrackingModels.swift that we've confirmed exist
+
+        // Add models from TimeTrackingModels.swift
         let timeTrackingModels: [any PersistentModel.Type] = [
             TimeEntry.self,
-            TimeCategory.self
+            TimeCategory.self,
+            TimeGoal.self
         ]
         extendedModels.append(contentsOf: timeTrackingModels)
-        
+
         // Add habit models
         let habitModels: [any PersistentModel.Type] = [
             Habit.self,
             HabitEntry.self
         ]
         extendedModels.append(contentsOf: habitModels)
-        
+
         // Add subscription models
         let subscriptionModels: [any PersistentModel.Type] = [
             SubscriptionStatus.self
         ]
         extendedModels.append(contentsOf: subscriptionModels)
-        
-        // Add Pro feature models (subtasks and dependencies)
+
+        // Add Pro feature models (subtasks, dependencies, sketches)
         let proModels: [any PersistentModel.Type] = [
             Subtask.self,
-            TaskDependency.self
+            TaskDependency.self,
+            Sketch.self
         ]
         extendedModels.append(contentsOf: proModels)
-        
-        // Note: We're not including models that might not exist yet like:
-        // RecurrenceRule, etc. These can be added later when they're properly defined
-        
+
+        // Add Focus Mode models (referenced by Reminder)
+        let focusModels: [any PersistentModel.Type] = [
+            FocusSession.self,
+            FocusInterruption.self,
+            FocusBreak.self,
+            FocusTemplate.self,
+            SystemFocusMode.self,
+            FocusGoal.self
+        ]
+        extendedModels.append(contentsOf: focusModels)
+
+        // Add Health models (referenced by Reminder)
+        let healthModels: [any PersistentModel.Type] = [
+            HealthIntegrationConfiguration.self,
+            HealthMetric.self,
+            HealthGoal.self,
+            WorkoutIntegration.self,
+            SleepIntegration.self,
+            MindfulnessIntegration.self,
+            HealthReminderTemplate.self
+        ]
+        extendedModels.append(contentsOf: healthModels)
+
+        // Add Smart Notification models (referenced by Reminder)
+        let notificationModels: [any PersistentModel.Type] = [
+            SmartNotificationConfiguration.self,
+            SmartNotification.self,
+            NotificationPattern.self,
+            NotificationBatch.self,
+            NotificationAnalytics.self,
+            NotificationRule.self
+        ]
+        extendedModels.append(contentsOf: notificationModels)
+
+        // Add AI models (referenced by Reminder)
+        let aiModels: [any PersistentModel.Type] = [
+            AISuggestion.self,
+            AIInsight.self,
+            AILearningData.self,
+            AIModelPerformance.self,
+            AIConfiguration.self
+        ]
+        extendedModels.append(contentsOf: aiModels)
+
+        // Add Collaboration models (referenced by Reminder and ReminderList)
+        let collaborationModels: [any PersistentModel.Type] = [
+            SharedReminder.self,
+            ShareParticipant.self,
+            ShareActivity.self,
+            SharedList.self,
+            ReminderComment.self,
+            Workspace.self,
+            WorkspaceMember.self
+        ]
+        extendedModels.append(contentsOf: collaborationModels)
+
+        // Add Recurring models (referenced by Reminder)
+        let recurringModels: [any PersistentModel.Type] = [
+            RecurrenceRule.self,
+            RecurringReminder.self,
+            ReminderTemplate.self,
+            TemplateCategory.self
+        ]
+        extendedModels.append(contentsOf: recurringModels)
+
+        // Add Backup models
+        let backupModels: [any PersistentModel.Type] = [
+            BackupConfiguration.self,
+            BackupRecord.self,
+            ExportTemplate.self,
+            ImportRecord.self,
+            SyncConfiguration.self,
+            SyncRecord.self
+        ]
+        extendedModels.append(contentsOf: backupModels)
+
+        // Add Search models
+        let searchModels: [any PersistentModel.Type] = [
+            SearchConfiguration.self,
+            SearchQuery.self,
+            SearchResult.self,
+            SearchFilter.self,
+            SearchIndex.self,
+            OrganizationRule.self,
+            QuickAction.self,
+            SearchAnalytics.self
+        ]
+        extendedModels.append(contentsOf: searchModels)
+
+        // Add Advanced Smart List models
+        let smartListModels: [any PersistentModel.Type] = [
+            EnhancedSmartListRule.self,
+            EnhancedSmartList.self,
+            SavedSearch.self
+        ]
+        extendedModels.append(contentsOf: smartListModels)
+
+        // Add Gamification models (simplified - no leaderboards)
+        let gamificationModels: [any PersistentModel.Type] = [
+            UserProfile.self,
+            Achievement.self,
+            UserAchievement.self,
+            Badge.self,
+            UserBadge.self,
+            Challenge.self,
+            UserChallenge.self,
+            Reward.self,
+            UserReward.self
+        ]
+        extendedModels.append(contentsOf: gamificationModels)
+
         return extendedModels
     }
     
-    // MARK: - Progressive Schema Building
-    
-    /// Build a schema progressively, starting with core models and adding others that validate
+    // MARK: - Schema Building
+
+    /// Get ALL model types that need to be in the schema together
+    /// IMPORTANT: Models with @Relationship MUST be included together, not validated individually
+    static func getAllModelTypes() -> [any PersistentModel.Type] {
+        var allModels: [any PersistentModel.Type] = []
+
+        // Core models
+        allModels.append(contentsOf: getCoreModelTypes())
+
+        // Extended models
+        allModels.append(contentsOf: getExtendedModelTypes())
+
+        return allModels
+    }
+
+    /// Build schema with ALL models at once
+    /// Individual validation breaks models with @Relationship attributes
     static func buildValidSchema() -> (schema: Schema, successfulModels: [String], failedModels: [String]) {
-        var successfulModels: [String] = []
-        var failedModels: [String] = []
-        var validModelTypes: [any PersistentModel.Type] = []
-        
-        // Start with core models
-        let coreModels = getCoreModelTypes()
-        for modelType in coreModels {
-            let typeName = String(describing: modelType)
-            if case .success = validateModelType(modelType) {
-                validModelTypes.append(modelType)
-                successfulModels.append(typeName)
-            } else {
-                failedModels.append(typeName)
-            }
-        }
-        
-        // Try extended models
-        let extendedModels = getExtendedModelTypes()
-        for modelType in extendedModels {
-            let typeName = String(describing: modelType)
-            
-            // Test if adding this model to our current set would work
-            let testModelTypes = validModelTypes + [modelType]
-            let testSchema = Schema(testModelTypes)
-            
-            do {
-                let testConfig = ModelConfiguration(schema: testSchema, isStoredInMemoryOnly: true)
-                let _ = try ModelContainer(for: testSchema, configurations: testConfig)
-                
-                // If we got here, adding this model is safe
-                validModelTypes.append(modelType)
-                successfulModels.append(typeName)
-            } catch {
-                failedModels.append("\(typeName): \(error.localizedDescription)")
-                logger.error("Model \(typeName, privacy: .public) cannot be added to schema: \(error.localizedDescription, privacy: .public)")
-            }
-        }
-        
-        let finalSchema = Schema(validModelTypes)
-        logger.info("Built schema with \(successfulModels.count, privacy: .public) successful models, \(failedModels.count, privacy: .public) failed models")
-        
-        return (finalSchema, successfulModels, failedModels)
+        let allModels = getAllModelTypes()
+        let modelNames = allModels.map { String(describing: $0) }
+
+        // Create schema with ALL models together - don't validate individually
+        // Models with @Relationship attributes REQUIRE all related models to be present
+        let schema = Schema(allModels)
+
+        logger.info("Built schema with \(allModels.count, privacy: .public) models (no individual validation - relationships require all models together)")
+
+        return (schema, modelNames, [])
     }
     
     // MARK: - Container Creation with Diagnostics
-    
+
     static func createDiagnosticContainer() -> (container: ModelContainer?, diagnostics: ContainerDiagnostics) {
         let schemaResult = buildValidSchema()
         let schema = schemaResult.schema
-        
+
         var diagnostics = ContainerDiagnostics(
             successfulModels: schemaResult.successfulModels,
             failedModels: schemaResult.failedModels
         )
-        
-        // Try persistent storage first
+
+        // Try persistent storage first with explicit app group
         do {
             let persistentConfig = ModelConfiguration(
                 schema: schema,
                 isStoredInMemoryOnly: false,
                 allowsSave: true,
-                groupContainer: .automatic,
+                groupContainer: .identifier("group.com.ado.app"),
                 cloudKitDatabase: .none
             )
             let container = try ModelContainer(for: schema, configurations: persistentConfig)
             diagnostics.containerType = .persistent
-            logger.info("Created persistent container successfully")
+            logger.info("Created persistent container successfully with app group")
             return (container, diagnostics)
         } catch {
             diagnostics.persistentStorageError = error.localizedDescription
-            logger.error("Persistent container failed: \(error.localizedDescription, privacy: .public)")
+            logger.error("Persistent container with app group failed: \(error.localizedDescription, privacy: .public)")
         }
-        
-        // Try in-memory storage as fallback
+
+        // Try persistent storage without app group as fallback
+        do {
+            let persistentConfig = ModelConfiguration(
+                schema: schema,
+                isStoredInMemoryOnly: false,
+                allowsSave: true,
+                groupContainer: .none,
+                cloudKitDatabase: .none
+            )
+            let container = try ModelContainer(for: schema, configurations: persistentConfig)
+            diagnostics.containerType = .persistent
+            logger.info("Created persistent container successfully without app group")
+            return (container, diagnostics)
+        } catch {
+            diagnostics.persistentStorageError = (diagnostics.persistentStorageError ?? "") + " | Without group: " + error.localizedDescription
+            logger.error("Persistent container without app group failed: \(error.localizedDescription, privacy: .public)")
+        }
+
+        // Try in-memory storage as last fallback
         do {
             let memoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
             let container = try ModelContainer(for: schema, configurations: memoryConfig)
             diagnostics.containerType = .memory
-            logger.info("Created in-memory container successfully")
+            logger.warning("Created in-memory container - DATA WILL NOT PERSIST")
             return (container, diagnostics)
         } catch {
             diagnostics.memoryStorageError = error.localizedDescription
             logger.error("In-memory container failed: \(error.localizedDescription, privacy: .public)")
         }
-        
+
         // If we get here, even basic models are failing
         diagnostics.containerType = .failed
         return (nil, diagnostics)
