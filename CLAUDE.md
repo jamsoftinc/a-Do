@@ -76,19 +76,34 @@ All managers are `@MainActor` singletons accessed via `.shared`:
 - `AIBehavioralIntegrationCoordinator` - Runs hourly learning cycles, coordinates AI subsystems
 - `SmartNotificationManager` - Predicts optimal notification timing
 
+**Apple Intelligence System (iOS 26+):**
+- `AppleIntelligenceManager` - Coordinator for all Apple Intelligence features
+- `FoundationModelsManager` - On-device LLM (~3B params) for task parsing, breakdown, insights
+- `WeeklyReviewManager` - AI-powered executive weekly review generation (Pro feature)
+- `MorningBriefingManager` - Daily briefing with weather, tasks, priorities (Pro feature)
+- `ContextNudgeManager` - Location-aware smart notifications (gym, library, office, home, focus zones)
+- `VisualIntelligenceManager` - Camera-based document/business card scanning
+- `EnhancedSiriManager` - Context-aware Siri integration
+
+**Subscription & Entitlements:**
+- `EntitlementManager` - Pro feature gating and subscription status
+- `SubscriptionManager` - StoreKit 2 subscription management
+
 **Other Specialized Managers:**
 - `GamificationManager`, `HealthKitManager`, `FocusModeManager`, `TimeTrackingManager`
 - `CollaborationManager`, `BackupManager`, `AdvancedSearchManager`
-- 30+ domain-specific managers
+- 45+ domain-specific managers
 
 #### 3. View Layer (`Views/`)
 SwiftUI views organized by feature area:
 - `Home/` - Main dashboard with adaptive iPhone/iPad layouts
 - `ReminderForm/` - Complex form handling with validation
 - `Habits/` - Habit tracking interface
-- `AI/` - AI insights and suggestions dashboard
+- `AI/` - AI insights, suggestions, Morning Briefing, Weekly Review
+- `Calendar/` - Calendar integration and Quantum Calendar view
 - `TimeTracking/`, `Templates/`, `Collaboration/`, `Search/`
-- `Components/` - Reusable UI components (`GlassCard`, `FlowLayout`, etc.)
+- `Subscription/` - Paywall and subscription management views
+- `Components/` - Reusable UI components (`GlassCard`, `FlowLayout`, `ProFeatureGate`, etc.)
 
 #### 4. Styling System
 - `AppTheme.swift` - Centralized design system (colors, typography, spacing)
@@ -124,6 +139,52 @@ AIBehavioralIntegrationCoordinator.runLearningCycle()
 - `Managers/MLPatternRecognitionManager.swift` - Pattern analysis
 - `Managers/AIBehavioralIntegrationCoordinator.swift` - System orchestration
 - `Models/AIModels.swift` - AI data models
+
+### Apple Intelligence System (iOS 26+)
+
+**Overview:**
+The app integrates Apple's Foundation Models framework for on-device AI processing. Requires A17 Pro / M1 chip or newer.
+
+**Features:**
+- **Foundation Models:** On-device LLM (~3B params) for natural language task parsing
+- **Visual Intelligence:** Camera-based scanning for documents, business cards, handwritten notes
+- **Writing Tools:** Proofread, rewrite, and enhance reminder descriptions
+- **Smart Suggestions:** Context-aware task recommendations
+- **Contextual Actions:** Location and time-based intelligent actions
+
+**Structured Output (via @Generable):**
+```swift
+// Task parsing produces structured output
+@Generable struct ParsedReminderOutput {
+    let title: String
+    let suggestedDueDate: String?
+    let priority: String?
+    let tags: [String]
+    let isRecurring: Bool
+    // ...
+}
+
+// Task breakdown suggestions
+@Generable struct TaskBreakdownOutput {
+    let subtasks: [SubtaskSuggestion]
+    let estimatedTotalMinutes: Int
+    let complexity: String
+}
+```
+
+**Pro Features (require subscription):**
+- Morning Briefing - Daily AI-generated briefing with weather, priorities, insights
+- Weekly Review - Executive summary with productivity grade and recommendations
+- Context Nudges - Smart notifications based on location context (gym, office, home, etc.)
+
+**Key Files:**
+- `Managers/AppleIntelligenceManager.swift` - Feature coordinator
+- `Managers/FoundationModelsManager.swift` - On-device LLM integration
+- `Managers/WeeklyReviewManager.swift` - Weekly review generation
+- `Managers/MorningBriefingManager.swift` - Daily briefing generation
+- `Managers/ContextNudgeManager.swift` - Location-aware nudges
+- `Views/AI/MorningBriefingView.swift` - Briefing UI (MeshGradient background)
+- `Views/AI/WeeklyReviewView.swift` - Weekly review UI
 
 ### Sync Architecture
 
@@ -190,6 +251,9 @@ a-do://tag/{tagName}            - Filter by tag
 a-do://priority/{level}         - Filter by priority (high/medium/low)
 a-do://ai/suggestions           - AI suggestions
 a-do://ai/insights              - AI insights
+a-do://ai/briefing              - Morning Briefing (Pro)
+a-do://ai/weekly-review         - Weekly Review (Pro)
+a-do://calendar                 - Calendar view
 a-do://sendtext/{reminderId}    - Text contact for reminder
 mobilenotes://                  - Apple Notes integration callbacks
 ```
@@ -258,12 +322,21 @@ mobilenotes://                  - Apple Notes integration callbacks
 a-do/
 ├── ADoApp.swift                    # App entry point
 ├── Models/                          # SwiftData @Model entities (40+ models)
-├── Managers/                        # Domain-specific singleton managers (30+)
+├── Managers/                        # Domain-specific singleton managers (45+)
+│   ├── Core: RemindersManager, CloudKitManager, AppleRemindersSyncManager
+│   ├── AI/ML: AIManager, BehavioralLearningManager, MLPatternRecognitionManager
+│   ├── Apple Intelligence: FoundationModelsManager, AppleIntelligenceManager
+│   ├── Pro Features: WeeklyReviewManager, MorningBriefingManager, ContextNudgeManager
+│   └── Subscription: EntitlementManager, SubscriptionManager
 ├── ViewModels/                      # MVVM view models
 ├── Views/                           # SwiftUI views organized by feature
-│   ├── Home/, ReminderForm/, Habits/, AI/, TimeTracking/
-│   ├── Templates/, Collaboration/, Search/, Tags/, Settings/
-│   └── Components/                  # Reusable UI components
+│   ├── Home/, ReminderForm/, Habits/, Lists/
+│   ├── AI/                          # AI views including MorningBriefingView, WeeklyReviewView
+│   ├── Calendar/                    # CalendarView, QuantumCalendarView
+│   ├── TimeTracking/, Templates/, Collaboration/, Search/, Tags/
+│   ├── Settings/, Subscription/     # Settings and paywall views
+│   ├── Onboarding/, Pencil/, ApplePencil/, Translation/
+│   └── Components/                  # Reusable UI (GlassCard, ProFeatureGate, etc.)
 ├── Shared/                          # Cross-target utilities
 │   ├── AppContainer.swift           # SwiftData container factory
 │   ├── AppRouter.swift              # Deep link navigation
@@ -315,3 +388,9 @@ AppContainer.optimizeDatabase(context: modelContext)
 5. **CloudKit Sync:** Requires active iCloud account. Always check `CloudKitManager.accountStatus` before attempting sync operations.
 
 6. **Manager Initialization Order:** Some managers depend on others. `ADoApp.swift` handles initialization sequence. Avoid calling manager methods before app fully initializes.
+
+7. **Apple Intelligence (iOS 26+):** Foundation Models require A17 Pro / M1 or newer. Always check device capability via `AppleIntelligenceManager` before invoking. Uses `@Generable` protocol for structured output.
+
+8. **Pro Features Gating:** Many AI features are Pro-only. Always check `EntitlementManager.shared.isProUser` before enabling. Use `ProFeatureGate` view component for UI gating.
+
+9. **WeatherKit Integration:** `MorningBriefingManager` uses WeatherKit which requires entitlement and may have rate limits. Handle gracefully if weather data unavailable.
