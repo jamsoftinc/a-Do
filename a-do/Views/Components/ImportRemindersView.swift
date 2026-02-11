@@ -131,6 +131,12 @@ struct ImportRemindersView: View {
                 await remindersManager.checkAvailableReminders(into: context)
             }
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Home") {
+                        goHome()
+                    }
+                }
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
                         dismiss()
@@ -151,9 +157,13 @@ struct ImportRemindersView: View {
             Text(remindersManager.lastImportError ?? "An unknown error occurred during import.")
         }
     }
+
+    private func goHome() {
+        NotificationCenter.default.post(name: .appNavigateHome, object: nil)
+        dismiss()
+    }
 }
 
 #Preview {
     ImportRemindersView()
 }
-

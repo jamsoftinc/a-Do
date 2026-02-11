@@ -20,6 +20,10 @@ struct DailyPlanningView: View {
     @State private var calendarEvents: [EKEvent] = []
     @State private var selectedDate: Date = Date()
     @State private var isLoading = true
+    @State private var isAutoPlanning = false
+    @State private var autoPlanResultMessage = ""
+    @State private var showingAutoPlanResult = false
+    @State private var showingPaywall = false
 
     private let calendar = Calendar.current
 
@@ -59,6 +63,14 @@ struct DailyPlanningView: View {
             .task {
                 await loadCalendarEvents()
                 isLoading = false
+            }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView()
+            }
+            .alert("Auto Plan", isPresented: $showingAutoPlanResult) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(autoPlanResultMessage)
             }
         }
     }
@@ -242,6 +254,15 @@ struct DailyPlanningView: View {
 
             HStack(spacing: 12) {
                 DailyPlanActionButton(
+                    title: isAutoPlanning ? "Planning..." : "AI Auto-Plan",
+                    icon: EntitlementManager.shared.canUseDailyPlanning ? "sparkles" : "lock.fill",
+                    color: .purple
+                ) {
+                    autoPlanMyDay()
+                }
+                .disabled(isAutoPlanning)
+
+                DailyPlanActionButton(
                     title: "Complete All",
                     icon: "checkmark.circle.fill",
                     color: .green
@@ -389,6 +410,210 @@ struct DailyPlanningView: View {
             reminder.completedAt = now
         }
         try? modelContext.save()
+    }
+
+    private var autoPlanCandidates: [Reminder] {
+        let dayStart = calendar.startOfDay(for: selectedDate)
+        let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart
+
+        return allReminders
+            .filter { reminder in
+                guard !reminder.isCompleted else { return false }
+                if let dueDate = reminder.dueDate {
+                    if dueDate < dayStart { return true } // Overdue tasks.
+                    if dueDate >= dayStart && dueDate < dayEnd {
+                        return !isTimeSpecific(dueDate)
+                    }
+                    return false
+                }
+                return true
+            }
+            .sorted { lhs, rhs in
+                if lhs.priority != rhs.priority {
+                    return lhs.priority.rawValue > rhs.priority.rawValue
+                }
+                return lhs.createdAt < rhs.createdAt
+            }
+    }
+
+    @MainActor
+    private func autoPlanMyDay() {
+        guard EntitlementManager.shared.canUseDailyPlanning else {
+            showingPaywall = true
+            return
+        }
+
+        guard !isAutoPlanning else { return }
+        isAutoPlanning = true
+
+        Task { @MainActor in
+            let candidates = Array(autoPlanCandidates.prefix(8))
+            guard !candidates.isEmpty else {
+                autoPlanResultMessage = "No unscheduled tasks were found for auto-planning."
+                showingAutoPlanResult = true
+                isAutoPlanning = false
+                return
+            }
+
+            let orderedIDs = await AIManager.shared.rankRemindersForFocus(candidates, focusType: .work)
+            let rankIndex = Dictionary(uniqueKeysWithValues: orderedIDs.enumerated().map { ($1, $0) })
+            let rankedCandidates = candidates.sorted { lhs, rhs in
+                let lhsRank = rankIndex[lhs.uuid] ?? Int.max
+                let rhsRank = rankIndex[rhs.uuid] ?? Int.max
+                if lhsRank != rhsRank {
+                    return lhsRank < rhsRank
+                }
+                return lhs.createdAt < rhs.createdAt
+            }
+
+            let existingIntervals = scheduledIntervalsForSelectedDay()
+            let slots = generateSlots(
+                for: selectedDate,
+                neededCount: rankedCandidates.count,
+                existingIntervals: existingIntervals
+            )
+
+            guard !slots.isEmpty else {
+                autoPlanResultMessage = "No available time slots were found for \(selectedDate.formatted(date: .abbreviated, time: .omitted))."
+                showingAutoPlanResult = true
+                isAutoPlanning = false
+                return
+            }
+
+            let shouldBlockCalendar = EntitlementManager.shared.canUseCalendarBlocking
+            if shouldBlockCalendar {
+                await CalendarManager.shared.requestAccess()
+            }
+
+            var scheduledCount = 0
+            var blockedCount = 0
+
+            for (reminder, slot) in zip(rankedCandidates, slots) {
+                reminder.dueDate = slot
+                scheduledCount += 1
+
+                let leadTimes = reminder.notifications?.map(\.leadTimeSeconds) ?? []
+                await NotificationManager.shared.rescheduleNotifications(
+                    for: reminder,
+                    dueDate: slot,
+                    leadTimes: leadTimes
+                )
+
+                guard shouldBlockCalendar, CalendarManager.shared.accessGranted else { continue }
+                do {
+                    if reminder.calendarEventID == nil {
+                        _ = try await CalendarManager.shared.createTimeBlock(
+                            for: reminder,
+                            startDate: slot,
+                            duration: 30 * 60,
+                            context: modelContext
+                        )
+                    } else {
+                        try await CalendarManager.shared.updateTimeBlock(
+                            for: reminder,
+                            newStartDate: slot,
+                            newDuration: 30 * 60,
+                            context: modelContext
+                        )
+                    }
+                    blockedCount += 1
+                } catch {
+                    // Calendar blocking is best-effort; reminders are still scheduled in-app.
+                }
+            }
+
+            try? modelContext.save()
+            await loadCalendarEvents()
+
+            if scheduledCount == 0 {
+                autoPlanResultMessage = "Auto-plan could not place tasks into open slots."
+            } else if blockedCount > 0 {
+                autoPlanResultMessage = "Scheduled \(scheduledCount) tasks and created \(blockedCount) calendar blocks."
+            } else {
+                autoPlanResultMessage = "Scheduled \(scheduledCount) tasks for your day."
+            }
+
+            showingAutoPlanResult = true
+            isAutoPlanning = false
+        }
+    }
+
+    private func scheduledIntervalsForSelectedDay() -> [DateInterval] {
+        let dayStart = calendar.startOfDay(for: selectedDate)
+        let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart
+        var intervals: [DateInterval] = []
+
+        for reminder in todayReminders {
+            guard let dueDate = reminder.dueDate, isTimeSpecific(dueDate) else { continue }
+            let end = dueDate.addingTimeInterval(30 * 60)
+            intervals.append(DateInterval(start: dueDate, end: end))
+        }
+
+        for event in calendarEvents {
+            let start = max(event.startDate, dayStart)
+            let end = min(event.endDate, dayEnd)
+            if end > start {
+                intervals.append(DateInterval(start: start, end: end))
+            }
+        }
+
+        return intervals.sorted { $0.start < $1.start }
+    }
+
+    private func generateSlots(
+        for day: Date,
+        neededCount: Int,
+        existingIntervals: [DateInterval]
+    ) -> [Date] {
+        guard neededCount > 0 else { return [] }
+        let dayStart = calendar.startOfDay(for: day)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart),
+              let preferredStart = calendar.date(bySettingHour: 8, minute: 0, second: 0, of: dayStart),
+              let preferredEnd = calendar.date(bySettingHour: 20, minute: 0, second: 0, of: dayStart) else {
+            return []
+        }
+
+        var usedIntervals = existingIntervals
+        var slots: [Date] = []
+        let slotDuration: TimeInterval = 30 * 60
+        let increment: TimeInterval = 30 * 60
+
+        let now = Date()
+        var cursor = max(preferredStart, calendar.isDate(day, inSameDayAs: now) ? now : preferredStart)
+        cursor = roundedUpToHalfHour(cursor)
+
+        while slots.count < neededCount && cursor < min(preferredEnd, dayEnd) {
+            let candidate = DateInterval(start: cursor, duration: slotDuration)
+            let hasConflict = usedIntervals.contains { $0.intersects(candidate) }
+            if !hasConflict && candidate.end <= min(preferredEnd, dayEnd) {
+                slots.append(cursor)
+                usedIntervals.append(candidate)
+            }
+            cursor = cursor.addingTimeInterval(increment)
+        }
+
+        return slots
+    }
+
+    private func roundedUpToHalfHour(_ date: Date) -> Date {
+        var components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+        let minute = components.minute ?? 0
+
+        if minute == 0 || minute == 30 {
+            components.second = 0
+            return calendar.date(from: components) ?? date
+        }
+
+        if minute < 30 {
+            components.minute = 30
+        } else {
+            components.minute = 0
+            if let hour = components.hour {
+                components.hour = hour + 1
+            }
+        }
+        components.second = 0
+        return calendar.date(from: components) ?? date
     }
 }
 

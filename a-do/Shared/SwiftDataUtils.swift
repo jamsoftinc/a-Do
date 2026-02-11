@@ -17,7 +17,7 @@ struct SwiftDataUtils {
         do {
             let schema = Schema([modelType])
             let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-            let container = try ModelContainer(for: schema, configurations: config)
+            _ = try ModelContainer(for: schema, configurations: config)
             
             // If we got here, the model is valid
             logger.info("✅ Model \(typeName, privacy: .public) validated successfully")
@@ -80,6 +80,12 @@ struct SwiftDataUtils {
             HabitEntry.self
         ]
         extendedModels.append(contentsOf: habitModels)
+
+        // Add shadow inbox models
+        let shadowModels: [any PersistentModel.Type] = [
+            ShadowTask.self
+        ]
+        extendedModels.append(contentsOf: shadowModels)
 
         // Add subscription models
         let subscriptionModels: [any PersistentModel.Type] = [

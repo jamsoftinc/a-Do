@@ -6,6 +6,7 @@ struct CalendarView: View {
     @State private var currentDate = Date()
     @State private var selectedDate: Date?
     @State private var viewMode: ViewMode = .month
+    @State private var showingPaywall = false
     
     enum ViewMode: String, CaseIterable {
         case month = "Month"
@@ -47,7 +48,7 @@ struct CalendarView: View {
                                 .padding(.horizontal)
                             
                             Button {
-                                // SubscriptionManager.shared.showPaywall()
+                                showingPaywall = true
                             } label: {
                                 Text("Upgrade to Pro")
                                     .bold()
@@ -67,6 +68,9 @@ struct CalendarView: View {
             .task {
                 await calendarManager.requestAccess()
             }
+        }
+        .sheet(isPresented: $showingPaywall) {
+            PaywallView()
         }
     }
     

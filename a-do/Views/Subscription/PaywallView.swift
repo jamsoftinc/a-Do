@@ -52,6 +52,16 @@ struct PaywallView: View {
             .navigationTitle("Unlock Pro")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        goHome()
+                    } label: {
+                        Image(systemName: "house.fill")
+                            .foregroundColor(.white)
+                            .imageScale(.large)
+                    }
+                }
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { dismissAction() }) {
                         Image(systemName: "xmark.circle.fill")
@@ -168,14 +178,32 @@ struct PaywallView: View {
                         .fontWeight(.semibold)
                         .foregroundColor(AppTheme.Colors.textPrimary)
                     
-                    Text("7 days free, then choose your plan")
+                    Text("Free trial handled directly by App Store on eligible plans")
                         .font(.subheadline)
                         .foregroundColor(AppTheme.Colors.textSecondary)
                 }
                 
                 Spacer()
             }
-            
+
+            if hasStoreIntroOffer {
+                Text("Choose an eligible plan below. Apple applies your introductory trial automatically.")
+                    .font(.caption)
+                    .foregroundColor(AppTheme.Colors.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else if subscriptionManager.availableProducts.isEmpty {
+                Text("Loading App Store offers. Trial eligibility appears once products are available.")
+                    .font(.caption)
+                    .foregroundColor(AppTheme.Colors.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Text("No introductory trial is currently available for this account.")
+                    .font(.caption)
+                    .foregroundColor(AppTheme.Colors.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            #if DEBUG
             Button {
                 Task {
                     await startFreeTrial()
@@ -199,6 +227,7 @@ struct PaywallView: View {
                 .cornerRadius(10)
             }
             .buttonStyle(.plain)
+            #endif
         }
         .padding(20)
         .background(
@@ -233,7 +262,9 @@ struct PaywallView: View {
         let isSelected = selectedProduct?.id == product.id
         
         return Button {
-            // In fallback mode, we can't actually purchase, but we can show the UI
+            Task {
+                await attemptFallbackPurchase(for: product)
+            }
         } label: {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
@@ -432,6 +463,10 @@ struct PaywallView: View {
         }
         return nil
     }
+
+    private var hasStoreIntroOffer: Bool {
+        subscriptionManager.availableProducts.contains { $0.subscription?.introductoryOffer != nil }
+    }
     
     private func purchaseProduct(_ product: Product) async {
         isPurchasing = true
@@ -457,12 +492,42 @@ struct PaywallView: View {
     private func startFreeTrial() async {
         // Start the 7-day free trial
         subscriptionManager.startFreeTrial(context: context)
-        dismissAction()
+        if let error = subscriptionManager.errorMessage {
+            errorMessage = error
+            showError = true
+        } else {
+            dismissAction()
+        }
+    }
+
+    private func attemptFallbackPurchase(for product: SubscriptionProduct) async {
+        selectedProduct = nil
+        isPurchasing = true
+        defer { isPurchasing = false }
+
+        if subscriptionManager.availableProducts.isEmpty {
+            await subscriptionManager.loadProducts()
+        }
+
+        if let liveProduct = subscriptionManager.availableProducts.first(where: { $0.id == product.id }) {
+            await purchaseProduct(liveProduct)
+            return
+        }
+
+        if product.subscriptionType == .monthly || product.subscriptionType == .annual {
+            errorMessage = "Store products are temporarily unavailable. Please try again in a moment."
+            showError = true
+        }
     }
     
     private func dismissAction() {
         dismiss()
         onDismiss?()
+    }
+
+    private func goHome() {
+        NotificationCenter.default.post(name: .appNavigateHome, object: nil)
+        dismissAction()
     }
 }
 

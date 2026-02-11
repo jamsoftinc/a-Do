@@ -2,10 +2,22 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSExtension</key>
-	<dict>
-		<key>NSExtensionPointIdentifier</key>
-		<string>com.apple.widgetkit-extension</string>
-	</dict>
+	<key>NSFaceIDUsageDescription</key>
+	<string>We use FaceID to unlock your private lists.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Location is used to trigger reminders when you arrive or leave specific places.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Speech recognition is used to transcribe your voice notes into text.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Microphone access is needed to record voice notes.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Calendar access is required to create events from your reminders.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Contacts access is used to tag people in your reminders.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

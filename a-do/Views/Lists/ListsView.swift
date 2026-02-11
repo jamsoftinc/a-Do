@@ -22,6 +22,11 @@ struct ListsView: View {
     @State private var smartListRuleType: SmartListRule.RuleType = .tag
     @State private var selectedTagName: String = ""
     @State private var selectedPriority: Priority = .high
+    
+    // Feature Flags & State
+    @State private var isSlumpMode: Bool = false
+    @StateObject private var bioAuth = BiometricAuthManager.shared
+    @State private var pendingProtectedList: ReminderList?
 
     var body: some View {
         Group {
@@ -95,6 +100,14 @@ struct ListsView: View {
                         .font(.title2)
                         .foregroundStyle(AppTheme.Colors.primary)
                 }
+                
+                // Slump Mode Toggle
+                Button(action: { isSlumpMode.toggle() }) {
+                    Image(systemName: isSlumpMode ? "battery.25" : "battery.100")
+                        .font(.title2)
+                        .foregroundStyle(isSlumpMode ? .green : .secondary)
+                }
+                .padding(.leading, 8)
             }
             .padding()
             
@@ -113,6 +126,18 @@ struct ListsView: View {
                                     .padding(.horizontal)
                             }
                         }
+                    }
+                    
+                    // Slump Mode Indicator
+                    if isSlumpMode {
+                        HStack {
+                            Image(systemName: "battery.25")
+                                .foregroundColor(.green)
+                            Text("Slump Mode Active: Showing Low Energy tasks")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.horizontal)
                     }
                     
                     // Sections
@@ -208,7 +233,7 @@ struct ListsView: View {
                             }
                             showingSectionSheet = false
                         }
-                        .disabled(isCreatingSection ? newSectionName.isEmpty : newListName.isEmpty)
+                        .disabled(isCreatingSection ? newSectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty : newListName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
                 }
             }
@@ -216,6 +241,9 @@ struct ListsView: View {
         }
         .sheet(isPresented: $showingSmartListSheet) {
             smartListCreationSheet
+        }
+        .navigationDestination(item: $pendingProtectedList) { list in
+            ListDetailView(list: list, allReminders: allReminders, isSlumpMode: isSlumpMode)
         }
     }
 
@@ -359,9 +387,34 @@ struct ListsView: View {
                 smartListRowContent(for: list)
                     .tag(list)
             } else {
-                NavigationLink { ListDetailView(list: list, allReminders: allReminders) } label: {
-                    smartListRowContent(for: list)
+                if list.isProtected && !bioAuth.isUnlocked {
+                     Button {
+                         authenticateAndOpen(list)
+                     } label: {
+                         smartListRowContent(for: list)
+                     }
+                } else {
+                     NavigationLink { ListDetailView(list: list, allReminders: allReminders, isSlumpMode: isSlumpMode) } label: {
+                         smartListRowContent(for: list)
+                     }
+                     .contextMenu {
+                         Button(list.isProtected ? "Unlock List" : "Lock List (Privacy Mode)") {
+                             list.isProtected.toggle()
+                         }
+                         Button("Delete", role: .destructive) {
+                             context.delete(list)
+                         }
+                     }
                 }
+            }
+        }
+    }
+    
+    private func authenticateAndOpen(_ list: ReminderList) {
+        Task {
+            if await bioAuth.authenticateUser(reason: "Unlock \(list.name)") {
+                // Upon success, trigger navigation
+                pendingProtectedList = list
             }
         }
     }
@@ -369,8 +422,8 @@ struct ListsView: View {
     private func smartListRowContent(for list: ReminderList) -> some View {
         HStack(spacing: 12) {
             // Icon
-            Image(systemName: list.isSmart ? smartListIcon(for: list) : "list.bullet")
-                .foregroundColor(list.isSmart ? .purple : .blue)
+            Image(systemName: list.isSmart ? smartListIcon(for: list) : (list.isProtected ? (bioAuth.isUnlocked ? "lock.open.fill" : "lock.fill") : "list.bullet"))
+                .foregroundColor(list.isProtected ? (bioAuth.isUnlocked ? .green : .orange) : (list.isSmart ? .purple : .blue))
                 .frame(width: 24)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -525,8 +578,10 @@ struct ListsView: View {
 struct ListDetailView: View {
     let list: ReminderList
     let allReminders: [Reminder]
+    var isSlumpMode: Bool = false
     @Environment(\.modelContext) private var context
     @State private var selectedReminder: Reminder?
+    @State private var showingAddReminderSheet = false
 
     var body: some View {
         List {
@@ -553,6 +608,21 @@ struct ListDetailView: View {
                 ReminderFormView(existingReminder: reminder)
             }
         }
+        .sheet(isPresented: $showingAddReminderSheet) {
+            NavigationStack {
+                ReminderFormView(list: list)
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showingAddReminderSheet = true
+                } label: {
+                    Image(systemName: "plus")
+                }
+            }
+        }
+
     }
     
     private var listReminders: [Reminder] {
@@ -561,7 +631,11 @@ struct ListDetailView: View {
             return SmartListEngine.reminders(for: list, from: allReminders)
         } else {
             // For regular lists, return reminders directly associated with the list
-            return list.reminders ?? []
+            let rawReminders = list.reminders ?? []
+            if isSlumpMode {
+                return rawReminders.filter { $0.energyLevel == .low }
+            }
+            return rawReminders
         }
     }
     

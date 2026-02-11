@@ -7,44 +7,59 @@ class LaunchScreenCoordinator: ObservableObject {
     @Published var isLaunchComplete = false
     @Published var launchProgress: Double = 0.0
     
-    private var cancellables = Set<AnyCancellable>()
-    private let minimumDisplayTime: TimeInterval = 2.0 // Minimum time to show launch screen
+    private var launchTask: Task<Void, Never>?
+    private let minimumDisplayTime: TimeInterval = 2.0
     private let startTime = Date()
     
     init() {
         startLaunchSequence()
     }
     
-    /// Starts the launch sequence with simulated loading progress
+    /// Starts the launch sequence and advances progress after each startup phase.
     private func startLaunchSequence() {
-        // Simulate app initialization progress
-        Timer.publish(every: 0.1, on: .main, in: .common)
-            .autoconnect()
-            .sink { [weak self] _ in
-                guard let self = self else { return }
-                
-                if self.launchProgress < 1.0 {
-                    // Simulate loading progress
-                    self.launchProgress += 0.05
-                } else {
-                    self.checkLaunchCompletion()
-                }
+        launchTask?.cancel()
+        launchTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            
+            await self.runLaunchPhase(progress: 0.2) {
+                _ = AppGroupDefaults.shared
             }
-            .store(in: &cancellables)
+            
+            await self.runLaunchPhase(progress: 0.45) {
+                _ = AppContainer.shared.getContainer()
+            }
+            
+            await self.runLaunchPhase(progress: 0.7) {
+                _ = SubscriptionManager.shared
+                _ = EntitlementManager.shared
+                _ = NotificationManager.shared
+            }
+            
+            await self.runLaunchPhase(progress: 0.9) {
+                _ = MemoryMonitor.shared
+            }
+            
+            await self.checkLaunchCompletion()
+            self.launchProgress = 1.0
+            self.completeLaunch()
+        }
     }
     
     /// Checks if minimum display time has passed and completes launch
-    private func checkLaunchCompletion() {
+    private func checkLaunchCompletion() async {
         let elapsedTime = Date().timeIntervalSince(startTime)
         
-        if elapsedTime >= minimumDisplayTime {
-            completeLaunch()
+        if elapsedTime < minimumDisplayTime {
+            let remaining = minimumDisplayTime - elapsedTime
+            let nanos = UInt64(max(0, remaining) * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: nanos)
         }
     }
     
     /// Completes the launch sequence and transitions to main app
     private func completeLaunch() {
-        cancellables.removeAll()
+        launchTask?.cancel()
+        launchTask = nil
         
         withAnimation(.easeInOut(duration: 0.5)) {
             isLaunchComplete = true
@@ -53,7 +68,14 @@ class LaunchScreenCoordinator: ObservableObject {
     
     /// Force complete launch (for testing or immediate transitions)
     func forceCompleteLaunch() {
+        launchProgress = 1.0
         completeLaunch()
+    }
+    
+    private func runLaunchPhase(progress: Double, action: () -> Void) async {
+        action()
+        launchProgress = max(launchProgress, min(progress, 1.0))
+        await Task.yield()
     }
 }
 

@@ -39,6 +39,17 @@ struct SettingsView: View {
                     }
                 }
                 
+                // PREFERENCES - User customization
+                Section("Preferences") {
+                    Picker("Temperature Unit", selection: Binding(
+                        get: { SettingsManager.shared.getTemperatureUnit(context: context) },
+                        set: { SettingsManager.shared.setTemperatureUnit($0, context: context) }
+                    )) {
+                        Text("Fahrenheit").tag("fahrenheit")
+                        Text("Celsius").tag("celsius")
+                    }
+                }
+                
                 // AI FEATURES - Pro functionality
                 Section("AI Features") {
                     Button {
@@ -92,20 +103,20 @@ struct SettingsView: View {
                 .listRowBackground(Color.clear)
             }
             .navigationTitle("More")
-            .sheet(isPresented: $showingCollaboration) {
+            .fullScreenCover(isPresented: $showingCollaboration) {
                 NavigationStack {
                     CollaborationView()
                 }
             }
-            .sheet(isPresented: $showingAISuggestions) {
+            .fullScreenCover(isPresented: $showingAISuggestions) {
                 NavigationStack {
                     AISuggestionsViewWrapper()
                 }
             }
-            .sheet(isPresented: $showingAIInsights) {
+            .fullScreenCover(isPresented: $showingAIInsights) {
                 AIInsightsDashboardWrapper()
             }
-            .sheet(isPresented: $showingSubscription) {
+            .fullScreenCover(isPresented: $showingSubscription) {
                 PaywallView()
             }
         }

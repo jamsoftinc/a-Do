@@ -29,6 +29,10 @@ enum DeepLinkDestination: Identifiable, Equatable {
     }
 }
 
+extension Notification.Name {
+    static let appNavigateHome = Notification.Name("appNavigateHome")
+}
+
 @MainActor
 @Observable
 final class AppRouter {
@@ -109,5 +113,4 @@ final class AppRouter {
         }
     }
 }
-
 

@@ -51,20 +51,49 @@ struct ReminderEntity: AppEntity {
 /// Query for searching reminders - enables Visual Intelligence integration
 struct ReminderEntityQuery: EntityQuery {
     func entities(for identifiers: [UUID]) async throws -> [ReminderEntity] {
-        let container = await MainActor.run {
-            AppContainer.shared.getContainer()
+        await MainActor.run {
+            let container = AppContainer.shared.getContainer()
+            let context = ModelContext(container)
+            var results: [ReminderEntity] = []
+
+            for id in identifiers {
+                let descriptor = FetchDescriptor<Reminder>(
+                    predicate: #Predicate { $0.uuid == id }
+                )
+
+                if let reminder = try? context.fetch(descriptor).first {
+                    results.append(ReminderEntity(
+                        id: reminder.uuid,
+                        title: reminder.title,
+                        details: reminder.details,
+                        dueDate: reminder.dueDate,
+                        isCompleted: reminder.isCompleted,
+                        priorityLevel: reminder.priority.title,
+                        listName: nil
+                    ))
+                }
+            }
+            return results
         }
-        let context = ModelContext(container)
+    }
 
-        var results: [ReminderEntity] = []
+    /// String-based search for Visual Intelligence
+    func suggestedEntities() async throws -> [ReminderEntity] {
+        await MainActor.run {
+            // Return top reminders for quick access
+            let container = AppContainer.shared.getContainer()
+            let context = ModelContext(container)
 
-        for id in identifiers {
-            let descriptor = FetchDescriptor<Reminder>(
-                predicate: #Predicate { $0.uuid == id }
+            var descriptor = FetchDescriptor<Reminder>(
+                predicate: #Predicate { !$0.isCompleted },
+                sortBy: [SortDescriptor(\.dueDate, order: .forward)]
             )
+            descriptor.fetchLimit = 10
 
-            if let reminder = try? context.fetch(descriptor).first {
-                results.append(ReminderEntity(
+            let reminders = (try? context.fetch(descriptor)) ?? []
+
+            return reminders.map { reminder in
+                ReminderEntity(
                     id: reminder.uuid,
                     title: reminder.title,
                     details: reminder.details,
@@ -72,39 +101,8 @@ struct ReminderEntityQuery: EntityQuery {
                     isCompleted: reminder.isCompleted,
                     priorityLevel: reminder.priority.title,
                     listName: nil
-                ))
+                )
             }
-        }
-
-        return results
-    }
-
-    /// String-based search for Visual Intelligence
-    func suggestedEntities() async throws -> [ReminderEntity] {
-        // Return top reminders for quick access
-        let container = await MainActor.run {
-            AppContainer.shared.getContainer()
-        }
-        let context = ModelContext(container)
-
-        var descriptor = FetchDescriptor<Reminder>(
-            predicate: #Predicate { !$0.isCompleted },
-            sortBy: [SortDescriptor(\.dueDate, order: .forward)]
-        )
-        descriptor.fetchLimit = 10
-
-        let reminders = (try? context.fetch(descriptor)) ?? []
-
-        return reminders.map { reminder in
-            ReminderEntity(
-                id: reminder.uuid,
-                title: reminder.title,
-                details: reminder.details,
-                dueDate: reminder.dueDate,
-                isCompleted: reminder.isCompleted,
-                priorityLevel: reminder.priority.title,
-                listName: nil
-            )
         }
     }
 }
@@ -181,32 +179,44 @@ struct CreateReminderFromVisual: AppIntent {
         let container = AppContainer.shared.getContainer()
         let context = ModelContext(container)
 
+        if useAI, EntitlementManager.shared.isProUser {
+            let requests = await AIManager.shared.buildCaptureRequests(from: content)
+            guard !requests.isEmpty else {
+                return .result(dialog: "Couldn't parse visual text into reminders.")
+            }
+
+            var createdCount = 0
+            for request in requests {
+                do {
+                    _ = try await ReminderCreationService.shared.createReminder(request: request, in: context)
+                    createdCount += 1
+                } catch {
+                    continue
+                }
+            }
+
+            if createdCount > 0 {
+                return .result(dialog: "Created \(createdCount) reminder\(createdCount == 1 ? "" : "s") from visual content.")
+            }
+            return .result(dialog: "Failed to create reminders from visual content.")
+        }
+
         var reminderTitle = content
         var dueDate: Date?
-
-        // Use AI parsing if available and requested
         if useAI {
             let parsed = await NaturalLanguageProcessor.shared.parseReminderText(content)
             reminderTitle = parsed.finalText
             dueDate = parsed.dueDate
         }
 
-        let reminder = Reminder(title: reminderTitle, dueDate: dueDate)
-        context.insert(reminder)
-
         do {
-            try context.save()
-
-            // Schedule notification if due date is set
-            if let due = dueDate {
-                await NotificationManager.shared.scheduleNotifications(
-                    for: reminder.persistentModelID,
-                    dueDate: due,
-                    leadTimes: [],
-                    title: reminderTitle
-                )
-            }
-
+            let request = ReminderCreationService.Request(
+                title: reminderTitle,
+                details: nil,
+                dueDate: dueDate,
+                useNaturalLanguageParsing: false
+            )
+            _ = try await ReminderCreationService.shared.createReminder(request: request, in: context)
             return .result(dialog: "Created reminder: \(reminderTitle)")
         } catch {
             return .result(dialog: "Failed to create reminder: \(error.localizedDescription)")
@@ -289,6 +299,28 @@ struct ScanDocumentIntent: AppIntent {
         let container = AppContainer.shared.getContainer()
         let context = ModelContext(container)
 
+        if EntitlementManager.shared.isProUser {
+            let requests = await AIManager.shared.buildCaptureRequests(from: documentText)
+            guard !requests.isEmpty else {
+                return .result(dialog: "No actionable reminders found in document.")
+            }
+
+            var createdCount = 0
+            for request in requests {
+                do {
+                    _ = try await ReminderCreationService.shared.createReminder(request: request, in: context)
+                    createdCount += 1
+                } catch {
+                    continue
+                }
+            }
+
+            if createdCount > 0 {
+                return .result(dialog: "Created \(createdCount) reminders from document")
+            }
+            return .result(dialog: "Failed to create reminders from document")
+        }
+
         // Parse document for action items
         let lines = documentText.components(separatedBy: .newlines)
         var createdCount = 0
@@ -347,31 +379,31 @@ struct ScanDocumentIntent: AppIntent {
 /// Provides entity indexing for Visual Intelligence search
 extension ReminderEntityQuery: EntityStringQuery {
     func entities(matching string: String) async throws -> [ReminderEntity] {
-        let container = await MainActor.run {
-            AppContainer.shared.getContainer()
-        }
-        let context = ModelContext(container)
+        await MainActor.run {
+            let container = AppContainer.shared.getContainer()
+            let context = ModelContext(container)
 
-        let searchLower = string.lowercased()
+            let searchLower = string.lowercased()
 
-        let descriptor = FetchDescriptor<Reminder>()
-        let allReminders = (try? context.fetch(descriptor)) ?? []
+            let descriptor = FetchDescriptor<Reminder>()
+            let allReminders = (try? context.fetch(descriptor)) ?? []
 
-        let matchingReminders = allReminders.filter { reminder in
-            reminder.title.lowercased().contains(searchLower) ||
-            (reminder.details?.lowercased().contains(searchLower) ?? false)
-        }
+            let matchingReminders = allReminders.filter { reminder in
+                reminder.title.lowercased().contains(searchLower) ||
+                (reminder.details?.lowercased().contains(searchLower) ?? false)
+            }
 
-        return matchingReminders.prefix(20).map { reminder in
-            ReminderEntity(
-                id: reminder.uuid,
-                title: reminder.title,
-                details: reminder.details,
-                dueDate: reminder.dueDate,
-                isCompleted: reminder.isCompleted,
-                priorityLevel: reminder.priority.title,
-                listName: nil
-            )
+            return matchingReminders.prefix(20).map { reminder in
+                ReminderEntity(
+                    id: reminder.uuid,
+                    title: reminder.title,
+                    details: reminder.details,
+                    dueDate: reminder.dueDate,
+                    isCompleted: reminder.isCompleted,
+                    priorityLevel: reminder.priority.title,
+                    listName: nil
+                )
+            }
         }
     }
 }

@@ -14,6 +14,7 @@ import os
 @MainActor
 final class CloudKitManager: ObservableObject {
     static let shared = CloudKitManager()
+    static let containerIdentifier = "iCloud.JAMSoft.a-do"
     
     @Published var isSignedIn: Bool = false
     @Published var syncStatus: CloudKitSyncStatus = .unknown
@@ -21,7 +22,7 @@ final class CloudKitManager: ObservableObject {
     @Published var syncError: String?
     @Published var isSyncEnabled: Bool = true
     
-    private let container = CKContainer.default()
+    private let container = CKContainer(identifier: CloudKitManager.containerIdentifier)
     private let logger = Logger(subsystem: "a-do", category: "CloudKit")
     
     private init() {

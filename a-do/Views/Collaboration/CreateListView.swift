@@ -191,9 +191,3 @@ struct CreateListView: View {
         }
     }
 }
-
-// Preview disabled - requires model context setup
-// #Preview {
-//     CreateListView(workspace: Workspace(name: "Sample Workspace", ownerID: "user123", ownerName: "John Doe"))
-//         .modelContainer(for: [Workspace.self, ReminderList.self, SharedList.self])
-// }

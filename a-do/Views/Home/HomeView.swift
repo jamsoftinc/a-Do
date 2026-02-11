@@ -33,7 +33,6 @@ struct HomeView: View {
     // Sheet states
     @State private var showingPaywall = false
     @State private var showingReminderForm = false
-    @State private var showingMoreMenu = false
     
     // More menu sheets
     @State private var showingCollaboration = false
@@ -73,21 +72,10 @@ struct HomeView: View {
                     .padding(.vertical)
                 }
                 .scrollIndicators(.hidden)
-
-                // Floating Action Button
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        floatingActionButton
-                            .padding(.trailing, 20)
-                            .padding(.bottom, 20)
-                    }
-                }
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     Menu {
                         Section("Features") {
                             NavigationLink(destination: CompletedRemindersView()) {
@@ -100,6 +88,14 @@ struct HomeView: View {
                             
                             NavigationLink(destination: TimeTrackingView()) {
                                 Label("Time Tracking", systemImage: "timer")
+                            }
+
+                            NavigationLink(destination: FocusDashboardView()) {
+                                Label("Focus", systemImage: "target")
+                            }
+
+                            NavigationLink(destination: ShadowInboxView()) {
+                                Label("Shadow Inbox", systemImage: "tray.full")
                             }
                             
                             Button {
@@ -125,6 +121,19 @@ struct HomeView: View {
                             .foregroundStyle(AppTheme.Colors.primary)
                             .font(.title3)
                     }
+                }
+
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                        impactFeedback.impactOccurred()
+                        showingReminderForm = true
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundStyle(AppTheme.Colors.primary)
+                            .font(.title3)
+                    }
+                    .accessibilityLabel("Add Reminder")
                 }
             }
             .onAppear {
@@ -287,26 +296,7 @@ struct HomeView: View {
                         .submitLabel(.done)
                         .onSubmit {
                             if !viewModel.quickTitle.isEmpty {
-                                let result = MagicInputParser.parse(viewModel.quickTitle)
-                                
-                                // Create reminder with parsed attributes
-                                let reminder = Reminder(title: result.title, dueDate: result.dueDate ?? viewModel.quickDueDate, priority: result.priority)
-                                
-                                // Add tags if parsed
-                                if !result.tags.isEmpty {
-                                    // Fetch all tags to match names
-                                    // Note: In a real app we'd fetch properly. 
-                                    // For now we just create the reminder.
-                                    // Tag linking logic would ideally happen in the ViewModel or Manager
-                                }
-                                
-                                context.insert(reminder)
-                                try? context.save()
-                                NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: reminder)
-                                
-                                // Reset
-                                viewModel.quickTitle = ""
-                                viewModel.quickDueDate = nil
+                                viewModel.addQuickReminder(context: context)
                             }
                         }
                     
@@ -413,8 +403,29 @@ struct HomeView: View {
                     )
                 }
             }
+
+            // Row 3: Focus and Time Tracking
+            HStack(spacing: 12) {
+                NavigationLink(destination: FocusDashboardView()) {
+                    QuickAccessCard(
+                        title: "Focus",
+                        icon: "target",
+                        color: .mint,
+                        count: nil
+                    )
+                }
+
+                NavigationLink(destination: TimeTrackingView()) {
+                    QuickAccessCard(
+                        title: "Time Tracking",
+                        icon: "timer",
+                        color: .cyan,
+                        count: nil
+                    )
+                }
+            }
             
-            // Row 3: AI Suggestions and Daily Planning (Pro features)
+            // Row 4: AI Suggestions and Daily Planning (Pro features)
             HStack(spacing: 12) {
                 Button {
                     if EntitlementManager.shared.hasAccess(to: .advancedNLP) {
@@ -449,7 +460,7 @@ struct HomeView: View {
                 }
             }
             
-            // Row 4: Morning Briefing (Pro feature)
+            // Row 5: Morning Briefing (Pro feature)
             Button {
                 if EntitlementManager.shared.isProUser {
                     showingMorningBriefing = true
@@ -530,24 +541,6 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Floating Action Button
-    private var floatingActionButton: some View {
-        Button {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
-            showingReminderForm = true
-        } label: {
-            Image(systemName: "plus")
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundStyle(.white)
-                .frame(width: 56, height: 56)
-                .background(AppTheme.Gradients.primary)
-                .clipShape(Circle())
-                .shadow(color: AppTheme.Colors.primary.opacity(0.4), radius: 10, x: 0, y: 5)
-        }
-    }
-    
     // MARK: - Helper Methods
     private func updateFilteredReminders() {
         let now = Date()
@@ -618,21 +611,38 @@ struct HomeView: View {
         let text = AudioManager.shared.transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard text.count > 2 else { return }
 
-        let reminder = Reminder(title: text, dueDate: viewModel.quickDueDate)
-        context.insert(reminder)
+        let parsedRequests = await AIManager.shared.buildCaptureRequests(
+            from: text,
+            fallbackDueDate: viewModel.quickDueDate
+        )
 
-        if let audioFileURL = AudioManager.shared.getAudioFileURL() {
-            let voiceReminder = VoiceReminder(
-                audioFileName: audioFileURL.lastPathComponent,
-                transcribedText: text,
-                recordingDuration: AudioManager.shared.recordingDuration
-            )
-            reminder.voiceReminder = voiceReminder
+        var createdAny = false
+        for (index, baseRequest) in parsedRequests.enumerated() {
+            var request = baseRequest
+            if request.dueDate == nil {
+                request.dueDate = viewModel.quickDueDate
+            }
+
+            // Attach the recording to the first generated task.
+            if index == 0, let audioFileURL = AudioManager.shared.getAudioFileURL() {
+                request.voiceReminder = VoiceReminder(
+                    audioFileName: audioFileURL.lastPathComponent,
+                    transcribedText: text,
+                    recordingDuration: AudioManager.shared.recordingDuration
+                )
+            }
+
+            do {
+                _ = try await ReminderCreationService.shared.createReminder(request: request, in: context)
+                createdAny = true
+            } catch {
+                Logger(subsystem: "a-do", category: "HomeView").error("Voice reminder creation failed: \(error.localizedDescription)")
+            }
         }
 
-        try? context.save()
-        NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: reminder)
-        AudioManager.shared.transcribedText = ""
+        if createdAny {
+            AudioManager.shared.transcribedText = ""
+        }
     }
     
     private func stopQuickVoiceMemo() {

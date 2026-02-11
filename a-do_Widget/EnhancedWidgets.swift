@@ -158,11 +158,11 @@ struct ReminderWidget: Widget {
 
 struct ReminderProvider: TimelineProvider {
     func placeholder(in context: Context) -> ReminderEntry {
-        ReminderEntry(date: Date(), reminders: sampleReminders())
+        ReminderEntry(date: Date(), reminders: [])
     }
 
     func getSnapshot(in context: Context, completion: @escaping (ReminderEntry) -> ()) {
-        let entry = ReminderEntry(date: Date(), reminders: sampleReminders())
+        let entry = ReminderEntry(date: Date(), reminders: fetchReminders())
         completion(entry)
     }
 
@@ -201,44 +201,49 @@ struct ReminderProvider: TimelineProvider {
     }
 
     private func fetchReminders() -> [ReminderData] {
-        // In a real implementation, this would fetch from the shared container
-        return sampleReminders()
+        guard
+            let defaults = UserDefaults(suiteName: "group.com.ado.app"),
+            let rawData = defaults.data(forKey: "widget_reminders_v1")
+        else {
+            return fallbackReminders()
+        }
+
+        do {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let snapshots = try decoder.decode([ReminderSnapshot].self, from: rawData)
+            let mapped = snapshots.map { snapshot in
+                ReminderData(
+                    id: snapshot.id,
+                    title: snapshot.title,
+                    dueDate: snapshot.dueDate,
+                    priority: Priority(rawValue: snapshot.priorityRaw) ?? .none,
+                    isCompleted: snapshot.isCompleted,
+                    hasLocation: snapshot.hasLocation,
+                    hasVoice: snapshot.hasVoice,
+                    tags: snapshot.tags
+                )
+            }
+            return mapped.isEmpty ? fallbackReminders() : mapped
+        } catch {
+            return fallbackReminders()
+        }
     }
 
-    private func sampleReminders() -> [ReminderData] {
-        return [
-            ReminderData(
-                id: UUID().uuidString,
-                title: "Team Meeting",
-                dueDate: Date().addingTimeInterval(3600),
-                priority: .high,
-                isCompleted: false,
-                hasLocation: true,
-                hasVoice: false,
-                tags: ["Work"]
-            ),
-            ReminderData(
-                id: UUID().uuidString,
-                title: "Buy groceries",
-                dueDate: Date().addingTimeInterval(7200),
-                priority: .medium,
-                isCompleted: false,
-                hasLocation: false,
-                hasVoice: false,
-                tags: ["Personal"]
-            ),
-            ReminderData(
-                id: UUID().uuidString,
-                title: "Call dentist",
-                dueDate: nil,
-                priority: .low,
-                isCompleted: false,
-                hasLocation: false,
-                hasVoice: true,
-                tags: ["Health"]
-            )
-        ]
+    private func fallbackReminders() -> [ReminderData] {
+        return []
     }
+}
+
+private struct ReminderSnapshot: Codable {
+    let id: String
+    let title: String
+    let dueDate: Date?
+    let priorityRaw: Int
+    let isCompleted: Bool
+    let hasLocation: Bool
+    let hasVoice: Bool
+    let tags: [String]
 }
 
 struct ReminderEntry: TimelineEntry {
@@ -280,61 +285,56 @@ struct SmallReminderWidget: View {
     let entry: ReminderEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: "checkmark.circle")
-                    .foregroundColor(.blue)
-                Text("Reminders")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                Spacer()
-            }
+        VStack(alignment: .leading, spacing: 10) {
+            WidgetHeader(title: "Reminders", icon: "checkmark.circle.fill", color: Color(red: 0.4, green: 0.2, blue: 0.8))
 
             if entry.reminders.isEmpty {
-                VStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.largeTitle)
-                        .foregroundColor(.green)
-                    Text("All done!")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                EmptyWidgetView(message: "All done!", icon: "checkmark.circle.fill", color: Color(red: 0.2, green: 0.7, blue: 0.3))
             } else {
                 let nextReminder = entry.reminders.first!
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Circle()
+                    HStack(alignment: .top, spacing: 6) {
+                        Capsule()
                             .fill(priorityColor(nextReminder.priority))
-                            .frame(width: 6, height: 6)
+                            .frame(width: 3, height: 16)
+                        
                         Text(nextReminder.title)
-                            .font(.caption)
-                            .fontWeight(.medium)
+                            .font(.system(size: 13, weight: .semibold))
                             .lineLimit(2)
                     }
 
                     if let dueDate = nextReminder.dueDate {
-                        Text(dueDate, style: .relative)
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 10))
+                            Text(dueDate, style: .relative)
+                                .font(.system(size: 10, weight: .medium))
+                        }
+                        .foregroundStyle(.secondary)
+                        .padding(.leading, 9)
                     }
+
+                    Spacer(minLength: 0)
 
                     if entry.reminders.count > 1 {
                         Text("+\(entry.reminders.count - 1) more")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Color(red: 0.4, green: 0.2, blue: 0.8))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color(red: 0.4, green: 0.2, blue: 0.8).opacity(0.1))
+                            .clipShape(Capsule())
                     }
                 }
             }
         }
-        .padding()
     }
 
     private func priorityColor(_ priority: Priority) -> Color {
         switch priority {
-        case .high: return .red
-        case .medium: return .orange
-        case .low: return .yellow
+        case .high: return Color(red: 0.9, green: 0.3, blue: 0.3)
+        case .medium: return Color(red: 0.9, green: 0.6, blue: 0.2)
+        case .low: return Color(red: 0.2, green: 0.8, blue: 0.4)
         case .none: return .gray
         }
     }
@@ -347,50 +347,29 @@ struct MediumReminderWidget: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "checkmark.circle")
-                    .foregroundColor(.blue)
-                Text("Reminders")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                Spacer()
-                Text("\(entry.reminders.count)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                WidgetHeader(title: "Reminders", icon: "checkmark.circle.fill", color: Color(red: 0.4, green: 0.2, blue: 0.8))
+                
+                if !entry.reminders.isEmpty {
+                    Text("\(entry.reminders.count)")
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(red: 0.4, green: 0.2, blue: 0.8))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(Color(red: 0.4, green: 0.2, blue: 0.8).opacity(0.1))
+                        .clipShape(Capsule())
+                }
             }
 
             if entry.reminders.isEmpty {
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.title)
-                        .foregroundColor(.green)
-                    VStack(alignment: .leading) {
-                        Text("All caught up!")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                        Text("No pending reminders")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    Spacer()
-                }
+                EmptyWidgetView(message: "All caught up!", icon: "checkmark.seal.fill", color: Color(red: 0.2, green: 0.7, blue: 0.3))
             } else {
                 VStack(spacing: 8) {
                     ForEach(Array(entry.reminders.prefix(3).enumerated()), id: \.offset) { index, reminder in
                         ReminderRowWidget(reminder: reminder)
                     }
-
-                    if entry.reminders.count > 3 {
-                        HStack {
-                            Text("+ \(entry.reminders.count - 3) more reminders")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Spacer()
-                        }
-                    }
                 }
             }
         }
-        .padding()
     }
 }
 
@@ -400,72 +379,41 @@ struct LargeReminderWidget: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Header
             HStack {
-                Image(systemName: "checkmark.circle")
-                    .foregroundColor(.blue)
-                Text("Reminders")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                Spacer()
-                VStack(alignment: .trailing, spacing: 2) {
+                WidgetHeader(title: "Reminders", icon: "checkmark.circle.fill", color: Color(red: 0.4, green: 0.2, blue: 0.8))
+                
+                VStack(alignment: .trailing, spacing: 0) {
                     Text("\(entry.reminders.count)")
-                        .font(.title2)
-                        .fontWeight(.bold)
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(red: 0.4, green: 0.2, blue: 0.8))
                     Text("pending")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
                 }
             }
 
             if entry.reminders.isEmpty {
-                VStack(spacing: 16) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 48))
-                        .foregroundColor(.green)
-
-                    VStack(spacing: 8) {
-                        Text("All caught up!")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                        Text("No pending reminders")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                EmptyWidgetView(message: "All caught up!", icon: "checkmark.seal.fill", color: Color(red: 0.2, green: 0.7, blue: 0.3))
             } else {
                 // Priority breakdown
-                let priorityBreakdown = calculatePriorityBreakdown(entry.reminders)
-
-                HStack(spacing: 16) {
-                    PriorityIndicator(count: priorityBreakdown.high, color: .red, label: "High")
-                    PriorityIndicator(count: priorityBreakdown.medium, color: .orange, label: "Med")
-                    PriorityIndicator(count: priorityBreakdown.low, color: .yellow, label: "Low")
+                let breakdown = calculatePriorityBreakdown(entry.reminders)
+                
+                HStack(spacing: 12) {
+                    PriorityIndicator(count: breakdown.high, color: Color(red: 0.9, green: 0.3, blue: 0.3), label: "HIGH")
+                    PriorityIndicator(count: breakdown.medium, color: Color(red: 0.9, green: 0.6, blue: 0.2), label: "MED")
+                    PriorityIndicator(count: breakdown.low, color: Color(red: 0.2, green: 0.8, blue: 0.4), label: "LOW")
                     Spacer()
                 }
 
-                // Reminder list
-                VStack(spacing: 6) {
+                VStack(spacing: 8) {
                     ForEach(Array(entry.reminders.prefix(6).enumerated()), id: \.offset) { index, reminder in
                         ReminderRowWidget(reminder: reminder, showDetails: true)
-                    }
-
-                    if entry.reminders.count > 6 {
-                        HStack {
-                            Text("+ \(entry.reminders.count - 6) more reminders")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Spacer()
-                        }
-                        .padding(.top, 4)
                     }
                 }
             }
         }
-        .padding()
     }
-
     private func calculatePriorityBreakdown(_ reminders: [ReminderData]) -> (high: Int, medium: Int, low: Int) {
         let high = reminders.filter { $0.priority == .high }.count
         let medium = reminders.filter { $0.priority == .medium }.count
@@ -480,15 +428,24 @@ struct PriorityIndicator: View {
     let label: String
 
     var body: some View {
-        VStack(spacing: 2) {
-            Text("\(count)")
-                .font(.caption)
-                .fontWeight(.bold)
-                .foregroundColor(color)
+        HStack(spacing: 6) {
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.1))
+                Circle()
+                    .strokeBorder(color.opacity(0.2), lineWidth: 1)
+                Text("\(count)")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(color)
+            }
+            .frame(width: 24, height: 24)
+            
             Text(label)
-                .font(.caption2)
-                .foregroundColor(.secondary)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
         }
+        .padding(.trailing, 4)
     }
 }
 
@@ -497,57 +454,66 @@ struct ReminderRowWidget: View {
     var showDetails: Bool = false
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             // Interactive completion button
             Button(intent: CompleteReminderIntent(reminderId: reminder.id)) {
-                Image(systemName: reminder.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .foregroundColor(reminder.isCompleted ? .green : .gray)
-                    .font(.body)
+                ZStack {
+                    Circle()
+                        .strokeBorder(reminder.isCompleted ? Color.green : Color.secondary.opacity(0.3), lineWidth: 1.5)
+                        .background(reminder.isCompleted ? Circle().fill(Color.green.opacity(0.15)) : nil)
+                    
+                    if reminder.isCompleted {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.green)
+                    }
+                }
+                .frame(width: 20, height: 20)
             }
             .buttonStyle(.plain)
 
-            Circle()
-                .fill(priorityColor(reminder.priority))
-                .frame(width: 6, height: 6)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(reminder.title)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
-                    .strikethrough(reminder.isCompleted)
-                    .foregroundColor(reminder.isCompleted ? .secondary : .primary)
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 6) {
+                    Capsule()
+                        .fill(priorityColor(reminder.priority))
+                        .frame(width: 3, height: 12)
+                    
+                    Text(reminder.title)
+                        .font(.system(size: 12, weight: .medium))
+                        .lineLimit(1)
+                        .strikethrough(reminder.isCompleted)
+                        .foregroundStyle(reminder.isCompleted ? .secondary : .primary)
+                }
 
                 if showDetails {
                     HStack(spacing: 8) {
                         if let dueDate = reminder.dueDate {
-                            Text(dueDate, style: .relative)
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
+                            Label(dueDate.formatted(.dateTime.hour().minute()), systemImage: "clock")
+                                .font(.system(size: 9, weight: .medium))
                         }
 
                         if reminder.hasLocation {
                             Image(systemName: "location.fill")
-                                .font(.caption2)
-                                .foregroundColor(.blue)
+                                .font(.system(size: 9))
                         }
 
                         if reminder.hasVoice {
                             Image(systemName: "waveform")
-                                .font(.caption2)
-                                .foregroundColor(.purple)
+                                .font(.system(size: 9))
                         }
 
-                        if !reminder.tags.isEmpty {
-                            Text(reminder.tags.first!)
-                                .font(.caption2)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 1)
-                                .background(.blue.opacity(0.2))
-                                .foregroundColor(.blue)
+                        if let tag = reminder.tags.first {
+                            Text(tag)
+                                .font(.system(size: 8, weight: .bold))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.blue.opacity(0.1))
+                                .foregroundStyle(.blue)
                                 .clipShape(Capsule())
                         }
                     }
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 9)
                 }
             }
 
@@ -555,10 +521,11 @@ struct ReminderRowWidget: View {
 
             if let dueDate = reminder.dueDate, !showDetails {
                 Text(dueDate, style: .time)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.secondary)
             }
         }
+        .widgetCardStyle()
     }
 
     private func priorityColor(_ priority: Priority) -> Color {
@@ -591,24 +558,16 @@ struct FocusProvider: TimelineProvider {
         FocusEntry(
             date: Date(),
             isActive: false,
-            sessionName: "Deep Work",
-            remainingTime: 1800,
-            totalTime: 3600,
-            todaysSessions: 3,
-            todaysFocusTime: 7200
+            sessionName: "",
+            remainingTime: 0,
+            totalTime: 0,
+            todaysSessions: 0,
+            todaysFocusTime: 0
         )
     }
 
     func getSnapshot(in context: Context, completion: @escaping (FocusEntry) -> ()) {
-        let entry = FocusEntry(
-            date: Date(),
-            isActive: false,
-            sessionName: "Deep Work",
-            remainingTime: 1800,
-            totalTime: 3600,
-            todaysSessions: 3,
-            todaysFocusTime: 7200
-        )
+        let entry = fetchFocusEntry(date: Date())
         completion(entry)
     }
 
@@ -633,20 +592,39 @@ struct FocusProvider: TimelineProvider {
             return
         }
 
-        // In a real implementation, this would fetch current focus session data
-        let entry = FocusEntry(
-            date: currentDate,
-            isActive: false,
-            sessionName: "Work Session",
-            remainingTime: 0,
-            totalTime: 1800,
-            todaysSessions: 2,
-            todaysFocusTime: 3600
-        )
+        let entry = fetchFocusEntry(date: currentDate)
 
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: 1, to: currentDate)!
         let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
         completion(timeline)
+    }
+
+    private func fetchFocusEntry(date: Date) -> FocusEntry {
+        guard
+            let defaults = UserDefaults(suiteName: "group.com.ado.app"),
+            let rawData = defaults.data(forKey: "widget_focus_v1"),
+            let snapshot = try? JSONDecoder().decode(FocusSnapshot.self, from: rawData)
+        else {
+            return FocusEntry(
+                date: date,
+                isActive: false,
+                sessionName: "",
+                remainingTime: 0,
+                totalTime: 0,
+                todaysSessions: 0,
+                todaysFocusTime: 0
+            )
+        }
+
+        return FocusEntry(
+            date: date,
+            isActive: snapshot.isActive,
+            sessionName: snapshot.sessionName,
+            remainingTime: snapshot.remainingTime,
+            totalTime: snapshot.totalTime,
+            todaysSessions: snapshot.todaysSessions,
+            todaysFocusTime: snapshot.todaysFocusTime
+        )
     }
 }
 
@@ -681,81 +659,48 @@ struct SmallFocusWidget: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            HStack {
-                Image(systemName: "target")
-                    .foregroundColor(.orange)
-                Text("Focus")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                Spacer()
-            }
+            WidgetHeader(title: "Focus", icon: "target", color: Color(red: 0.4, green: 0.2, blue: 0.8))
 
-            // Check if this is the upgrade message (Pro Feature indicator)
             if entry.sessionName == "Pro Feature" {
-                VStack(spacing: 8) {
-                    Image(systemName: "star.fill")
-                        .font(.largeTitle)
-                        .foregroundColor(.orange)
-
-                    Text("Widgets are a")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-
-                    Text("Pro Feature")
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.orange)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                EmptyWidgetView(message: "Focus is a Pro Feature", icon: "star.fill", color: Color(red: 0.9, green: 0.4, blue: 0.6))
             } else if entry.isActive {
                 VStack(spacing: 8) {
                     Text(formatTime(entry.remainingTime))
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.orange)
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(red: 0.4, green: 0.2, blue: 0.8))
 
                     Text("remaining")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
 
                     ProgressView(value: 1.0 - (entry.remainingTime / entry.totalTime))
-                        .progressViewStyle(LinearProgressViewStyle(tint: .orange))
+                        .progressViewStyle(LinearProgressViewStyle(tint: Color(red: 0.4, green: 0.2, blue: 0.8)))
+                        .scaleEffect(x: 1, y: 1.5, anchor: .center)
+                        .clipShape(Capsule())
                 }
+                .padding(.top, 4)
             } else {
-                VStack(spacing: 8) {
-                    Text("\(entry.todaysSessions)")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.orange)
-
-                    Text("sessions today")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                VStack(spacing: 6) {
+                    HStack(alignment: .firstTextBaseline, spacing: 2) {
+                        Text("\(entry.todaysSessions)")
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color(red: 0.4, green: 0.2, blue: 0.8))
+                        Text("SESSIONS")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.secondary)
+                    }
 
                     Text(formatTime(entry.todaysFocusTime))
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
 
-                    // Start button
-                    Button(intent: StartFocusSessionIntent(durationMinutes: 25)) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "play.fill")
-                                .font(.caption2)
-                            Text("Start")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(.orange)
-                        .clipShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
+                    Spacer(minLength: 0)
+
+                    WidgetActionButton(title: "Start", icon: "play.fill", color: Color(red: 0.4, green: 0.2, blue: 0.8), intent: StartFocusSessionIntent(durationMinutes: 25))
                 }
             }
         }
-        .padding()
     }
 
     private func formatTime(_ timeInterval: TimeInterval) -> String {
@@ -776,126 +721,84 @@ struct MediumFocusWidget: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "target")
-                    .foregroundColor(.orange)
-                Text("Focus Sessions")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                Spacer()
+                WidgetHeader(title: "Focus Sessions", icon: "target", color: Color(red: 0.4, green: 0.2, blue: 0.8))
 
                 if entry.isActive {
                     HStack(spacing: 4) {
                         Circle()
                             .fill(.green)
-                            .frame(width: 8, height: 8)
-                        Text("Active")
-                            .font(.caption)
-                            .foregroundColor(.green)
+                            .frame(width: 6, height: 6)
+                        Text("ACTIVE")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.green)
                     }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(Color.green.opacity(0.1))
+                    .clipShape(Capsule())
                 }
             }
 
-            // Check if this is the upgrade message (Pro Feature indicator)
             if entry.sessionName == "Pro Feature" {
-                VStack(spacing: 8) {
-                    Image(systemName: "star.fill")
-                        .font(.largeTitle)
-                        .foregroundColor(.orange)
-
-                    Text("Widgets are a")
-                        .font(.callout)
-                        .foregroundColor(.secondary)
-
-                    Text("Pro Feature")
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(.orange)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                EmptyWidgetView(message: "Focus is a Pro Feature", icon: "star.fill", color: .orange)
             } else if entry.isActive {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(entry.sessionName)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 20) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(entry.sessionName)
+                            .font(.system(size: 15, weight: .bold))
+                        
+                        HStack(alignment: .firstTextBaseline, spacing: 4) {
                             Text(formatTime(entry.remainingTime))
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.orange)
-                            Text("remaining")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
+                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color(red: 0.4, green: 0.2, blue: 0.8))
+                            Text("left")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(.secondary)
+                                .textCase(.uppercase)
                         }
-
-                        Spacer()
-
-                        CircularProgressView(
-                            progress: 1.0 - (entry.remainingTime / entry.totalTime),
-                            color: .orange
-                        )
-                        .frame(width: 40, height: 40)
                     }
+                    
+                    Spacer()
+                    
+                    CircularProgressView(
+                        progress: 1.0 - (entry.remainingTime / entry.totalTime),
+                        color: Color(red: 0.4, green: 0.2, blue: 0.8)
+                    )
+                    .frame(width: 50, height: 50)
                 }
+                .widgetCardStyle()
             } else {
                 VStack(spacing: 12) {
-                    HStack(spacing: 20) {
-                        VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 24) {
+                        VStack(alignment: .leading, spacing: 0) {
                             Text("\(entry.todaysSessions)")
-                                .font(.title)
-                                .fontWeight(.bold)
-                                .foregroundColor(.orange)
-                            Text("Sessions")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color(red: 0.4, green: 0.2, blue: 0.8))
+                            Text("SESSIONS")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.secondary)
                         }
 
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: 0) {
                             Text(formatTime(entry.todaysFocusTime))
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.blue)
-                            Text("Focus Time")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color(red: 0.9, green: 0.4, blue: 0.6))
+                            Text("FOCUS TIME")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.secondary)
                         }
 
                         Spacer()
                     }
 
-                    // Quick action buttons
                     HStack(spacing: 8) {
-                        Button(intent: StartFocusSessionIntent(durationMinutes: 25)) {
-                            Text("25 min")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(.orange)
-                                .clipShape(Capsule())
-                        }
-                        .buttonStyle(.plain)
-
-                        Button(intent: StartFocusSessionIntent(durationMinutes: 50)) {
-                            Text("50 min")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(.blue)
-                                .clipShape(Capsule())
-                        }
-                        .buttonStyle(.plain)
-
+                        WidgetActionButton(title: "25 min", icon: "play.fill", color: Color(red: 0.4, green: 0.2, blue: 0.8), intent: StartFocusSessionIntent(durationMinutes: 25))
+                        WidgetActionButton(title: "50 min", icon: "play.fill", color: Color(red: 0.9, green: 0.4, blue: 0.6), intent: StartFocusSessionIntent(durationMinutes: 50))
                         Spacer()
                     }
                 }
             }
         }
-        .padding()
     }
 
     private func formatTime(_ timeInterval: TimeInterval) -> String {
@@ -917,12 +820,13 @@ struct CircularProgressView: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(color.opacity(0.2), lineWidth: 4)
+                .stroke(color.opacity(0.1), lineWidth: 6)
 
             Circle()
                 .trim(from: 0, to: progress)
-                .stroke(color, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .stroke(color.gradient, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .rotationEffect(.degrees(-90))
+                .shadow(color: color.opacity(0.3), radius: 2)
         }
     }
 }
@@ -947,30 +851,15 @@ struct TimeTrackingProvider: TimelineProvider {
         TimeTrackingEntry(
             date: Date(),
             isTracking: false,
-            currentCategory: "Work",
-            elapsedTime: 3600,
-            todaysTotal: 14400,
-            topCategories: [
-                ("Work", 7200),
-                ("Study", 3600),
-                ("Personal", 1800)
-            ]
+            currentCategory: "",
+            elapsedTime: 0,
+            todaysTotal: 0,
+            topCategories: []
         )
     }
 
     func getSnapshot(in context: Context, completion: @escaping (TimeTrackingEntry) -> ()) {
-        let entry = TimeTrackingEntry(
-            date: Date(),
-            isTracking: true,
-            currentCategory: "Work",
-            elapsedTime: 1800,
-            todaysTotal: 10800,
-            topCategories: [
-                ("Work", 5400),
-                ("Study", 3600),
-                ("Personal", 1800)
-            ]
-        )
+        let entry = fetchTimeEntry(date: Date())
         completion(entry)
     }
 
@@ -994,23 +883,60 @@ struct TimeTrackingProvider: TimelineProvider {
             return
         }
 
-        let entry = TimeTrackingEntry(
-            date: currentDate,
-            isTracking: false,
-            currentCategory: "Work",
-            elapsedTime: 0,
-            todaysTotal: 7200,
-            topCategories: [
-                ("Work", 3600),
-                ("Study", 2400),
-                ("Personal", 1200)
-            ]
-        )
+        let entry = fetchTimeEntry(date: currentDate)
 
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: 1, to: currentDate)!
         let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
         completion(timeline)
     }
+
+    private func fetchTimeEntry(date: Date) -> TimeTrackingEntry {
+        guard
+            let defaults = UserDefaults(suiteName: "group.com.ado.app"),
+            let rawData = defaults.data(forKey: "widget_time_tracking_v1"),
+            let snapshot = try? JSONDecoder().decode(TimeTrackingSnapshot.self, from: rawData)
+        else {
+            return TimeTrackingEntry(
+                date: date,
+                isTracking: false,
+                currentCategory: "",
+                elapsedTime: 0,
+                todaysTotal: 0,
+                topCategories: []
+            )
+        }
+
+        return TimeTrackingEntry(
+            date: date,
+            isTracking: snapshot.isTracking,
+            currentCategory: snapshot.currentCategory,
+            elapsedTime: snapshot.elapsedTime,
+            todaysTotal: snapshot.todaysTotal,
+            topCategories: snapshot.topCategories.map { ($0.category, $0.duration) }
+        )
+    }
+}
+
+private struct FocusSnapshot: Codable {
+    let isActive: Bool
+    let sessionName: String
+    let remainingTime: TimeInterval
+    let totalTime: TimeInterval
+    let todaysSessions: Int
+    let todaysFocusTime: TimeInterval
+}
+
+private struct TimeCategorySnapshot: Codable {
+    let category: String
+    let duration: TimeInterval
+}
+
+private struct TimeTrackingSnapshot: Codable {
+    let isTracking: Bool
+    let currentCategory: String
+    let elapsedTime: TimeInterval
+    let todaysTotal: TimeInterval
+    let topCategories: [TimeCategorySnapshot]
 }
 
 struct TimeTrackingEntry: TimelineEntry {
@@ -1043,99 +969,46 @@ struct SmallTimeTrackingWidget: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            HStack {
-                Image(systemName: "stopwatch")
-                    .foregroundColor(.green)
-                Text("Time")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                Spacer()
-            }
+            WidgetHeader(title: "Time", icon: "stopwatch.fill", color: Color(red: 0.4, green: 0.2, blue: 0.8))
 
             if entry.currentCategory == "Pro Feature" {
-                VStack(spacing: 8) {
-                    Image(systemName: "star.fill")
-                        .font(.largeTitle)
-                        .foregroundColor(.orange)
-
-                    Text("Widgets are a")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-
-                    Text("Pro Feature")
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.orange)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                EmptyWidgetView(message: "Tracking is a Pro Feature", icon: "star.fill", color: Color(red: 0.9, green: 0.4, blue: 0.6))
             } else if entry.isTracking {
-                VStack(spacing: 8) {
+                VStack(spacing: 6) {
                     Text(formatTime(entry.elapsedTime))
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.green)
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(red: 0.2, green: 0.8, blue: 0.4))
 
                     Text(entry.currentCategory)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
 
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(.green)
-                            .frame(width: 6, height: 6)
-                        Text("Tracking")
-                            .font(.caption2)
-                            .foregroundColor(.green)
-                    }
+                    Spacer(minLength: 0)
 
-                    // Stop button
-                    Button(intent: StopTimeTrackingIntent()) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "stop.fill")
-                                .font(.caption2)
-                            Text("Stop")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(.red)
-                        .clipShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
+                    WidgetActionButton(title: "Stop", icon: "stop.fill", color: .red, intent: StopTimeTrackingIntent())
                 }
             } else {
-                VStack(spacing: 8) {
-                    Text(formatTime(entry.todaysTotal))
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.blue)
+                VStack(spacing: 6) {
+                    HStack(alignment: .firstTextBaseline, spacing: 2) {
+                        Text(formatTime(entry.todaysTotal))
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color(red: 0.9, green: 0.4, blue: 0.6))
+                        Text("TOTAL")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.secondary)
+                    }
 
                     Text("today")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.secondary)
 
-                    // Start button
-                    Button(intent: StartTimeTrackingIntent(category: "Work")) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "play.fill")
-                                .font(.caption2)
-                            Text("Start")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(.green)
-                        .clipShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
+                    Spacer(minLength: 0)
+
+                    WidgetActionButton(title: "Start", icon: "play.fill", color: Color(red: 0.4, green: 0.2, blue: 0.8), intent: StartTimeTrackingIntent(category: "Work"))
                 }
             }
         }
-        .padding()
     }
 
     private func formatTime(_ timeInterval: TimeInterval) -> String {
@@ -1156,124 +1029,91 @@ struct MediumTimeTrackingWidget: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "stopwatch")
-                    .foregroundColor(.green)
-                Text("Time Tracking")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                Spacer()
+                WidgetHeader(title: "Time Tracking", icon: "stopwatch.fill", color: Color(red: 0.4, green: 0.2, blue: 0.8))
 
                 if entry.isTracking {
                     HStack(spacing: 4) {
                         Circle()
                             .fill(.green)
-                            .frame(width: 8, height: 8)
-                        Text("Active")
-                            .font(.caption)
-                            .foregroundColor(.green)
+                            .frame(width: 6, height: 6)
+                        Text("TRACKING")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.green)
                     }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(Color.green.opacity(0.1))
+                    .clipShape(Capsule())
                 }
             }
 
-            // Check if this is the upgrade message (Pro Feature indicator)
             if entry.currentCategory == "Pro Feature" {
-                VStack(spacing: 8) {
-                    Image(systemName: "star.fill")
-                        .font(.largeTitle)
-                        .foregroundColor(.orange)
-
-                    Text("Widgets are a")
-                        .font(.callout)
-                        .foregroundColor(.secondary)
-
-                    Text("Pro Feature")
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(.orange)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                EmptyWidgetView(message: "Tracking is a Pro Feature", icon: "star.fill", color: Color(red: 0.9, green: 0.4, blue: 0.6))
             } else if entry.isTracking {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: 2) {
                             Text(formatTime(entry.elapsedTime))
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.green)
+                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color(red: 0.2, green: 0.8, blue: 0.4))
                             Text(entry.currentCategory)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.secondary)
                         }
 
                         Spacer()
 
-                        VStack(alignment: .trailing, spacing: 4) {
+                        VStack(alignment: .trailing, spacing: 2) {
                             Text(formatTime(entry.todaysTotal))
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                                .foregroundColor(.blue)
-                            Text("Total Today")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
+                                .font(.system(size: 15, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color(red: 0.9, green: 0.4, blue: 0.6))
+                            Text("TOTAL TODAY")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundStyle(.secondary)
                         }
                     }
+                    .widgetCardStyle()
 
-                    // Stop button
-                    Button(intent: StopTimeTrackingIntent()) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "stop.fill")
-                                .font(.caption)
-                            Text("Stop Tracking")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(.red)
-                        .clipShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
+                    WidgetActionButton(title: "Stop Tracking", icon: "stop.fill", color: .red, intent: StopTimeTrackingIntent())
                 }
             } else {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .firstTextBaseline) {
                         Text(formatTime(entry.todaysTotal))
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.blue)
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color(red: 0.9, green: 0.4, blue: 0.6))
+                        Text("TOTAL TODAY")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.secondary)
                         Spacer()
-                        Text("Today's Total")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
                     }
 
-                    VStack(spacing: 4) {
+                    VStack(spacing: 6) {
                         ForEach(Array(entry.topCategories.prefix(2).enumerated()), id: \.offset) { index, category in
                             HStack {
+                                Text(category.0)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(.primary)
+                                
+                                Spacer()
+                                
+                                Text(formatTime(category.1))
+                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                                    .foregroundStyle(.secondary)
+                                
                                 Button(intent: StartTimeTrackingIntent(category: category.0)) {
-                                    HStack {
-                                        Text(category.0)
-                                            .font(.caption)
-                                            .foregroundColor(.primary)
-                                        Spacer()
-                                        Text(formatTime(category.1))
-                                            .font(.caption)
-                                            .fontWeight(.medium)
-                                            .foregroundColor(.secondary)
-                                        Image(systemName: "play.circle.fill")
-                                            .font(.caption)
-                                            .foregroundColor(.green)
-                                    }
+                                    Image(systemName: "play.circle.fill")
+                                        .font(.system(size: 18))
+                                        .foregroundStyle(Color(red: 0.2, green: 0.8, blue: 0.4))
                                 }
                                 .buttonStyle(.plain)
                             }
+                            .widgetCardStyle()
                         }
                     }
                 }
             }
         }
-        .padding()
     }
 
     private func formatTime(_ timeInterval: TimeInterval) -> String {

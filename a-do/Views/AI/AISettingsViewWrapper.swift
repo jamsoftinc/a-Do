@@ -23,7 +23,7 @@ struct AISettingsViewWrapper: View {
             ) {
                 showPaywall = true
             }
-            .sheet(isPresented: $showPaywall) {
+            .fullScreenCover(isPresented: $showPaywall) {
                 PaywallView()
             }
         }

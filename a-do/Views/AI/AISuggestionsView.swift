@@ -11,12 +11,15 @@ import Observation
 
 struct AISuggestionsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     @State private var aiManager = AIManager.shared
     @State private var behavioralLearning = BehavioralLearningManager.shared
     @State private var selectedSuggestion: AISuggestion?
     @State private var showingFeedback = false
     @State private var feedbackText = ""
     @State private var feedbackRating = 3
+    @State private var showingActionFeedback = false
+    @State private var actionFeedbackMessage = ""
     
     // Filter states
     @State private var selectedPriority: AISuggestionPriority? = nil
@@ -63,6 +66,28 @@ struct AISuggestionsView: View {
             .navigationTitle("AI Suggestions")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
+                ToolbarItemGroup(placement: .navigationBarLeading) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(8)
+                            .background(Color.black.opacity(0.2), in: Circle())
+                    }
+
+                    Button {
+                        goHome()
+                    } label: {
+                        Image(systemName: "house.fill")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(8)
+                            .background(Color.black.opacity(0.2), in: Circle())
+                    }
+                }
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     refreshButton
                 }
@@ -75,10 +100,20 @@ struct AISuggestionsView: View {
             .alert("Provide Feedback", isPresented: $showingFeedback) {
                 feedbackAlert
             }
+            .alert("Suggestion Updated", isPresented: $showingActionFeedback) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(actionFeedbackMessage)
+            }
             .onAppear {
                 refreshSuggestions()
             }
         }
+    }
+
+    private func goHome() {
+        NotificationCenter.default.post(name: .appNavigateHome, object: nil)
+        dismiss()
     }
     
     // MARK: - Header Section
@@ -260,21 +295,31 @@ struct AISuggestionsView: View {
     }
     
     private func refreshSuggestionsAsync() async {
-        await aiManager.generateSuggestions(userId: "current-user", context: modelContext)
+        await aiManager.generateSuggestions(
+            userId: SecurityUtils.getCurrentUserID(),
+            context: modelContext
+        )
     }
     
     private func handleSuggestionAction(suggestion: AISuggestion, action: SuggestionAction) {
         switch action {
         case .apply:
-            // Track user interaction before applying
-            behavioralLearning.trackSuggestionInteraction(
-                suggestion: suggestion,
-                interaction: .applied,
-                modelContext: modelContext
-            )
-            
-            suggestion.apply()
-            try? modelContext.save()
+            Task {
+                behavioralLearning.trackSuggestionInteraction(
+                    suggestion: suggestion,
+                    interaction: .applied,
+                    modelContext: modelContext
+                )
+
+                let resultMessage = await applySuggestionEffect(suggestion)
+                suggestion.apply()
+                try? modelContext.save()
+
+                await MainActor.run {
+                    actionFeedbackMessage = resultMessage
+                    showingActionFeedback = true
+                }
+            }
             
         case .dismiss:
             // Track user interaction before dismissing
@@ -301,6 +346,172 @@ struct AISuggestionsView: View {
             selectedSuggestion = suggestion
             showingFeedback = true
         }
+    }
+
+    private func applySuggestionEffect(_ suggestion: AISuggestion) async -> String {
+        switch suggestion.type {
+        case .scheduleConflictResolution, .optimalTaskTiming, .dueDateOptimization, .deadlineWarning:
+            guard let reminder = suggestion.targetReminder else {
+                return "Applied. No target reminder was attached."
+            }
+
+            let proposedDate = CalendarManager.shared.suggestTimeForReminder(reminder) ??
+                reminder.dueDate?.addingTimeInterval(60 * 60) ??
+                Date().addingTimeInterval(60 * 60)
+
+            reminder.dueDate = proposedDate
+
+            if EntitlementManager.shared.canUseCalendarBlocking {
+                await CalendarManager.shared.requestAccess()
+                if CalendarManager.shared.accessGranted {
+                    try? await CalendarManager.shared.updateTimeBlock(
+                        for: reminder,
+                        newStartDate: proposedDate,
+                        newDuration: 30 * 60,
+                        context: modelContext
+                    )
+                }
+            }
+
+            return "Rescheduled '\(reminder.title)' to \(proposedDate.formatted(date: .abbreviated, time: .shortened))."
+
+        case .taskBreakdown:
+            guard let reminder = suggestion.targetReminder else {
+                return "Applied. No reminder found for task breakdown."
+            }
+            let breakdown = suggestion.getContextData(as: [String: [String]].self)?["suggestedTasks"] ?? []
+            guard !breakdown.isEmpty else {
+                return "Applied. No suggested subtasks were available."
+            }
+
+            let existing = Set((reminder.subtasks ?? []).map { $0.title.lowercased() })
+            var added = 0
+            for title in breakdown where !existing.contains(title.lowercased()) {
+                if SubtasksManager.shared.addSubtask(to: reminder, title: title, context: modelContext) != nil {
+                    added += 1
+                }
+            }
+            return added > 0
+                ? "Added \(added) subtasks to '\(reminder.title)'."
+                : "No new subtasks were added."
+
+        case .priorityAdjustment:
+            guard let reminder = suggestion.targetReminder else {
+                return "Applied. No reminder found for priority adjustment."
+            }
+            reminder.priority = .high
+            return "Marked '\(reminder.title)' as high priority."
+
+        case .workloadBalance:
+            let descriptor = FetchDescriptor<Reminder>(
+                predicate: #Predicate { !$0.isCompleted }
+            )
+            let reminders = (try? modelContext.fetch(descriptor)) ?? []
+            let calendar = Calendar.current
+            let tomorrow = calendar.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+            var movedCount = 0
+
+            for reminder in reminders where movedCount < 3 {
+                guard reminder.isOverdue || (reminder.dueDate.map { calendar.isDateInToday($0) } ?? false) else { continue }
+                guard reminder.priority != .high else { continue }
+                let hour = 10 + movedCount
+                reminder.dueDate = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: tomorrow)
+                movedCount += 1
+            }
+            return movedCount > 0
+                ? "Rescheduled \(movedCount) lower-priority tasks to tomorrow."
+                : "No tasks needed balancing."
+
+        case .habitTiming, .habitStacking, .habitStreak, .habitDifficulty:
+            guard let habit = suggestion.targetHabit else {
+                return "Applied. No target habit was attached."
+            }
+            let note = "AI tip applied (\(Date().formatted(date: .abbreviated, time: .omitted))): \(suggestion.aiDescription)"
+            habit.habitDescription = [habit.habitDescription, note]
+                .filter { !$0.isEmpty }
+                .joined(separator: "\n")
+            habit.updatedAt = Date()
+            return "Updated habit plan for '\(habit.title)'."
+
+        case .delegationSuggestion, .collaborationOpportunity:
+            guard let reminder = suggestion.targetReminder else {
+                return "Applied. No reminder found for collaboration suggestion."
+            }
+            reminder.autoTextTaggedContacts = true
+            return "Enabled collaborator outreach for '\(reminder.title)'."
+
+        case .tagSuggestion:
+            let tagCandidates = extractSuggestedTags(from: suggestion.aiDescription)
+            guard !tagCandidates.isEmpty else {
+                return "Applied. No suggested tags could be parsed."
+            }
+
+            let reminderDescriptor = FetchDescriptor<Reminder>(
+                predicate: #Predicate { !$0.isCompleted }
+            )
+            let reminders = (try? modelContext.fetch(reminderDescriptor)) ?? []
+            let untagged = reminders.filter { ($0.tags ?? []).isEmpty }
+            guard !untagged.isEmpty else {
+                return "Applied. No untagged reminders were found."
+            }
+
+            let tagDescriptor = FetchDescriptor<Tag>()
+            let existingTags = (try? modelContext.fetch(tagDescriptor)) ?? []
+            var tagByName = Dictionary(uniqueKeysWithValues: existingTags.map { ($0.name.lowercased(), $0) })
+
+            var applied = 0
+            for reminder in untagged.prefix(10) {
+                var currentTags = reminder.tags ?? []
+                for candidate in tagCandidates {
+                    let normalized = candidate.lowercased()
+                    let tag: Tag
+                    if let existing = tagByName[normalized] {
+                        tag = existing
+                    } else {
+                        let newTag = Tag(name: candidate)
+                        modelContext.insert(newTag)
+                        tagByName[normalized] = newTag
+                        tag = newTag
+                    }
+
+                    if !currentTags.contains(where: { $0.name.lowercased() == normalized }) {
+                        currentTags.append(tag)
+                        applied += 1
+                    }
+                }
+                reminder.tags = currentTags
+            }
+
+            return applied > 0
+                ? "Applied \(applied) tag assignments to untagged reminders."
+                : "No new tags were applied."
+
+        default:
+            return "Suggestion marked as applied."
+        }
+    }
+
+    private func extractSuggestedTags(from description: String) -> [String] {
+        let hashPattern = #"#(\w+)"#
+        if let regex = try? NSRegularExpression(pattern: hashPattern) {
+            let nsRange = NSRange(description.startIndex..<description.endIndex, in: description)
+            let tags = regex.matches(in: description, range: nsRange).compactMap { match -> String? in
+                guard let range = Range(match.range(at: 1), in: description) else { return nil }
+                return String(description[range])
+            }
+            if !tags.isEmpty { return tags }
+        }
+
+        if let range = description.range(of: "like:", options: .caseInsensitive) {
+            let trailing = description[range.upperBound...]
+            let parsed = trailing
+                .split(separator: ",")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            if !parsed.isEmpty { return parsed }
+        }
+
+        return []
     }
     
     private var feedbackAlert: some View {

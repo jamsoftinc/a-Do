@@ -58,7 +58,7 @@ struct LaunchScreenView: View {
     
     private var appIconView: some View {
         Group {
-            if let appIcon = UIImage(named: "logo-bell-up") {
+            if let appIcon = UIImage(named: "AppLogo") {
                 Image(uiImage: appIcon)
                     .resizable()
                     .aspectRatio(contentMode: .fit)

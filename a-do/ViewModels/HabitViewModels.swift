@@ -95,6 +95,7 @@ final class HabitViewModel {
         do {
             try context.save()
             loadHabits()
+            refreshWidgetSnapshotsIfPossible()
             logger.info("Created habit: \(title)")
         } catch {
             logger.error("Failed to create habit: \(error.localizedDescription)")
@@ -114,6 +115,7 @@ final class HabitViewModel {
         do {
             try modelContext?.save()
             updateStatistics()
+            refreshWidgetSnapshotsIfPossible()
             logger.info("Updated habit: \(title)")
         } catch {
             logger.error("Failed to update habit: \(error.localizedDescription)")
@@ -128,6 +130,7 @@ final class HabitViewModel {
         do {
             try context.save()
             loadHabits()
+            refreshWidgetSnapshotsIfPossible()
             logger.info("Deleted habit: \(habit.title)")
         } catch {
             logger.error("Failed to delete habit: \(error.localizedDescription)")
@@ -141,6 +144,7 @@ final class HabitViewModel {
         do {
             try modelContext?.save()
             updateStatistics()
+            refreshWidgetSnapshotsIfPossible()
             logger.info("Toggled habit active state: \(habit.title)")
         } catch {
             logger.error("Failed to toggle habit: \(error.localizedDescription)")
@@ -180,6 +184,7 @@ final class HabitViewModel {
         do {
             try modelContext?.save()
             updateStatistics()
+            refreshWidgetSnapshotsIfPossible()
             logger.info("Incremented habit: \(habit.title)")
         } catch {
             logger.error("Failed to increment habit: \(error.localizedDescription)")
@@ -192,6 +197,7 @@ final class HabitViewModel {
         do {
             try modelContext?.save()
             updateStatistics()
+            refreshWidgetSnapshotsIfPossible()
             logger.info("Decremented habit: \(habit.title)")
         } catch {
             logger.error("Failed to decrement habit: \(error.localizedDescription)")
@@ -204,6 +210,7 @@ final class HabitViewModel {
         do {
             try modelContext?.save()
             updateStatistics()
+            refreshWidgetSnapshotsIfPossible()
             logger.info("Set habit count: \(habit.title) to \(count)")
         } catch {
             logger.error("Failed to set habit count: \(error.localizedDescription)")
@@ -216,6 +223,7 @@ final class HabitViewModel {
         do {
             try modelContext?.save()
             updateStatistics()
+            refreshWidgetSnapshotsIfPossible()
             logger.info("Added habit entry: \(habit.title)")
         } catch {
             logger.error("Failed to add habit entry: \(error.localizedDescription)")
@@ -268,6 +276,11 @@ final class HabitViewModel {
     func dismissHabitDetail() {
         showingHabitDetail = false
         selectedHabit = nil
+    }
+
+    private func refreshWidgetSnapshotsIfPossible() {
+        guard let modelContext else { return }
+        WidgetSnapshotManager.shared.refreshSnapshots(context: modelContext)
     }
 }
 

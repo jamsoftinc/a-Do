@@ -19,6 +19,38 @@ enum Priority: Int, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum EnergyLevel: Int, Codable, CaseIterable, Identifiable {
+    case low = 1
+    case medium = 2
+    case high = 3
+    
+    var id: Int { rawValue }
+    
+    var title: String {
+        switch self {
+        case .low: return "Low Energy"
+        case .medium: return "Medium Energy"
+        case .high: return "High Energy"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .low: return "battery.25"
+        case .medium: return "battery.50"
+        case .high: return "battery.100"
+        }
+    }
+    
+    var color: String {
+        switch self {
+        case .low: return "#34C759" // Green
+        case .medium: return "#FF9500" // Orange
+        case .high: return "#FF3B30" // Red
+        }
+    }
+}
+
 enum LocationTriggerType: String, Codable, CaseIterable, Identifiable {
     case onArrival
     case onDeparture
@@ -170,6 +202,7 @@ final class AppleNoteAttachment {
 final class ReminderList {
     var name: String = ""
     var isSmart: Bool = false
+    var isProtected: Bool = false
     var encodedSmartRules: Data?
     var order: Int = 0
 
@@ -178,9 +211,10 @@ final class ReminderList {
     @Relationship(deleteRule: .cascade) var sharedLists: [SharedList]?
     
 
-    init(name: String, isSmart: Bool = false, rules: [SmartListRule]? = nil, reminders: [Reminder] = []) {
+    init(name: String, isSmart: Bool = false, isProtected: Bool = false, rules: [SmartListRule]? = nil, reminders: [Reminder] = []) {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         self.isSmart = isSmart
+        self.isProtected = isProtected
         if let rules { 
             self.encodedSmartRules = try? JSONEncoder().encode(rules) 
         }
@@ -225,6 +259,9 @@ final class Reminder {
     // Snooze tracking
     var snoozeCount: Int? = 0
     var lastSnoozedAt: Date?
+    
+    // Contextual Priority
+    var energyLevelRaw: Int = 2 // Default to medium. Using Int for SwiftData storage.
 
     @Relationship(deleteRule: .nullify) var tags: [Tag]?
     @Relationship(deleteRule: .cascade) var notifications: [ReminderNotification]? = []
@@ -278,6 +315,8 @@ final class Reminder {
         autoTextMe: Bool = false,
         appleNote: AppleNoteAttachment? = nil,
         voiceReminder: VoiceReminder? = nil,
+
+        energyLevel: EnergyLevel = .medium,
         uuid: UUID = UUID(),
         calendarInviteCreated: Bool = false
     ) {
@@ -297,12 +336,19 @@ final class Reminder {
         self.autoTextMe = autoTextMe
         self.appleNote = appleNote
         self.voiceReminder = voiceReminder
+
+        self.energyLevelRaw = energyLevel.rawValue
         self.calendarInviteCreated = calendarInviteCreated
     }
 
     var priority: Priority {
         get { Priority(rawValue: priorityRaw) ?? .none }
         set { priorityRaw = newValue.rawValue }
+    }
+    
+    var energyLevel: EnergyLevel {
+        get { EnergyLevel(rawValue: energyLevelRaw) ?? .medium }
+        set { energyLevelRaw = newValue.rawValue }
     }
     
     // Check if completed reminder should be automatically deleted (older than 30 days)
@@ -370,8 +416,28 @@ final class VoiceReminder {
 // MARK: - Extensions
 extension ReminderList {
     static func defaultSmartLists() -> [ReminderList] {
-        // Return empty array - no demo data in production
-        return []
+        let today = ReminderList(
+            name: "Today",
+            isSmart: true,
+            isProtected: true,
+            rules: [SmartListRule(type: .dueToday, priority: nil, tagName: nil)]
+        )
+        
+        let overdue = ReminderList(
+            name: "Overdue",
+            isSmart: true,
+            isProtected: true,
+            rules: [SmartListRule(type: .overdue, priority: nil, tagName: nil)]
+        )
+        
+        let highPriority = ReminderList(
+            name: "High Priority",
+            isSmart: true,
+            isProtected: true,
+            rules: [SmartListRule(type: .priority, priority: .high, tagName: nil)]
+        )
+        
+        return [today, overdue, highPriority]
     }
 }
 

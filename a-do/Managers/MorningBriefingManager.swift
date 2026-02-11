@@ -48,8 +48,8 @@ final class MorningBriefingManager {
             // 1. Aggregate Data
             let data = try await aggregateUserData(context: context)
             
-            // 2. Generate Content using FoundationModels
-            let content = try await generateAIContent(from: data)
+            // 2. Generate Content using selected AI provider
+            let content = try await generateAIContent(from: data, context: context)
             
             self.currentBriefing = content
             self.lastGeneratedDate = Date()
@@ -78,6 +78,8 @@ final class MorningBriefingManager {
         let tasksOverdue: Int
         let topPriorityTask: String?
         let weatherCondition: String
+        let temperature: String
+        let weatherIcon: String
         let productivityScore: Int?
     }
     
@@ -109,7 +111,7 @@ final class MorningBriefingManager {
         let bestHabit = habits.max(by: { $0.currentStreak < $1.currentStreak })
         
         // Get real weather data
-        let weatherCondition = await fetchCurrentWeather()
+        let weather = await fetchWeatherDetails()
         
         // Calculate real productivity score
         let productivityScore = await calculateProductivityScore(context: context)
@@ -121,36 +123,103 @@ final class MorningBriefingManager {
             tasksDueToday: dueTasks.count,
             tasksOverdue: overdueTasks.count,
             topPriorityTask: dueTasks.first?.title,
-            weatherCondition: weatherCondition,
+            weatherCondition: weather.condition,
+            temperature: weather.temperature,
+            weatherIcon: weather.icon,
             productivityScore: productivityScore
         )
     }
     
     // MARK: - Weather Integration (WeatherKit)
     
-    private func fetchCurrentWeather() async -> String {
+    private struct WeatherDetails {
+        let condition: String
+        let temperature: String
+        let icon: String
+    }
+    
+    private func fetchWeatherDetails() async -> WeatherDetails {
+        logger.info("Starting weather detail fetch...")
         do {
             // Get user's current location
             guard let location = await LocationManager.shared.getCurrentLocation() else {
-                logger.warning("Could not get location for weather")
-                return "Clear"
+                let status = LocationManager.shared.authorizationStatus.rawValue
+                logger.error("Could not get location for weather. Auth status: \(status)")
+                return WeatherDetails(condition: "Clear", temperature: "--", icon: "sun.max.fill")
             }
+            
+            logger.info("Found location: \(location.coordinate.latitude), \(location.coordinate.longitude). Requesting WeatherKit data...")
             
             // Use WeatherKit to fetch current weather
             let weatherService = WeatherService.shared
-            let weather = try await weatherService.weather(for: location)
             
-            // Get current condition description
-            let condition = weather.currentWeather.condition
-            let temperature = weather.currentWeather.temperature
-            
-            // Format a human-friendly weather string
-            let tempFormatted = temperature.formatted(.measurement(width: .narrow))
-            return "\(condition.description), \(tempFormatted)"
+            do {
+                let weather = try await weatherService.weather(for: location)
+                
+                // Get current condition description
+                let condition = weather.currentWeather.condition
+                let temperature = weather.currentWeather.temperature
+                
+                // Get user's preferred temperature unit (from UserDefaults for quick access)
+                let preferredUnit = UserDefaults.standard.string(forKey: "temperatureUnit") ?? "fahrenheit"
+                
+                // Convert and format temperature as a rounded whole number
+                let tempValue: Double
+                let unitSymbol: String
+                
+                if preferredUnit == "celsius" {
+                    // Convert to Celsius if needed
+                    tempValue = temperature.converted(to: .celsius).value
+                    unitSymbol = "°C"
+                } else {
+                    // Fahrenheit (default)
+                    tempValue = temperature.converted(to: .fahrenheit).value
+                    unitSymbol = "°F"
+                }
+                
+                let roundedTemp = Int(tempValue.rounded())
+                let tempFormatted = "\(roundedTemp)\(unitSymbol)"
+                
+                // Map condition to SF Symbol
+                let iconName = mapWeatherConditionToIcon(condition)
+                
+                logger.info("Successfully fetched weather: \(condition.description), \(tempFormatted)")
+                
+                return WeatherDetails(
+                    condition: condition.description,
+                    temperature: tempFormatted,
+                    icon: iconName
+                )
+            } catch {
+                logger.error("WeatherKit service failed: \(error.localizedDescription)")
+                // Re-throw to be caught by outer block for unified fallback logic
+                throw error
+            }
             
         } catch {
-            logger.error("Failed to fetch weather: \(error.localizedDescription)")
-            return "Clear"
+            logger.error("Top-level weather fetch error: \(error.localizedDescription)")
+            return WeatherDetails(condition: "Clear", temperature: "--", icon: "sun.max.fill")
+        }
+    }
+    
+    private func mapWeatherConditionToIcon(_ condition: WeatherCondition) -> String {
+        switch condition {
+        case .clear, .mostlyClear:
+            return "sun.max.fill"
+        case .partlyCloudy, .mostlyCloudy, .cloudy:
+            return "cloud.fill"
+        case .rain, .heavyRain, .drizzle, .sunShowers:
+            return "cloud.rain.fill"
+        case .snow, .heavySnow, .flurries, .sunFlurries:
+            return "cloud.snow.fill"
+        case .thunderstorms, .isolatedThunderstorms, .scatteredThunderstorms:
+            return "cloud.bolt.rain.fill"
+        case .windy, .breezy:
+            return "wind"
+        case .foggy, .haze, .smoky:
+            return "cloud.fog.fill"
+        default:
+            return "sun.max.fill"
         }
     }
     
@@ -226,7 +295,22 @@ final class MorningBriefingManager {
     
     // MARK: - AI Generation (FoundationModels)
 
-    private func generateAIContent(from data: UserContextData) async throws -> BriefingContent {
+    private func generateAIContent(from data: UserContextData, context _: ModelContext) async throws -> BriefingContent {
+        let userId = SecurityUtils.getCurrentUserID()
+        let provider = AIManager.shared.provider(for: .morningBriefing, userId: userId)
+
+        if provider == .googleGemini3 {
+            do {
+                return try await generateGeminiContent(from: data)
+            } catch {
+                logger.error("Gemini briefing generation failed: \(error.localizedDescription). Falling back to Apple on-device model.")
+            }
+        }
+
+        return try await generateFoundationModelContent(from: data)
+    }
+
+    private func generateFoundationModelContent(from data: UserContextData) async throws -> BriefingContent {
         // Check if Foundation Models is available
         let availability = SystemLanguageModel.default.availability
         guard case .available = availability else {
@@ -243,10 +327,14 @@ final class MorningBriefingManager {
         Generate a 3-part morning briefing for the user based on this data:
         \(dataJSON)
 
-        Structure the response as JSON with keys: 'greeting', 'focus', 'motivation'.
-        - greeting: Warm welcome, mention name and weather.
+        Structure the response as JSON with keys: 'greeting', 'focus', 'motivation', 'weatherIcon', 'temperature', 'condition'.
+        - greeting: Warm welcome. Mention THEIR NAME. IMPORTANT: Specifically mention that it's \(data.weatherCondition) and \(data.temperature) outside.
         - focus: Summary of tasks (mention count and top priority).
         - motivation: Encouragement based on level/streak.
+        - weatherIcon: Use exactly this string: "\(data.weatherIcon)".
+        - temperature: Use exactly this string: "\(data.temperature)".
+        - condition: Use exactly this string: "\(data.weatherCondition)".
+        
         Keep it concise and punchy.
         """
 
@@ -255,20 +343,51 @@ final class MorningBriefingManager {
 
         return response.content
     }
+
+    private func generateGeminiContent(from data: UserContextData) async throws -> BriefingContent {
+        let dataJSON = (try? JSONEncoder().encode(data)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+
+        let prompt = """
+        You are a helpful, encouraging assistant for a productivity app.
+        Generate a morning briefing from this data:
+        \(dataJSON)
+
+        Return ONLY valid JSON with keys:
+        - greeting (String): Include the user's name and explicitly mention weather condition and temperature.
+        - focus (String): Mention tasks due today and top priority task.
+        - motivation (String): Encouraging line tied to level/streak.
+        - weatherIcon (String): Use this exact icon: "\(data.weatherIcon)".
+        - temperature (String): Use this exact value: "\(data.temperature)".
+        - condition (String): Use this exact value: "\(data.weatherCondition)".
+        """
+
+        return try await GeminiManager.shared.generateStructuredResponse(
+            prompt: prompt,
+            as: BriefingContent.self,
+            temperature: 0.2,
+            maxOutputTokens: 512
+        )
+    }
     
     private func generateFallbackContent(from data: UserContextData?) -> BriefingContent {
         guard let data = data else {
             return BriefingContent(
                 greeting: "Good Morning!",
                 focus: "Let's check your tasks.",
-                motivation: "You've got this!"
+                motivation: "You've got this!",
+                weatherIcon: "sun.max.fill",
+                temperature: "--",
+                condition: "Clear"
             )
         }
         
         return BriefingContent(
             greeting: "Good Morning, \(data.name).",
             focus: "You have \(data.tasksDueToday) items due today. Top priority: \(data.topPriorityTask ?? "Clear input").",
-            motivation: "Keep up the momentum!"
+            motivation: "Keep up the momentum!",
+            weatherIcon: data.weatherIcon,
+            temperature: data.temperature,
+            condition: data.weatherCondition
         )
     }
 }
@@ -283,6 +402,12 @@ struct BriefingContent: Codable, Equatable, Sendable {
     let focus: String
     /// Encouragement based on level and streak
     let motivation: String
+    /// SF Symbol name for the weather
+    let weatherIcon: String
+    /// Formatted temperature string
+    let temperature: String
+    /// Current weather condition description
+    let condition: String
 }
 
 private enum MorningBriefingAIError: Error {

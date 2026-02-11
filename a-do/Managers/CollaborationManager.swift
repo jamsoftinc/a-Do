@@ -18,7 +18,7 @@ final class CollaborationManager: ObservableObject {
     static let shared = CollaborationManager()
     
     private let logger = Logger(subsystem: "a-do", category: "Collaboration")
-    private let container = CKContainer.default()
+    private let container = CKContainer(identifier: CloudKitManager.containerIdentifier)
 
     // Current user info - Secure user identification
     var currentUserID: String?
@@ -111,7 +111,7 @@ final class CollaborationManager: ObservableObject {
             
             // Add validated participants
             for participantEmail in validParticipants {
-                let participant = sharedReminder.addParticipant(
+                _ = sharedReminder.addParticipant(
                     userID: "", // Will be filled when they accept
                     email: participantEmail,
                     name: participantEmail, // Will be updated when they join
@@ -231,7 +231,7 @@ final class CollaborationManager: ObservableObject {
             return
         }
         
-        let participant = sharedReminder.addParticipant(
+        _ = sharedReminder.addParticipant(
             userID: "",
             email: email,
             name: email,

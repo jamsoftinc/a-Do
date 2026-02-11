@@ -92,6 +92,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             logger.info("Started focus session: \(session.name)")
         } catch {
             logger.error("Failed to start session: \(error.localizedDescription)")
@@ -107,6 +108,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             logger.info("Paused focus session")
         } catch {
             logger.error("Failed to pause session: \(error.localizedDescription)")
@@ -123,6 +125,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             logger.info("Resumed focus session")
         } catch {
             logger.error("Failed to resume session: \(error.localizedDescription)")
@@ -160,6 +163,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             logger.info("Ended focus session: \(session.name)")
         } catch {
             logger.error("Failed to end session: \(error.localizedDescription)")
@@ -176,6 +180,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             logger.info("Recorded interruption: \(reason.displayName)")
         } catch {
             logger.error("Failed to record interruption: \(error.localizedDescription)")
@@ -214,6 +219,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             logger.info("Started \(type.displayName) for \(Int(breakDuration/60)) minutes")
         } catch {
             logger.error("Failed to start break: \(error.localizedDescription)")
@@ -235,6 +241,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             logger.info("Ended break")
         } catch {
             logger.error("Failed to end break: \(error.localizedDescription)")
@@ -256,6 +263,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             logger.info("Skipped break")
         } catch {
             logger.error("Failed to skip break: \(error.localizedDescription)")
@@ -400,6 +408,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             logger.info("Completed reminder in focus session: \(reminder.title)")
         } catch {
             logger.error("Failed to complete reminder: \(error.localizedDescription)")
@@ -419,6 +428,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             logger.info("Created focus template: \(name)")
         } catch {
             logger.error("Failed to create template: \(error.localizedDescription)")
@@ -557,6 +567,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             logger.info("Created focus goal: \(title)")
         } catch {
             logger.error("Failed to create goal: \(error.localizedDescription)")
@@ -592,6 +603,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
         } catch {
             logger.error("Failed to update goals: \(error.localizedDescription)")
         }

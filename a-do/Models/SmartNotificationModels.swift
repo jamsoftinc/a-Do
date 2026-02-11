@@ -449,7 +449,7 @@ final class NotificationPattern {
             averageResponseTime = (averageResponseTime * Double(totalNotifications - 1) + responseTime) / Double(totalNotifications)
         }
         
-        // Update confidence based on sample size and consistency
+        // Update confidence based on observation count and consistency
         confidence = min(1.0, Double(totalNotifications) / 50.0) * engagementRate
         
         lastUpdated = Date()

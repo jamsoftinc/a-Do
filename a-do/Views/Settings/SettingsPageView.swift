@@ -12,6 +12,20 @@ struct SettingsPageView: View {
     @State private var showingEditName = false
     @State private var newName = ""
 
+    private let themeOptions: [(name: String, value: String)] = [
+        ("System", "system"),
+        ("Light", "light"),
+        ("Dark", "dark")
+    ]
+
+    private let accentOptions: [(name: String, value: String)] = [
+        ("Ocean", "#336BDB"),
+        ("Emerald", "#1FA971"),
+        ("Sunset", "#E28A2E"),
+        ("Rose", "#D64D74"),
+        ("Graphite", "#4A5568")
+    ]
+
     var body: some View {
         List {
             // Profile
@@ -74,6 +88,35 @@ struct SettingsPageView: View {
                 }
             }
             
+            // Preferences
+            Section("Preferences") {
+                Picker("Theme", selection: Binding(
+                    get: { SettingsManager.shared.getTheme(context: context) },
+                    set: { SettingsManager.shared.setTheme($0, context: context) }
+                )) {
+                    ForEach(themeOptions, id: \.value) { option in
+                        Text(option.name).tag(option.value)
+                    }
+                }
+
+                Picker("Accent Color", selection: Binding(
+                    get: { SettingsManager.shared.getAccentColor(context: context) },
+                    set: { SettingsManager.shared.setAccentColor($0, context: context) }
+                )) {
+                    ForEach(accentOptions, id: \.value) { option in
+                        Text(option.name).tag(option.value)
+                    }
+                }
+
+                Picker("Temperature Unit", selection: Binding(
+                    get: { SettingsManager.shared.getTemperatureUnit(context: context) },
+                    set: { SettingsManager.shared.setTemperatureUnit($0, context: context) }
+                )) {
+                    Text("Fahrenheit").tag("fahrenheit")
+                    Text("Celsius").tag("celsius")
+                }
+            }
+            
             // Subscription
             Section {
                 NavigationLink(destination: SubscriptionManagementView()) {
@@ -90,7 +133,7 @@ struct SettingsPageView: View {
                         Text("a-do")
                             .font(.headline)
                             .foregroundStyle(.secondary)
-                        Text("Version 1.0.0")
+                        Text("Version \(appVersion)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -101,18 +144,16 @@ struct SettingsPageView: View {
         }
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showingAppleIntegrations) {
+        .fullScreenCover(isPresented: $showingAppleIntegrations) {
             AppleIntegrationsView()
         }
-        .sheet(isPresented: $showingImportReminders) {
+        .fullScreenCover(isPresented: $showingImportReminders) {
             ImportRemindersView()
         }
-        .sheet(isPresented: $showingAISettings) {
-            NavigationStack {
-                AISettingsViewWrapper()
-            }
+        .fullScreenCover(isPresented: $showingAISettings) {
+            AISettingsViewWrapper()
         }
-        .sheet(isPresented: $showingSubscription) {
+        .fullScreenCover(isPresented: $showingSubscription) {
             PaywallView()
         }
         .alert("Change Name", isPresented: $showingEditName) {
@@ -125,5 +166,11 @@ struct SettingsPageView: View {
                 }
             }
         }
+    }
+
+    private var appVersion: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
+        return "\(version) (\(build))"
     }
 }

@@ -20,10 +20,13 @@ struct ReminderFormView: View {
     @State private var viewModel = ReminderFormViewModel()
     @State private var showingCancelConfirmation = false
     @State private var showingDeleteConfirmation = false
+    @State private var saveErrorMessage: String?
     let existingReminder: Reminder?
+    let list: ReminderList?
     
-    init(existingReminder: Reminder? = nil) {
+    init(existingReminder: Reminder? = nil, list: ReminderList? = nil) {
         self.existingReminder = existingReminder
+        self.list = list
     }
 
     var body: some View {
@@ -75,6 +78,14 @@ struct ReminderFormView: View {
             } message: {
                 Text("Are you sure you want to delete '\(viewModel.title)'? This action cannot be undone.")
             }
+            .alert("Couldn’t Save Reminder", isPresented: Binding(
+                get: { saveErrorMessage != nil },
+                set: { if !$0 { saveErrorMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) { saveErrorMessage = nil }
+            } message: {
+                Text(saveErrorMessage ?? "Unknown error")
+            }
         }
     }
     
@@ -122,6 +133,11 @@ struct ReminderFormView: View {
                         .labelsHidden()
                     }
                     .frame(maxWidth: .infinity)
+                }
+                
+                // Energy Level
+                VStack(alignment: .leading, spacing: 8) {
+                    EnergyLevelPicker(selection: $viewModel.energyLevel)
                 }
                 
                 // Notes
@@ -562,33 +578,28 @@ struct ReminderFormView: View {
             
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
-                    let saved = viewModel.save(context: context, existing: existingReminder)
-                    NotificationManager.shared.cancelNotifications(for: saved.id)
                     Task {
-                        await NotificationManager.shared.scheduleNotifications(
-                            for: saved.id,
-                            dueDate: saved.dueDate,
-                            // Temporarily disabled - notifications relationship commented out
-                            leadTimes: [], // saved.notifications?.map { $0.leadTimeSeconds } ?? [],
-                            title: saved.title
-                        )
-                        
-                        // Create calendar invite if requested
-                        await viewModel.createCalendarInviteFromReminder(context: context)
+                        do {
+                            let saved = try await viewModel.save(context: context, existing: existingReminder)
+                            await viewModel.createCalendarInviteFromReminder(context: context)
+
+                            if let locationTrigger = saved.locationTrigger {
+                                let notifyOnEntry = locationTrigger.type == .onArrival
+                                let notifyOnExit = locationTrigger.type == .onDeparture
+                                LocationManager.shared.startMonitoring(
+                                    label: locationTrigger.label,
+                                    latitude: locationTrigger.latitude,
+                                    longitude: locationTrigger.longitude,
+                                    radius: locationTrigger.radius,
+                                    notifyOnEntry: notifyOnEntry,
+                                    notifyOnExit: notifyOnExit
+                                )
+                            }
+                            dismiss()
+                        } catch {
+                            saveErrorMessage = error.localizedDescription
+                        }
                     }
-                    if !viewModel.locationLabel.isEmpty {
-                        let notifyOnEntry = viewModel.locationType == .onArrival
-                        let notifyOnExit = viewModel.locationType == .onDeparture
-                        LocationManager.shared.startMonitoring(
-                            label: viewModel.locationLabel,
-                            latitude: viewModel.locationLatitude,
-                            longitude: viewModel.locationLongitude,
-                            radius: viewModel.locationRadius,
-                            notifyOnEntry: notifyOnEntry,
-                            notifyOnExit: notifyOnExit
-                        )
-                    }
-                    dismiss()
                 }
                 .disabled(viewModel.title.trimmingCharacters(in: .whitespaces).isEmpty ||
                          (!viewModel.locationLabel.isEmpty && !viewModel.hasValidCoordinates))
@@ -600,9 +611,13 @@ struct ReminderFormView: View {
     private func performCancel() {
         // Clean up any temporary resources
         if viewModel.isRecordingVoice {
-            viewModel.stopVoiceRecording()
+            viewModel.cancelVoiceRecording()
         }
-        if viewModel.voiceReminder != nil {
+
+        // Only clean up voice files created during this form session.
+        let existingVoiceFileName = existingReminder?.voiceReminder?.audioFileName
+        let currentVoiceFileName = viewModel.voiceReminder?.audioFileName
+        if existingReminder == nil || (currentVoiceFileName != nil && currentVoiceFileName != existingVoiceFileName) {
             viewModel.deleteVoiceRecording()
         }
         dismiss()
@@ -613,25 +628,24 @@ struct ReminderFormView: View {
         guard let existingReminder = existingReminder else { return }
         
         // Cancel any notifications for this reminder
-        NotificationManager.shared.cancelNotifications(for: existingReminder.id)
+        NotificationManager.shared.cancelNotifications(for: existingReminder)
         
         // Stop location monitoring if this reminder has location triggers
-        // Temporarily disabled - locationTrigger relationship commented out
-        // if let locationTrigger = existingReminder.locationTrigger {
-        //     LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
-        // }
+        if let locationTrigger = existingReminder.locationTrigger {
+            LocationManager.shared.stopMonitoring(identifier: locationTrigger.label)
+        }
         
         // Delete voice recording file if it exists
-        // Temporarily disabled - voiceReminder relationship commented out
-        // if let voiceReminder = existingReminder.voiceReminder,
-        //    let audioFileURL = voiceReminder.audioFileURL {
-        //     try? FileManager.default.removeItem(at: audioFileURL)
-        // }
+        if let voiceReminder = existingReminder.voiceReminder,
+           let audioFileURL = voiceReminder.audioFileURL {
+            try? FileManager.default.removeItem(at: audioFileURL)
+        }
         
         // Remove from context and save
         context.delete(existingReminder)
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             Logger(subsystem: "a-do", category: "Reminders").info("Reminder deleted: '\(existingReminder.title)'")
         } catch {
             Logger(subsystem: "a-do", category: "Reminders").error("Failed to delete reminder: \(error.localizedDescription)")
@@ -647,24 +661,21 @@ struct ReminderFormView: View {
             viewModel.details = existing.details ?? ""
             viewModel.dueDate = existing.dueDate
             viewModel.priority = existing.priority
-            // Temporarily disabled - tags relationship commented out
+            viewModel.energyLevel = existing.energyLevel
             viewModel.selectedTags = existing.tags ?? []
-            // Temporarily disabled - notifications relationship commented out
-            viewModel.leadTimes = [] // existing.notifications?.map { $0.leadTimeSeconds } ?? []
+            viewModel.leadTimes = existing.notifications?.map { $0.leadTimeSeconds } ?? []
             viewModel.autoTextTaggedContacts = existing.autoTextTaggedContacts
             viewModel.autoTextMe = existing.autoTextMe
-            // Temporarily disabled - appleNote relationship commented out
-            viewModel.attachedNote = nil // existing.appleNote
-            // Temporarily disabled - voiceReminder relationship commented out
-            viewModel.voiceReminder = nil // existing.voiceReminder
-            // Temporarily disabled - locationTrigger relationship commented out
-            // if let location = existing.locationTrigger {
-            //     viewModel.locationLabel = location.label
-            //     viewModel.locationLatitude = location.latitude
-            //     viewModel.locationLongitude = location.longitude
-            //     viewModel.locationRadius = location.radius
-            //     viewModel.locationType = location.type
-            // }
+            viewModel.attachedNote = existing.appleNote
+            viewModel.voiceReminder = existing.voiceReminder
+            viewModel.list = existing.list
+            if let location = existing.locationTrigger {
+                viewModel.locationLabel = location.label
+                viewModel.locationLatitude = location.latitude
+                viewModel.locationLongitude = location.longitude
+                viewModel.locationRadius = location.radius
+                viewModel.locationType = location.type
+            }
             
             // For existing reminders, don't create calendar invites by default
             // as they likely already exist
@@ -674,6 +685,9 @@ struct ReminderFormView: View {
             viewModel.calendarAttendees = ""
             viewModel.calendarInviteCreated = existing.calendarInviteCreated
         } else {
+            // For new reminders, set the target list
+            viewModel.list = list
+            
             // For new reminders, try to pre-fill with current location
             Task {
                 await viewModel.prefillWithCurrentLocation()
@@ -782,4 +796,3 @@ private struct LocationPin: Identifiable {
 }
 
 #endif
-

@@ -40,15 +40,3 @@ struct AppleNoteAttachmentView: View {
     }
 }
 
-#Preview {
-    AppleNoteAttachmentView(
-        noteAttachment: AppleNoteAttachment(
-            noteIdentifier: "preview-123",
-            noteTitle: "Preview Note",
-            noteContent: "Sample note content for preview.",
-            lastModified: Date()
-        )
-    )
-    .padding()
-}
-

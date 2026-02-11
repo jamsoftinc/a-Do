@@ -15,96 +15,33 @@ final class ReminderHomeViewModel {
 
     func addQuickReminder(context: ModelContext) {
         let safeTitle = quickTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        Logger(subsystem: "a-do", category: "Reminders").info("addQuickReminder called with title: '\(safeTitle)'")
-        
-        guard !safeTitle.isEmpty else { 
-            Logger(subsystem: "a-do", category: "Reminders").warning("Attempted to create quick reminder with empty title")
-            return 
-        }
-        
-        // Use advanced NLP if Pro, otherwise use basic parsing
-        if EntitlementManager.shared.canUseAdvancedNLP {
-            Task {
-                let parsed = await NaturalLanguageProcessor.shared.parseReminderText(safeTitle)
-                let title = parsed.finalText
-                let dueDate = parsed.dueDate ?? self.quickDueDate
-                let priority = parsed.priority != .none ? parsed.priority : .none
-                
-                let reminder = Reminder(title: title, dueDate: dueDate, priority: priority)
-                createReminder(reminder: reminder, context: context)
+        guard !safeTitle.isEmpty else { return }
+
+        Task {
+            let requests = await AIManager.shared.buildCaptureRequests(
+                from: safeTitle,
+                fallbackDueDate: quickDueDate
+            )
+
+            var createdCount = 0
+            for var request in requests {
+                if request.dueDate == nil {
+                    request.dueDate = quickDueDate
+                }
+
+                do {
+                    _ = try await ReminderCreationService.shared.createReminder(request: request, in: context)
+                    createdCount += 1
+                } catch {
+                    Logger(subsystem: "a-do", category: "Reminders").error("Quick add failed: \(error.localizedDescription)")
+                }
             }
-            return
-        } else {
-            // Basic creation for non-Pro users
-            Logger(subsystem: "a-do", category: "Reminders").info("Creating reminder object with title: '\(safeTitle)', dueDate: \(String(describing: self.quickDueDate))")
-            let reminder = Reminder(title: safeTitle, dueDate: quickDueDate)
-            createReminder(reminder: reminder, context: context)
-        }
-    }
-    
-    private func createReminder(reminder: Reminder, context: ModelContext) {
-        Logger(subsystem: "a-do", category: "Reminders").info("Inserting reminder into context with UUID: \(reminder.uuid)")
-        context.insert(reminder)
-        
-        Logger(subsystem: "a-do", category: "Reminders").info("Attempting to save context...")
-        do { 
-            try context.save() 
-            Logger(subsystem: "a-do", category: "Reminders").info("Context save succeeded")
-            
-            // Force context to process pending changes and assign permanent IDs
-            context.processPendingChanges()
-            Logger(subsystem: "a-do", category: "Reminders").info("Context processing complete")
-            
-            // Verify the reminder was actually saved by trying to fetch it
-            let reminderUUID = reminder.uuid
-            let descriptor = FetchDescriptor<Reminder>(predicate: #Predicate<Reminder> { $0.uuid == reminderUUID })
-            Logger(subsystem: "a-do", category: "Reminders").info("Attempting to fetch saved reminder with UUID: \(reminderUUID)")
-            let savedReminders = try? context.fetch(descriptor)
-            
-            if let savedReminder = savedReminders?.first {
-                Logger(subsystem: "a-do", category: "Reminders").info("Quick reminder saved: '\(reminder.title)' with ID: \(String(describing: savedReminder.id)), due: \(reminder.dueDate?.description ?? "none")")
-                Logger(subsystem: "a-do", category: "Reminders").info("Reminder verification: Found saved reminder with UUID: \(savedReminder.uuid)")
-            } else {
-                Logger(subsystem: "a-do", category: "Reminders").error("Reminder verification failed: Could not fetch saved reminder with UUID: \(reminder.uuid)")
-                
-                // Check if the container is using in-memory storage
-                let containerType = AppContainer.shared.getContainer().configurations.first?.isStoredInMemoryOnly ?? true
-                Logger(subsystem: "a-do", category: "Reminders").error("Container is using in-memory storage: \(containerType)")
+
+            if createdCount > 0 {
+                quickTitle = ""
+                quickDueDate = nil
             }
-            
-            // Log total reminder count for debugging
-            let totalDescriptor = FetchDescriptor<Reminder>()
-            let totalCount = (try? context.fetch(totalDescriptor))?.count ?? 0
-            Logger(subsystem: "a-do", category: "Reminders").info("Total reminders in database: \(totalCount)")
-            
-            // Test: Try to fetch all reminders to see what's actually in the database
-            let allReminders = (try? context.fetch(FetchDescriptor<Reminder>()))?.map { "'\($0.title)' (UUID: \($0.uuid))" } ?? []
-            Logger(subsystem: "a-do", category: "Reminders").info("All reminders in DB: [\(allReminders.joined(separator: ", "))]")
-            
-            // Test with fresh context to check for isolation issues
-            let freshContext = ModelContext(context.container)
-            let freshCount = (try? freshContext.fetch(FetchDescriptor<Reminder>()))?.count ?? 0
-            Logger(subsystem: "a-do", category: "Reminders").info("Fresh context reminder count: \(freshCount)")
-            
-            // Notify views to refresh their data
-            NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: reminder)
-            
-            // Temporarily disable sync to debug reminder creation
-            // Task {
-            //     let settings = SettingsManager.shared.getSettings(context: context)
-            //     if settings.appleRemindersEnabled {
-            //         await AppleRemindersSyncManager.shared.performFullSync(context: context)
-            //     }
-            // }
-        } catch { 
-            Logger(subsystem: "a-do", category: "Reminders").error("Quick add failed: \(String(describing: error))") 
-            // Reset form state on failure to allow retry
-            return
         }
-        
-        // Clear form only on successful save
-        quickTitle = ""
-        quickDueDate = nil
     }
     
     func clearQuickDueDate() {
@@ -125,8 +62,7 @@ final class ReminderHomeViewModel {
         reminder.isCompleted = true
         reminder.completedAt = Date()
 
-        // Cancel any pending notifications for this reminder
-        NotificationManager.shared.cancelNotification(for: reminder)
+        NotificationManager.shared.cancelNotifications(for: reminder)
         
         // Stop location monitoring if this reminder has location triggers
         // if let locationTrigger = reminder.locationTrigger {
@@ -135,6 +71,7 @@ final class ReminderHomeViewModel {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             Logger(subsystem: "a-do", category: "Reminders").info("Reminder marked complete: '\(reminder.title)'")
         } catch {
             Logger(subsystem: "a-do", category: "Reminders").error("Failed to mark reminder complete: \(String(describing: error))")
@@ -147,6 +84,7 @@ final class ReminderHomeViewModel {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             Logger(subsystem: "a-do", category: "Reminders").info("Reminder marked incomplete: '\(reminder.title)'")
         } catch {
             Logger(subsystem: "a-do", category: "Reminders").error("Failed to mark reminder incomplete: \(String(describing: error))")
@@ -161,6 +99,7 @@ final class ReminderFormViewModel {
     var details: String = ""
     var dueDate: Date? = nil
     var priority: Priority = .none
+    var energyLevel: EnergyLevel = .medium
     var selectedTags: [Tag] = []
     var leadTimes: [TimeInterval] = []
     var locationLabel: String = ""
@@ -186,10 +125,13 @@ final class ReminderFormViewModel {
     var autoTextTaggedContacts: Bool = false
     var autoTextMe: Bool = false
     
+    var list: ReminderList? = nil
+    
     // Apple Note attachment
     var attachedNote: AppleNoteAttachment?
     var showNotePicker: Bool = false
     
+    // ...
     // Voice reminder
     var voiceReminder: VoiceReminder?
     var isRecordingVoice: Bool = false
@@ -207,26 +149,26 @@ final class ReminderFormViewModel {
     var isDetectingLocation: Bool = false
     var locationDetectionError: String?
     
-    // Computed property to check if coordinates are valid and real
+    // Computed property to check if coordinates are valid and usable
     var hasValidCoordinates: Bool {
         let isValid = self.locationLatitude >= -90 && self.locationLatitude <= 90 &&
                self.locationLongitude >= -180 && self.locationLongitude <= 180
         
-        // Additional validation to ensure coordinates are not demo/fake data
+        // Additional validation to ensure coordinates are initialized and practical
         if isValid {
-            // Check if coordinates are not zero (which could indicate uninitialized data)
+            // Check if coordinates are not zero (which may indicate uninitialized data)
             let isNotZero = self.locationLatitude != 0 || self.locationLongitude != 0
             
-            // Check if coordinates are not obviously fake (like 0,0 which is in the ocean)
-            let isNotFake = !(abs(self.locationLatitude) < 0.001 && abs(self.locationLongitude) < 0.001)
+            // Reject near-origin coordinates that commonly represent invalid data.
+            let isNotOrigin = !(abs(self.locationLatitude) < 0.001 && abs(self.locationLongitude) < 0.001)
             
-            // Check if coordinates are within reasonable bounds for real locations
+            // Check if coordinates are within reasonable bounds for real-world locations.
             let isReasonable = self.locationLatitude != 0 && self.locationLongitude != 0
             
-            let isReal = isNotZero && isNotFake && isReasonable
+            let isReal = isNotZero && isNotOrigin && isReasonable
             
             if !isReal {
-                Logger(subsystem: "a-do", category: "Location").warning("Coordinates appear to be demo/fake data: lat=\(self.locationLatitude), lon=\(self.locationLongitude)")
+                Logger(subsystem: "a-do", category: "Location").warning("Coordinates appear invalid: lat=\(self.locationLatitude), lon=\(self.locationLongitude)")
             }
             
             return isReal
@@ -244,80 +186,32 @@ final class ReminderFormViewModel {
     }
 
     @discardableResult
-    func save(context: ModelContext, existing: Reminder? = nil) -> Reminder {
-        let target = existing ?? Reminder(title: title)
-        target.title = title
-        target.details = details.isEmpty ? nil : details
-        target.dueDate = dueDate
-        target.priority = priority
-        
-        // Extract tags from title and details using NLP
-        let textToAnalyze = "\(title) \(details)"
-        var extractedTags: Set<String> = []
-        
-        // Use simple regex for immediate tag extraction (NLP might be async/slower)
-        let tagPattern = #"#(\w+)"#
-        if let regex = try? NSRegularExpression(pattern: tagPattern, options: []) {
-            let matches = regex.matches(in: textToAnalyze, options: [], range: NSRange(textToAnalyze.startIndex..., in: textToAnalyze))
-            for match in matches {
-                if let range = Range(match.range(at: 1), in: textToAnalyze) {
-                    let extractedTag = String(textToAnalyze[range])
-                    extractedTags.insert(extractedTag)
-                    Logger(subsystem: "a-do", category: "NLP").info("Extracted tag: \(extractedTag)")
-                }
-            }
+    func save(context: ModelContext, existing: Reminder? = nil) async throws -> Reminder {
+        let request = ReminderCreationService.Request(
+            title: title,
+            details: details.isEmpty ? nil : details,
+            dueDate: dueDate,
+            priority: priority,
+            energyLevel: energyLevel,
+            selectedTags: selectedTags,
+            leadTimes: leadTimes,
+            list: list,
+            locationLabel: locationLabel.isEmpty ? nil : locationLabel,
+            locationLatitude: hasValidCoordinates ? locationLatitude : nil,
+            locationLongitude: hasValidCoordinates ? locationLongitude : nil,
+            locationRadius: locationRadius,
+            locationType: locationType,
+            attachedNote: attachedNote,
+            voiceReminder: voiceReminder,
+            autoTextTaggedContacts: autoTextTaggedContacts,
+            autoTextMe: autoTextMe
+        )
+
+        if let existing {
+            return try await ReminderCreationService.shared.updateReminder(existing, with: request, in: context)
+        } else {
+            return try await ReminderCreationService.shared.createReminder(request: request, in: context)
         }
-        
-        // Fetch existing tags to avoid duplicates
-        let tagDescriptor = FetchDescriptor<Tag>()
-        let existingTags = (try? context.fetch(tagDescriptor)) ?? []
-        var finalTags = Set(selectedTags)
-        
-        // Process extracted tags
-        for tagName in extractedTags {
-            if let existingTag = existingTags.first(where: { $0.name.lowercased() == tagName.lowercased() }) {
-                finalTags.insert(existingTag)
-            } else {
-                // Create new tag
-                let newTag = Tag(name: tagName)
-                context.insert(newTag)
-                finalTags.insert(newTag)
-            }
-        }
-        
-        target.tags = finalTags.isEmpty ? nil : Array(finalTags)
-        
-        // target.notifications = leadTimes.isEmpty ? nil : leadTimes.map { ReminderNotification(leadTimeSeconds: $0) }
-        // if !locationLabel.isEmpty && hasValidCoordinates {
-        //     target.locationTrigger = LocationTrigger(label: locationLabel, latitude: self.locationLatitude, longitude: self.locationLongitude, radius: locationRadius, type: locationType)
-        // } else if !locationLabel.isEmpty && !hasValidCoordinates {
-        //     // Log invalid coordinates but don't create location trigger
-        //     Logger(subsystem: "a-do", category: "Location").error("Invalid coordinates provided: lat=\(self.locationLatitude), lon=\(self.locationLongitude)")
-        // }
-        target.autoTextTaggedContacts = autoTextTaggedContacts
-        target.autoTextMe = autoTextMe
-        // target.appleNote = attachedNote
-        // target.voiceReminder = voiceReminder
-        if existing == nil { context.insert(target) }
-        do { 
-            try context.save() 
-            
-            // Notify views to refresh their data (only for new reminders)
-            if existing == nil {
-                NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: target)
-            }
-            
-            // Temporarily disable sync to debug reminder creation
-            // Task {
-            //     let settings = SettingsManager.shared.getSettings(context: context)
-            //     if settings.appleRemindersEnabled {
-            //         await AppleRemindersSyncManager.shared.performFullSync(context: context)
-            //     }
-            // }
-        } catch { 
-            Logger(subsystem: "a-do", category: "Reminders").error("Save failed: \(String(describing: error))") 
-        }
-        return target
     }
     
     // Create calendar invite from reminder
@@ -524,4 +418,3 @@ final class ReminderFormViewModel {
         }
     }
 }
-

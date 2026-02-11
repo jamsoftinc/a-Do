@@ -707,15 +707,91 @@ final class AdvancedSearchManager: ObservableObject {
     }
     
     private func shouldApplyRule(_ rule: OrganizationRule, to item: Any) async -> Bool {
-        // Evaluate rule conditions against the item
-        // This would be implemented based on the specific rule conditions
-        return false // Placeholder
+        // No conditions means the rule applies to every compatible item.
+        guard let conditionData = rule.conditions, !conditionData.isEmpty else { return true }
+        
+        // Supported JSON shape:
+        // [{"field":"title","operator":"contains","value":"meeting"}]
+        // or {"field":"title","operator":"contains","value":"meeting"}
+        if let conditions = try? JSONDecoder().decode([OrganizationRuleCondition].self, from: conditionData) {
+            return conditions.allSatisfy { evaluateRuleCondition($0, item: item) }
+        }
+        
+        if let condition = try? JSONDecoder().decode(OrganizationRuleCondition.self, from: conditionData) {
+            return evaluateRuleCondition(condition, item: item)
+        }
+        
+        // If conditions cannot be decoded, fail closed.
+        return false
     }
     
     private func executeRule(_ rule: OrganizationRule, on item: Any, context: ModelContext) async {
-        // Execute rule actions on the item
-        // This would be implemented based on the specific rule actions
-        logger.info("Executing organization rule: \(rule.name)")
+        guard let reminder = item as? Reminder else {
+            logger.info("Skipping organization rule \(rule.name) for unsupported item type")
+            return
+        }
+        
+        switch rule.ruleType {
+        case .autoTag:
+            let tagName = rule.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !tagName.isEmpty else { return }
+            
+            let tagDescriptor = FetchDescriptor<Tag>(
+                predicate: #Predicate<Tag> { tag in
+                    tag.name == tagName
+                }
+            )
+            
+            let tag = (try? context.fetch(tagDescriptor).first) ?? Tag(name: tagName)
+            if (try? context.fetch(tagDescriptor).first) == nil {
+                context.insert(tag)
+            }
+            
+            var existingTags = reminder.tags ?? []
+            if !existingTags.contains(where: { $0.name.caseInsensitiveCompare(tagName) == .orderedSame }) {
+                existingTags.append(tag)
+                reminder.tags = existingTags
+            }
+            
+        case .autoList:
+            guard !rule.name.isEmpty else { return }
+            let listName = rule.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            let listDescriptor = FetchDescriptor<ReminderList>(
+                predicate: #Predicate<ReminderList> { list in
+                    list.name == listName
+                }
+            )
+            
+            if let list = try? context.fetch(listDescriptor).first {
+                reminder.list = list
+            }
+            
+        case .autoPriority:
+            let lowered = rule.ruleDescription.lowercased()
+            if lowered.contains("high") {
+                reminder.priority = .high
+            } else if lowered.contains("medium") {
+                reminder.priority = .medium
+            } else if lowered.contains("low") {
+                reminder.priority = .low
+            }
+            
+        case .autoSchedule:
+            guard reminder.dueDate == nil else { break }
+            // Apply a conservative default schedule only when missing.
+            reminder.dueDate = Calendar.current.date(byAdding: .day, value: 1, to: Date())
+            
+        case .autoArchive:
+            if reminder.isCompleted {
+                reminder.list = nil
+            }
+            
+        case .autoDelegate, .autoReminder, .autoCategory:
+            // These require data models not currently present in this repository.
+            break
+        }
+        
+        logger.info("Executed organization rule: \(rule.name)")
     }
     
     // MARK: - Helper Methods
@@ -811,9 +887,14 @@ final class AdvancedSearchManager: ObservableObject {
     }
     
     private func applyFilters(_ results: [SearchResult], filters: [SearchFilter], context: ModelContext) -> [SearchResult] {
-        // Apply search filters to results
-        // This would be implemented based on the specific filter types
-        return results
+        let activeFilters = filters.filter(\.isActive)
+        guard !activeFilters.isEmpty else { return results }
+        
+        return results.filter { result in
+            activeFilters.allSatisfy { filter in
+                evaluateSearchFilter(filter, for: result, context: context)
+            }
+        }
     }
     
     private func levenshteinDistance(_ s1: String, _ s2: String) -> Int {
@@ -848,26 +929,129 @@ final class AdvancedSearchManager: ObservableObject {
     }
     
     private func calculateSemanticSimilarity(query: String, text: String, embedding: NLEmbedding?) -> Double {
-        // This would use the NLEmbedding to calculate semantic similarity
-        // For now, return a placeholder value
-        return 0.5
+        let queryTokens = tokenizeForSimilarity(query)
+        let textTokens = tokenizeForSimilarity(text)
+        
+        guard !queryTokens.isEmpty, !textTokens.isEmpty else { return 0.0 }
+        
+        let overlapScore = jaccardSimilarity(queryTokens, textTokens)
+        
+        guard let embedding else {
+            return overlapScore
+        }
+        
+        // Compute mean of best token-to-token semantic similarities.
+        let semanticComponents: [Double] = queryTokens.compactMap { queryToken in
+            let best = textTokens.compactMap { token in
+                embedding.distance(between: queryToken, and: token)
+            }
+            .map { distance in max(0.0, 1.0 - distance) }
+            .max()
+            
+            return best
+        }
+        
+        let semanticScore = semanticComponents.isEmpty
+            ? 0.0
+            : semanticComponents.reduce(0, +) / Double(semanticComponents.count)
+        
+        let phraseBonus = text.localizedCaseInsensitiveContains(query) ? 0.15 : 0.0
+        return min(1.0, max(0.0, semanticScore * 0.7 + overlapScore * 0.3 + phraseBonus))
     }
     
     private func isPhoneticMatch(_ query: String, _ text: String) -> Bool {
         // Implement phonetic matching algorithm (e.g., Soundex, Metaphone)
-        // For now, return a simple similarity check
         return levenshteinDistance(query.lowercased(), text.lowercased()) <= 2
     }
     
     private func parseAdvancedQuery(_ query: String) -> [AdvancedSearchTerm] {
-        // Parse advanced search syntax
-        // For now, return a simple term
-        return [AdvancedSearchTerm(field: "title", searchOperator: .and, value: query)]
+        let tokens = tokenizeAdvancedQuery(query)
+        guard !tokens.isEmpty else { return [] }
+        
+        var terms: [AdvancedSearchTerm] = []
+        var pendingOperator: AdvancedSearchOperator = .and
+        
+        for token in tokens {
+            let normalized = token.uppercased()
+            if normalized == "AND" {
+                pendingOperator = .and
+                continue
+            }
+            if normalized == "OR" {
+                pendingOperator = .or
+                continue
+            }
+            if normalized == "NOT" {
+                pendingOperator = .not
+                continue
+            }
+            
+            let cleanedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !cleanedToken.isEmpty else { continue }
+            
+            let fieldValue = cleanedToken.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+            if fieldValue.count == 2 {
+                let field = String(fieldValue[0]).lowercased()
+                let value = stripWrappingQuotes(String(fieldValue[1]))
+                terms.append(AdvancedSearchTerm(field: field, searchOperator: pendingOperator, value: value))
+            } else {
+                terms.append(AdvancedSearchTerm(field: "any", searchOperator: pendingOperator, value: stripWrappingQuotes(cleanedToken)))
+            }
+            
+            pendingOperator = .and
+        }
+        
+        return terms
     }
     
     private func executeAdvancedTerm(_ term: AdvancedSearchTerm, scope: SearchScope, context: ModelContext) async -> [SearchResult] {
-        // Execute advanced search term
-        return []
+        let normalizedValue = term.value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedValue.isEmpty else { return [] }
+        
+        switch term.field {
+        case "title":
+            return await executeAdvancedTextFieldSearch(
+                value: normalizedValue,
+                scope: scope,
+                context: context
+            ) { reminder, habit in
+                reminder?.title.localizedCaseInsensitiveContains(normalizedValue) == true ||
+                habit?.title.localizedCaseInsensitiveContains(normalizedValue) == true
+            }
+            
+        case "details", "description", "content":
+            return await executeAdvancedTextFieldSearch(
+                value: normalizedValue,
+                scope: scope,
+                context: context
+            ) { reminder, habit in
+                reminder?.details?.localizedCaseInsensitiveContains(normalizedValue) == true ||
+                habit?.habitDescription.localizedCaseInsensitiveContains(normalizedValue) == true
+            }
+            
+        case "priority":
+            return await executePrioritySearch(value: normalizedValue, scope: scope, context: context)
+            
+        case "status":
+            return await executeStatusSearch(value: normalizedValue, scope: scope, context: context)
+            
+        case "due", "duedate":
+            return await executeDueDateSearch(value: normalizedValue, scope: scope, context: context)
+            
+        case "tag", "tags":
+            return await executeTagSearch(value: normalizedValue, scope: scope, context: context)
+            
+        case "list", "listname":
+            return await executeListSearch(value: normalizedValue, scope: scope, context: context)
+            
+        default:
+            return await performTextSearch(
+                query: normalizedValue,
+                scope: scope,
+                filters: [],
+                context: context
+            )
+        }
     }
     
     private func combineResults(_ results1: [SearchResult], _ results2: [SearchResult], operator searchOperator: AdvancedSearchOperator) -> [SearchResult] {
@@ -902,6 +1086,544 @@ final class AdvancedSearchManager: ObservableObject {
         
         let queries = (try? context.fetch(descriptor)) ?? []
         recentSearches = Array(queries.prefix(20))
+    }
+    
+    // MARK: - Advanced Search Helpers
+    
+    private struct OrganizationRuleCondition: Codable {
+        let field: String
+        let `operator`: String
+        let value: String
+    }
+    
+    private struct DateRangeFilterConfiguration: Codable {
+        let startDate: Date?
+        let endDate: Date?
+        let field: String?
+    }
+    
+    private struct PriorityFilterConfiguration: Codable {
+        let priorities: [Int]?
+        let minimum: Int?
+        let maximum: Int?
+    }
+    
+    private struct StatusFilterConfiguration: Codable {
+        let values: [String]?
+    }
+    
+    private struct StringSetFilterConfiguration: Codable {
+        let values: [String]?
+    }
+    
+    private func evaluateRuleCondition(_ condition: OrganizationRuleCondition, item: Any) -> Bool {
+        if let reminder = item as? Reminder {
+            return evaluateConditionForReminder(condition, reminder: reminder)
+        }
+        
+        if let habit = item as? Habit {
+            return evaluateConditionForHabit(condition, habit: habit)
+        }
+        
+        return false
+    }
+    
+    private func evaluateConditionForReminder(_ condition: OrganizationRuleCondition, reminder: Reminder) -> Bool {
+        let value = condition.value.lowercased()
+        let op = condition.operator.lowercased()
+        
+        switch condition.field.lowercased() {
+        case "title":
+            return compare(reminder.title.lowercased(), op: op, value: value)
+        case "details":
+            return compare((reminder.details ?? "").lowercased(), op: op, value: value)
+        case "priority":
+            return compare(reminder.priority.title.lowercased(), op: op, value: value)
+        case "completed":
+            return compare(String(reminder.isCompleted), op: op, value: value)
+        default:
+            return false
+        }
+    }
+    
+    private func evaluateConditionForHabit(_ condition: OrganizationRuleCondition, habit: Habit) -> Bool {
+        let value = condition.value.lowercased()
+        let op = condition.operator.lowercased()
+        
+        switch condition.field.lowercased() {
+        case "title":
+            return compare(habit.title.lowercased(), op: op, value: value)
+        case "description":
+            return compare(habit.habitDescription.lowercased(), op: op, value: value)
+        case "active":
+            return compare(String(habit.isActive), op: op, value: value)
+        default:
+            return false
+        }
+    }
+    
+    private func compare(_ lhs: String, op: String, value: String) -> Bool {
+        switch op {
+        case "equals", "==":
+            return lhs == value
+        case "contains":
+            return lhs.contains(value)
+        case "startswith":
+            return lhs.hasPrefix(value)
+        case "endswith":
+            return lhs.hasSuffix(value)
+        case "not_equals", "!=":
+            return lhs != value
+        default:
+            return false
+        }
+    }
+    
+    private func evaluateSearchFilter(_ filter: SearchFilter, for result: SearchResult, context: ModelContext) -> Bool {
+        switch filter.filterType {
+        case .dateRange:
+            return evaluateDateRangeFilter(filter, for: result, context: context)
+        case .priority:
+            return evaluatePriorityFilter(filter, for: result, context: context)
+        case .status:
+            return evaluateStatusFilter(filter, for: result, context: context)
+        case .tags:
+            return evaluateTagFilter(filter, for: result, context: context)
+        case .lists:
+            return evaluateListFilter(filter, for: result, context: context)
+        case .attachments:
+            return evaluateAttachmentFilter(for: result, context: context)
+        case .location, .duration, .category, .collaborators:
+            // These filters require additional entities that are not represented by SearchResult directly.
+            return true
+        }
+    }
+    
+    private func evaluateDateRangeFilter(_ filter: SearchFilter, for result: SearchResult, context: ModelContext) -> Bool {
+        guard let config: DateRangeFilterConfiguration = filter.getConfiguration(as: DateRangeFilterConfiguration.self) else {
+            return true
+        }
+        
+        guard let date = getFilterDate(for: result, field: config.field, context: context) else {
+            return false
+        }
+        
+        if let startDate = config.startDate, date < startDate {
+            return false
+        }
+        
+        if let endDate = config.endDate, date > endDate {
+            return false
+        }
+        
+        return true
+    }
+    
+    private func getFilterDate(for result: SearchResult, field: String?, context: ModelContext) -> Date? {
+        switch result.itemType {
+        case .reminder:
+            guard let reminder = fetchReminder(by: result.itemId, context: context) else { return nil }
+            switch field?.lowercased() {
+            case "due", "duedate":
+                return reminder.dueDate
+            case "completed":
+                return reminder.completedAt
+            default:
+                return reminder.createdAt
+            }
+            
+        case .habit:
+            guard let habit = fetchHabit(by: result.itemId, context: context) else { return nil }
+            return habit.createdAt
+            
+        default:
+            return nil
+        }
+    }
+    
+    private func evaluatePriorityFilter(_ filter: SearchFilter, for result: SearchResult, context: ModelContext) -> Bool {
+        guard result.itemType == .reminder,
+              let reminder = fetchReminder(by: result.itemId, context: context),
+              let config: PriorityFilterConfiguration = filter.getConfiguration(as: PriorityFilterConfiguration.self) else {
+            return true
+        }
+        
+        let priorityValue = reminder.priority.rawValue
+        
+        if let priorities = config.priorities, !priorities.isEmpty, !priorities.contains(priorityValue) {
+            return false
+        }
+        
+        if let minimum = config.minimum, priorityValue < minimum {
+            return false
+        }
+        
+        if let maximum = config.maximum, priorityValue > maximum {
+            return false
+        }
+        
+        return true
+    }
+    
+    private func evaluateStatusFilter(_ filter: SearchFilter, for result: SearchResult, context: ModelContext) -> Bool {
+        guard result.itemType == .reminder,
+              let reminder = fetchReminder(by: result.itemId, context: context),
+              let config: StatusFilterConfiguration = filter.getConfiguration(as: StatusFilterConfiguration.self),
+              let values = config.values?.map({ $0.lowercased() }),
+              !values.isEmpty else {
+            return true
+        }
+        
+        return values.contains { value in
+            switch value {
+            case "completed":
+                return reminder.isCompleted
+            case "active":
+                return !reminder.isCompleted
+            case "overdue":
+                return reminder.isOverdue
+            default:
+                return false
+            }
+        }
+    }
+    
+    private func evaluateTagFilter(_ filter: SearchFilter, for result: SearchResult, context: ModelContext) -> Bool {
+        guard let config: StringSetFilterConfiguration = filter.getConfiguration(as: StringSetFilterConfiguration.self),
+              let values = config.values?.map({ $0.lowercased() }),
+              !values.isEmpty else {
+            return true
+        }
+        
+        switch result.itemType {
+        case .reminder:
+            guard let reminder = fetchReminder(by: result.itemId, context: context) else { return false }
+            let tagNames = Set((reminder.tags ?? []).map { $0.name.lowercased() })
+            return !tagNames.isDisjoint(with: values)
+        case .habit:
+            guard let habit = fetchHabit(by: result.itemId, context: context) else { return false }
+            let tagNames = Set((habit.tags ?? []).map { $0.name.lowercased() })
+            return !tagNames.isDisjoint(with: values)
+        default:
+            return true
+        }
+    }
+    
+    private func evaluateListFilter(_ filter: SearchFilter, for result: SearchResult, context: ModelContext) -> Bool {
+        guard result.itemType == .reminder,
+              let reminder = fetchReminder(by: result.itemId, context: context),
+              let config: StringSetFilterConfiguration = filter.getConfiguration(as: StringSetFilterConfiguration.self),
+              let values = config.values?.map({ $0.lowercased() }),
+              !values.isEmpty else {
+            return true
+        }
+        
+        let listName = reminder.list?.name.lowercased() ?? ""
+        return values.contains(listName)
+    }
+    
+    private func evaluateAttachmentFilter(for result: SearchResult, context: ModelContext) -> Bool {
+        guard result.itemType == .reminder,
+              let reminder = fetchReminder(by: result.itemId, context: context) else {
+            return true
+        }
+        
+        return reminder.appleNote != nil || reminder.voiceReminder != nil
+    }
+    
+    private func fetchReminder(by itemId: String, context: ModelContext) -> Reminder? {
+        guard let uuid = UUID(uuidString: itemId) else { return nil }
+        let descriptor = FetchDescriptor<Reminder>(
+            predicate: #Predicate<Reminder> { reminder in
+                reminder.uuid == uuid
+            }
+        )
+        return try? context.fetch(descriptor).first
+    }
+    
+    private func fetchHabit(by itemId: String, context: ModelContext) -> Habit? {
+        guard let uuid = UUID(uuidString: itemId) else { return nil }
+        let descriptor = FetchDescriptor<Habit>(
+            predicate: #Predicate<Habit> { habit in
+                habit.id == uuid
+            }
+        )
+        return try? context.fetch(descriptor).first
+    }
+    
+    private func tokenizeForSimilarity(_ text: String) -> [String] {
+        text.lowercased()
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { $0.count > 1 }
+    }
+    
+    private func jaccardSimilarity(_ lhs: [String], _ rhs: [String]) -> Double {
+        let leftSet = Set(lhs)
+        let rightSet = Set(rhs)
+        guard !leftSet.isEmpty || !rightSet.isEmpty else { return 0 }
+        
+        let intersection = leftSet.intersection(rightSet)
+        let union = leftSet.union(rightSet)
+        return union.isEmpty ? 0 : Double(intersection.count) / Double(union.count)
+    }
+    
+    private func tokenizeAdvancedQuery(_ query: String) -> [String] {
+        let pattern = #""[^"]+"|\S+"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            return query.split(separator: " ").map(String.init)
+        }
+        
+        let nsQuery = query as NSString
+        let matches = regex.matches(in: query, range: NSRange(location: 0, length: nsQuery.length))
+        return matches.map { nsQuery.substring(with: $0.range) }
+    }
+    
+    private func stripWrappingQuotes(_ value: String) -> String {
+        guard value.count >= 2,
+              value.first == "\"",
+              value.last == "\"" else {
+            return value
+        }
+        return String(value.dropFirst().dropLast())
+    }
+    
+    private func executeAdvancedTextFieldSearch(
+        value: String,
+        scope: SearchScope,
+        context: ModelContext,
+        matcher: (Reminder?, Habit?) -> Bool
+    ) async -> [SearchResult] {
+        var results: [SearchResult] = []
+        
+        if scope == .all || scope == .reminders || scope == .active || scope == .overdue || scope == .completed {
+            let reminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+            for reminder in reminders where matcher(reminder, nil) {
+                let result = SearchResult(
+                    queryId: UUID(),
+                    itemType: .reminder,
+                    itemId: reminder.uuid.uuidString,
+                    title: reminder.title,
+                    snippet: reminder.details ?? "",
+                    relevanceScore: calculateRelevanceScore(query: value, title: reminder.title, content: reminder.details ?? "")
+                )
+                results.append(result)
+            }
+        }
+        
+        if scope == .all || scope == .habits {
+            let habits = (try? context.fetch(FetchDescriptor<Habit>())) ?? []
+            for habit in habits where matcher(nil, habit) {
+                let result = SearchResult(
+                    queryId: UUID(),
+                    itemType: .habit,
+                    itemId: habit.id.uuidString,
+                    title: habit.title,
+                    snippet: habit.habitDescription,
+                    relevanceScore: calculateRelevanceScore(query: value, title: habit.title, content: habit.habitDescription)
+                )
+                results.append(result)
+            }
+        }
+        
+        return results
+    }
+    
+    private func executePrioritySearch(value: String, scope: SearchScope, context: ModelContext) async -> [SearchResult] {
+        guard scope == .all || scope == .reminders || scope == .active || scope == .overdue || scope == .completed else {
+            return []
+        }
+        
+        let targetPriority: Priority?
+        switch value.lowercased() {
+        case "high", "3": targetPriority = .high
+        case "medium", "2": targetPriority = .medium
+        case "low", "1": targetPriority = .low
+        case "none", "0": targetPriority = .none
+        default: targetPriority = nil
+        }
+        
+        guard let targetPriority else { return [] }
+        
+        let reminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+        return reminders
+            .filter { $0.priority == targetPriority }
+            .map { reminder in
+                SearchResult(
+                    queryId: UUID(),
+                    itemType: .reminder,
+                    itemId: reminder.uuid.uuidString,
+                    title: reminder.title,
+                    snippet: reminder.details ?? "",
+                    relevanceScore: 0.9
+                )
+            }
+    }
+    
+    private func executeStatusSearch(value: String, scope: SearchScope, context: ModelContext) async -> [SearchResult] {
+        guard scope == .all || scope == .reminders || scope == .active || scope == .overdue || scope == .completed else {
+            return []
+        }
+        
+        let normalized = value.lowercased()
+        let reminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+        
+        let filtered = reminders.filter { reminder in
+            switch normalized {
+            case "completed":
+                return reminder.isCompleted
+            case "active", "open":
+                return !reminder.isCompleted
+            case "overdue":
+                return reminder.isOverdue
+            default:
+                return false
+            }
+        }
+        
+        return filtered.map { reminder in
+            SearchResult(
+                queryId: UUID(),
+                itemType: .reminder,
+                itemId: reminder.uuid.uuidString,
+                title: reminder.title,
+                snippet: reminder.details ?? "",
+                relevanceScore: 0.9
+            )
+        }
+    }
+    
+    private func executeDueDateSearch(value: String, scope: SearchScope, context: ModelContext) async -> [SearchResult] {
+        guard scope == .all || scope == .reminders || scope == .active || scope == .overdue || scope == .completed else {
+            return []
+        }
+        
+        let normalized = value.lowercased()
+        let calendar = Calendar.current
+        let now = Date()
+        let reminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+        
+        let filtered = reminders.filter { reminder in
+            guard let dueDate = reminder.dueDate else {
+                return normalized == "none" || normalized == "nodue"
+            }
+            
+            switch normalized {
+            case "today":
+                return calendar.isDateInToday(dueDate)
+            case "tomorrow":
+                return calendar.isDateInTomorrow(dueDate)
+            case "overdue":
+                return dueDate < now && !reminder.isCompleted
+            case "thisweek":
+                return calendar.isDate(dueDate, equalTo: now, toGranularity: .weekOfYear)
+            case "nextweek":
+                guard let startOfNextWeek = calendar.date(byAdding: .weekOfYear, value: 1, to: now) else { return false }
+                return calendar.isDate(dueDate, equalTo: startOfNextWeek, toGranularity: .weekOfYear)
+            default:
+                if let parsedDate = parseDateLiteral(normalized) {
+                    return calendar.isDate(dueDate, inSameDayAs: parsedDate)
+                }
+                return false
+            }
+        }
+        
+        return filtered.map { reminder in
+            SearchResult(
+                queryId: UUID(),
+                itemType: .reminder,
+                itemId: reminder.uuid.uuidString,
+                title: reminder.title,
+                snippet: reminder.details ?? "",
+                relevanceScore: 0.85
+            )
+        }
+    }
+    
+    private func parseDateLiteral(_ value: String) -> Date? {
+        let isoFormatter = ISO8601DateFormatter()
+        if let isoDate = isoFormatter.date(from: value) {
+            return isoDate
+        }
+        
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.date(from: value)
+    }
+    
+    private func executeTagSearch(value: String, scope: SearchScope, context: ModelContext) async -> [SearchResult] {
+        let normalizedValue = value.lowercased()
+        var results: [SearchResult] = []
+        
+        if scope == .all || scope == .reminders || scope == .active || scope == .overdue || scope == .completed {
+            let reminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+            for reminder in reminders {
+                let matches = (reminder.tags ?? []).contains { tag in
+                    tag.name.localizedCaseInsensitiveContains(normalizedValue)
+                }
+                
+                if matches {
+                    results.append(
+                        SearchResult(
+                            queryId: UUID(),
+                            itemType: .reminder,
+                            itemId: reminder.uuid.uuidString,
+                            title: reminder.title,
+                            snippet: reminder.details ?? "",
+                            relevanceScore: 0.85
+                        )
+                    )
+                }
+            }
+        }
+        
+        if scope == .all || scope == .habits {
+            let habits = (try? context.fetch(FetchDescriptor<Habit>())) ?? []
+            for habit in habits {
+                let matches = (habit.tags ?? []).contains { tag in
+                    tag.name.localizedCaseInsensitiveContains(normalizedValue)
+                }
+                
+                if matches {
+                    results.append(
+                        SearchResult(
+                            queryId: UUID(),
+                            itemType: .habit,
+                            itemId: habit.id.uuidString,
+                            title: habit.title,
+                            snippet: habit.habitDescription,
+                            relevanceScore: 0.85
+                        )
+                    )
+                }
+            }
+        }
+        
+        return results
+    }
+    
+    private func executeListSearch(value: String, scope: SearchScope, context: ModelContext) async -> [SearchResult] {
+        guard scope == .all || scope == .reminders || scope == .active || scope == .overdue || scope == .completed else {
+            return []
+        }
+        
+        let normalizedValue = value.lowercased()
+        let reminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+        
+        return reminders
+            .filter { reminder in
+                reminder.list?.name.localizedCaseInsensitiveContains(normalizedValue) == true
+            }
+            .map { reminder in
+                SearchResult(
+                    queryId: UUID(),
+                    itemType: .reminder,
+                    itemId: reminder.uuid.uuidString,
+                    title: reminder.title,
+                    snippet: reminder.details ?? "",
+                    relevanceScore: 0.85
+                )
+            }
     }
 }
 

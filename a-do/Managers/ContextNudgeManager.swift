@@ -37,15 +37,15 @@ final class ContextNudgeManager: NSObject {
         super.init()
     }
     
-    // MARK: - Simulation / Trigger
+    // MARK: - Context Triggering
     
-    func simulateContext(_ context: UserContextType, modelContext: ModelContext) {
+    func handleContextEvent(_ context: UserContextType, modelContext: ModelContext) {
         guard isProEnabled else {
             logger.warning("Context Nudges are a Pro feature")
             return
         }
         
-        logger.info("Simulating context entry: \(context.rawValue)")
+        logger.info("Processing context event: \(context.rawValue)")
         
         switch context {
         case .gym:
@@ -69,26 +69,41 @@ final class ContextNudgeManager: NSObject {
                 focusType: .work,
                 context: modelContext
             )
-        default:
+        case .home:
             break
+        }
+    }
+    
+    func evaluateCurrentContextAndTrigger(modelContext: ModelContext) async {
+        guard isProEnabled else { return }
+        
+        if let location = await locationManager.getCurrentLocation() {
+            let context = classifyContext(from: location)
+            handleContextEvent(context, modelContext: modelContext)
+            return
+        }
+        
+        // Fallback to time-of-day context if location is unavailable.
+        let hour = Calendar.current.component(.hour, from: Date())
+        if (6..<9).contains(hour) || (18..<21).contains(hour) {
+            handleContextEvent(.home, modelContext: modelContext)
+        } else if (9..<17).contains(hour) {
+            handleContextEvent(.office, modelContext: modelContext)
         }
     }
     
     // MARK: - Notification Logic
     
     private func triggerNudge(title: String, body: String, focusType: FocusType, context: ModelContext) {
-        // In a real implementation, we would use SmartNotificationManager to schedule this.
-        // For now, we'll create a new SmartNotification record which the system would pick up.
-        
         let notification = SmartNotification(
-            userId: "current-user",
+            userId: SecurityUtils.getCurrentUserID(),
             type: .aiSuggestion, // or focusStart
             title: title,
             body: body,
-            scheduledDate: Date().addingTimeInterval(5) // Immediate trigger
+            scheduledDate: Date().addingTimeInterval(5)
         )
         notification.priority = .high
-        notification.context = .general // Could be .gym, etc.
+        notification.context = mapFocusTypeToNotificationContext(focusType)
         
         context.insert(notification)
         
@@ -96,11 +111,50 @@ final class ContextNudgeManager: NSObject {
             try context.save()
             logger.info("Scheduled Context Nudge: \(title)")
             
-            // Post a local notification via UserNotifications for immediate feedback if permission exists
             sendLocalNotification(title: title, body: body)
             
         } catch {
             logger.error("Failed to save nudge: \(error.localizedDescription)")
+        }
+    }
+    
+    private func classifyContext(from location: CLLocation) -> UserContextType {
+        let speed = max(0, location.speed)
+        
+        if speed > 5.0 {
+            return .focusZone
+        }
+        
+        if let address = locationManager.currentAddress?.lowercased() {
+            if address.contains("gym") || address.contains("fitness") {
+                return .gym
+            }
+            if address.contains("office") || address.contains("work") {
+                return .office
+            }
+            if address.contains("library") {
+                return .library
+            }
+            if address.contains("home") {
+                return .home
+            }
+        }
+        
+        return .focusZone
+    }
+    
+    private func mapFocusTypeToNotificationContext(_ focusType: FocusType) -> NotificationContext {
+        switch focusType {
+        case .work:
+            return .work
+        case .study:
+            return .focus
+        case .exercise:
+            return .health
+        case .personal:
+            return .personal
+        default:
+            return .general
         }
     }
     

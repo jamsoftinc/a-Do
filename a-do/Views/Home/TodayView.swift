@@ -4,9 +4,11 @@ import os
 
 struct TodayView: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
     @State private var todayReminders: [Reminder] = []
     @State private var isLoading: Bool = false
     @State private var showingReminderForm = false
+    @State private var showingDailyPlanning = false
     
     var body: some View {
         NavigationStack {
@@ -35,8 +37,7 @@ struct TodayView: View {
                             // Smart Actions
                             VStack(spacing: 16) {
                                 Button {
-                                    // Navigate to tomorrow planning
-                                    // ideally this opens a sheet, but for now we simulate action
+                                    showingDailyPlanning = true
                                 } label: {
                                     Label("Plan for Tomorrow", systemImage: "sun.max")
                                         .font(.headline)
@@ -70,6 +71,14 @@ struct TodayView: View {
             }
             .navigationTitle("Today")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        goHome()
+                    } label: {
+                        Image(systemName: "house.fill")
+                    }
+                }
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         showingReminderForm = true
@@ -82,6 +91,11 @@ struct TodayView: View {
             .sheet(isPresented: $showingReminderForm) {
                 NavigationStack {
                     ReminderFormView()
+                }
+            }
+            .sheet(isPresented: $showingDailyPlanning) {
+                NavigationStack {
+                    DailyPlanningView()
                 }
             }
             .onAppear {
@@ -124,10 +138,16 @@ struct TodayView: View {
     }
     
     private func deleteReminder(_ reminder: Reminder) {
-        NotificationManager.shared.cancelNotification(for: reminder)
+        NotificationManager.shared.cancelNotifications(for: reminder)
         context.delete(reminder)
         try? context.save()
+        WidgetSnapshotManager.shared.refreshSnapshots(context: context)
         loadTodayReminders()
+    }
+
+    private func goHome() {
+        NotificationCenter.default.post(name: .appNavigateHome, object: nil)
+        dismiss()
     }
 }
 
@@ -201,6 +221,7 @@ private struct TodayReminderCard: View {
         reminder.isCompleted = isCompleted
         reminder.completedAt = isCompleted ? Date() : nil
         try? context.save()
+        WidgetSnapshotManager.shared.refreshSnapshots(context: context)
         
         if isCompleted {
             HapticManager.shared.play(.success)

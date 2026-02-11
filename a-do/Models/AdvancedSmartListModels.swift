@@ -353,9 +353,21 @@ final class EnhancedSmartListRule {
         case .hasNoTags:
             return reminder.tags?.isEmpty ?? true
 
-        // Placeholder conditions
-        case .habitRelated, .recurringReminder, .fromTemplate, .customFilter:
-            return false // These would need additional implementation
+        case .habitRelated:
+            let linkedToHabit = (reminder.timeEntries ?? []).contains { $0.habit != nil }
+            return linkedToHabit || reminder.recurringReminder != nil
+            
+        case .recurringReminder:
+            return reminder.recurringReminder != nil
+            
+        case .fromTemplate:
+            // Recurring reminders are generated from a template definition.
+            return reminder.recurringReminder != nil
+            
+        case .customFilter:
+            guard !value.isEmpty else { return false }
+            let source = "\(reminder.title) \(reminder.details ?? "")"
+            return evaluateTextCondition(text: source, searchValue: value)
         }
     }
     
@@ -388,9 +400,7 @@ final class EnhancedSmartListRule {
     }
     
     private func getCurrentUserID() -> String {
-        // Return a default user ID for now - this would be properly implemented
-        // with proper user management in a real app
-        return "default_user"
+        SecurityUtils.getCurrentUserID()
     }
 }
 

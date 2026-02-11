@@ -29,6 +29,7 @@ final class BehavioralLearningManager {
     private var actionBuffer: [UserAction] = []
     private var feedbackBuffer: [UserFeedback] = []
     private var lastProcessingDate: Date = Date.distantPast
+    private let sessionId: String = UUID().uuidString
     
     private init() {
         setupPeriodicProcessing()
@@ -448,10 +449,9 @@ final class BehavioralLearningManager {
         processingTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                // Process any remaining actions in buffer
                 if !self.actionBuffer.isEmpty {
-                    // Would need context here in real implementation
-                    // await self.processBatchedActions(context: context)
+                    let context = ModelContext(AppContainer.shared.getContainer())
+                    await self.processBatchedActions(context: context)
                 }
             }
         }
@@ -466,11 +466,11 @@ final class BehavioralLearningManager {
     }
     
     private func getCurrentUserId() -> String {
-        return "current-user" // In real app, would get from authentication
+        return SecurityUtils.getCurrentUserID()
     }
     
     private func getCurrentSessionId() -> String {
-        return UUID().uuidString // In real app, would maintain session ID
+        return sessionId
     }
     
     private func updateSuggestionTypeReliability(
@@ -478,8 +478,31 @@ final class BehavioralLearningManager {
         delta: Double,
         modelContext: ModelContext
     ) {
-        // Update reliability metrics for suggestion type
-        // This would be stored in a dedicated model or configuration
+        let performance = getOrCreateModelPerformance(type, context: modelContext)
+        
+        let nextTotalPredictions = max(1, performance.totalPredictions + 1)
+        let nextCorrectPredictions = max(
+            0,
+            min(
+                nextTotalPredictions,
+                performance.correctPredictions + (delta >= 0 ? 1 : 0)
+            )
+        )
+        
+        let updatedAccuracy = clamp(performance.accuracy + delta * 0.15, min: 0.0, max: 1.0)
+        let updatedPrecision = clamp(performance.precision + delta * 0.12, min: 0.0, max: 1.0)
+        let updatedRecall = clamp(performance.recall + delta * 0.1, min: 0.0, max: 1.0)
+        
+        performance.updateMetrics(
+            accuracy: updatedAccuracy,
+            precision: updatedPrecision,
+            recall: updatedRecall,
+            userSatisfactionScore: performance.userSatisfactionScore,
+            totalPredictions: nextTotalPredictions,
+            correctPredictions: nextCorrectPredictions
+        )
+        
+        try? modelContext.save()
         logger.info("Updated reliability for \(type.displayName) by \(delta)")
     }
     
@@ -503,26 +526,79 @@ final class BehavioralLearningManager {
         return performance
     }
     
-    // MARK: - Helper Methods (Placeholder implementations)
+    // MARK: - Helper Methods
     
     private func handleSuggestionApplied(_ action: UserAction, context: ModelContext) async {
-        // Implementation for handling applied suggestions
+        guard let suggestion = fetchSuggestion(from: action.context, context: context) else { return }
+        suggestion.apply()
+        updateSuggestionTypeReliability(suggestion.type, delta: 0.12, modelContext: context)
+        try? context.save()
     }
     
     private func handleSuggestionDismissed(_ action: UserAction, context: ModelContext) async {
-        // Implementation for handling dismissed suggestions
+        guard let suggestion = fetchSuggestion(from: action.context, context: context) else { return }
+        suggestion.dismiss()
+        updateSuggestionTypeReliability(suggestion.type, delta: -0.08, modelContext: context)
+        try? context.save()
     }
     
     private func handleTaskRescheduled(_ action: UserAction, context: ModelContext) async {
-        // Implementation for handling rescheduled tasks
+        guard let reminderId = action.context["reminderId"] as? String,
+              let uuid = UUID(uuidString: reminderId) else { return }
+        
+        let reminderDescriptor = FetchDescriptor<Reminder>(
+            predicate: #Predicate { $0.uuid == uuid }
+        )
+        
+        guard let reminder = try? context.fetch(reminderDescriptor).first else { return }
+        
+        // If user keeps rescheduling, lower confidence in aggressive due-date suggestions.
+        if reminder.dueDate != nil {
+            updateSuggestionTypeReliability(.dueDateOptimization, delta: -0.05, modelContext: context)
+        }
     }
     
     private func handleHabitSkipped(_ action: UserAction, context: ModelContext) async {
-        // Implementation for handling skipped habits
+        guard let habitId = action.context["habitId"] as? String,
+              let uuid = UUID(uuidString: habitId) else { return }
+        
+        let habitDescriptor = FetchDescriptor<Habit>(
+            predicate: #Predicate { $0.id == uuid }
+        )
+        
+        guard let habit = try? context.fetch(habitDescriptor).first else { return }
+        
+        let suggestion = AISuggestion(
+            type: .habitTiming,
+            title: "Adjust Timing for \(habit.title)",
+            description: "Try a smaller target or an earlier cue to improve consistency.",
+            confidence: 0.7
+        )
+        suggestion.priority = .medium
+        suggestion.targetHabit = habit
+        suggestion.targetHabitID = habit.id
+        context.insert(suggestion)
+        
+        updateSuggestionTypeReliability(.habitTiming, delta: -0.04, modelContext: context)
+        try? context.save()
     }
     
     private func updateOptimalHabitTiming(habit: Habit, timing: HabitTiming, context: ModelContext) {
-        // Update optimal timing patterns for the habit
+        let learningData = AILearningData(
+            dataType: .habitExecution,
+            userId: getCurrentUserId(),
+            sessionId: getCurrentSessionId()
+        )
+        
+        learningData.context = "habit_timing:\(timing.rawValue)"
+        learningData.setEventData([
+            "habitId": habit.id.uuidString,
+            "habitTitle": habit.title,
+            "timing": timing.rawValue
+        ])
+        
+        context.insert(learningData)
+        try? context.save()
     }
     
     private func adjustHabitSuggestions(
@@ -531,11 +607,37 @@ final class BehavioralLearningManager {
         patterns: UserBehaviorAnalysis,
         context: ModelContext
     ) async {
-        // Adjust future habit suggestions based on completion patterns
+        guard !completed else { return }
+        
+        let pendingStatus = AISuggestionStatus.pending.rawValue
+        let targetHabitID: UUID? = habit.id
+        let descriptor = FetchDescriptor<AISuggestion>(
+            predicate: #Predicate { suggestion in
+                suggestion.targetHabitID == targetHabitID &&
+                suggestion.statusRaw == pendingStatus
+            }
+        )
+        
+        let existing = (try? context.fetch(descriptor)) ?? []
+        guard existing.isEmpty else { return }
+        
+        let suggestion = AISuggestion(
+            type: .habitStacking,
+            title: "Reinforce \(habit.title)",
+            description: "Consistency is slipping. Pair this habit with an existing routine anchor.",
+            confidence: max(0.6, 1.0 - patterns.habitPatterns.optimalFormationTime / (2 * 3600))
+        )
+        suggestion.targetHabit = habit
+        suggestion.targetHabitID = habit.id
+        suggestion.priority = .medium
+        
+        context.insert(suggestion)
+        try? context.save()
     }
     
     private func reinforceSchedulingPatterns(reminder: Reminder, context: ModelContext) async {
-        // Reinforce successful scheduling patterns
+        guard reminder.isCompleted else { return }
+        updateSuggestionTypeReliability(.optimalTaskTiming, delta: 0.04, modelContext: context)
     }
     
     private func adjustSchedulingSuggestions(
@@ -543,7 +645,20 @@ final class BehavioralLearningManager {
         patterns: UserBehaviorAnalysis,
         context: ModelContext
     ) async {
-        // Adjust scheduling suggestions based on delays
+        let delayHours = patterns.taskCompletionPatterns.averageCompletionDelay / 3600
+        guard delayHours > 2 else { return }
+        
+        let suggestion = AISuggestion(
+            type: .dueDateOptimization,
+            title: "Reschedule \(reminder.title)",
+            description: "Recent completion delays suggest this reminder needs an earlier or less busy timeslot.",
+            confidence: min(0.9, 0.6 + delayHours / 24)
+        )
+        suggestion.targetReminder = reminder
+        suggestion.targetReminderID = reminder.uuid
+        suggestion.priority = .medium
+        context.insert(suggestion)
+        try? context.save()
     }
     
     private func processImplicitFeedback(
@@ -551,7 +666,19 @@ final class BehavioralLearningManager {
         suggestion: AISuggestion,
         context: ModelContext
     ) async {
-        // Process implicit feedback from user actions
+        let delta: Double
+        switch feedback.action {
+        case .clickedDetails, .sharedSuggestion, .bookmarkedSuggestion:
+            delta = 0.05
+        case .viewedLong:
+            delta = 0.02
+        case .viewedBrief:
+            delta = -0.01
+        case .scrolledPast:
+            delta = -0.04
+        }
+        
+        updateSuggestionTypeReliability(suggestion.type, delta: delta, modelContext: context)
     }
     
     private func incorporateFeedbackIntoModel(
@@ -559,49 +686,169 @@ final class BehavioralLearningManager {
         suggestion: AISuggestion,
         context: ModelContext
     ) async {
-        // Incorporate explicit feedback into learning models
+        let normalizedRating = Double(max(1, min(5, feedback.rating))) / 5.0
+        let confidenceShift = (normalizedRating - 0.5) * 0.2
+        suggestion.confidence = clamp(suggestion.confidence + confidenceShift, min: 0.0, max: 1.0)
+        
+        if feedback.wasHelpful {
+            suggestion.priority = .high
+        }
+        
+        try? context.save()
     }
     
     private func calculateAverageRating(for type: AISuggestionType, context: ModelContext) -> Double {
-        // Calculate average rating for suggestion type
-        return 3.5 // Placeholder
+        let descriptor = FetchDescriptor<AISuggestion>(
+            predicate: #Predicate { $0.typeRaw == type.rawValue && $0.userRating != nil }
+        )
+        
+        let suggestions = (try? context.fetch(descriptor)) ?? []
+        let ratings = suggestions.compactMap(\.userRating)
+        
+        guard !ratings.isEmpty else { return 0.7 }
+        return Double(ratings.reduce(0, +)) / Double(ratings.count) / 5.0
     }
     
     private func calculatePrecision(for type: AISuggestionType, context: ModelContext) -> Double {
-        // Calculate precision for suggestion type
-        return 0.75 // Placeholder
+        let descriptor = FetchDescriptor<AISuggestion>(
+            predicate: #Predicate { $0.typeRaw == type.rawValue }
+        )
+        
+        let suggestions = (try? context.fetch(descriptor)) ?? []
+        let actedOn = suggestions.filter { $0.status == .applied || $0.status == .dismissed }
+        guard !actedOn.isEmpty else { return 0.5 }
+        
+        let truePositives = actedOn.filter { $0.status == .applied }.count
+        return Double(truePositives) / Double(actedOn.count)
     }
     
     private func calculateRecall(for type: AISuggestionType, context: ModelContext) -> Double {
-        // Calculate recall for suggestion type
-        return 0.68 // Placeholder
+        let descriptor = FetchDescriptor<AISuggestion>(
+            predicate: #Predicate { $0.typeRaw == type.rawValue }
+        )
+        
+        let suggestions = (try? context.fetch(descriptor)) ?? []
+        let feedbackCount = suggestions.filter { $0.wasHelpful != nil }.count
+        guard feedbackCount > 0 else { return 0.5 }
+        
+        let helpfulCount = suggestions.filter { $0.wasHelpful == true }.count
+        return Double(helpfulCount) / Double(feedbackCount)
     }
     
     private func extractActionSequences(_ actions: [UserAction], windowSize: Int) -> [[UserAction]] {
-        // Extract sequences of actions within a time window
-        return [] // Placeholder
+        guard actions.count >= max(2, windowSize) else { return [] }
+        
+        let sortedActions = actions.sorted { $0.timestamp < $1.timestamp }
+        var sequences: [[UserAction]] = []
+        
+        for startIndex in 0...(sortedActions.count - windowSize) {
+            let endIndex = startIndex + windowSize
+            sequences.append(Array(sortedActions[startIndex..<endIndex]))
+        }
+        
+        return sequences
     }
     
     private func findFrequentSequences(_ sequences: [[UserAction]], minSupport: Double) -> [[UserAction]] {
-        // Find frequently occurring action sequences
-        return [] // Placeholder
+        guard !sequences.isEmpty else { return [] }
+        
+        var counts: [String: (count: Int, sequence: [UserAction])] = [:]
+        for sequence in sequences {
+            let key = sequence.map(\.type.rawValue).joined(separator: ">")
+            let previous = counts[key]?.count ?? 0
+            counts[key] = (previous + 1, sequence)
+        }
+        
+        let minimumCount = max(1, Int(Double(sequences.count) * minSupport))
+        return counts.values
+            .filter { $0.count >= minimumCount }
+            .sorted { $0.count > $1.count }
+            .map { $0.sequence }
     }
     
     private func analyzePreferencePatterns(_ actions: [UserAction]) -> [String: Any] {
-        // Analyze user preference patterns from actions
-        return [:] // Placeholder
+        guard !actions.isEmpty else { return [:] }
+        
+        let actionTypeCounts = Dictionary(grouping: actions, by: \.type)
+            .mapValues(\.count)
+        
+        let preferredActions = actionTypeCounts
+            .sorted { $0.value > $1.value }
+            .prefix(5)
+            .map { $0.key.rawValue }
+        
+        let activeHours = Dictionary(grouping: actions) { action in
+            Calendar.current.component(.hour, from: action.timestamp)
+        }
+        .mapValues(\.count)
+        .sorted { $0.value > $1.value }
+        .prefix(3)
+        .map(\.key)
+        
+        let positivityRate = Double(actions.filter { $0.type.isPositive }.count) / Double(actions.count)
+        
+        return [
+            "preferredActions": preferredActions,
+            "activeHours": activeHours,
+            "positivityRate": positivityRate
+        ]
     }
     
     private func updateUserBehaviorModel(patterns: [String: Any]) async {
-        // Update the user behavior learning model
+        let sequenceCount = (patterns["actionSequences"] as? [String: Any])?["sequenceLength"] as? Int ?? 0
+        let newProgress = learningProgress + min(0.15, Double(sequenceCount) / 500.0)
+        learningProgress = clamp(newProgress, min: 0.0, max: 1.0)
     }
     
     private func updatePredictionConfidence(patterns: [String: Any], context: ModelContext) async {
-        // Update prediction confidence based on success patterns
+        let successRates = (patterns["successRates"] as? [String: Any]) ?? [:]
+        let overallSuccessRate = (successRates["overallSuccessRate"] as? Double) ?? 0.5
+        
+        let configuration = getOrCreateAIConfiguration(context: context)
+        configuration.minimumConfidenceThreshold = clamp(
+            0.55 + (overallSuccessRate - 0.5) * 0.4,
+            min: 0.4,
+            max: 0.85
+        )
+        configuration.lastUpdated = Date()
+        
+        try? context.save()
     }
     
     private func updateFeatureWeights(patterns: [String: Any]) async {
-        // Update feature weights in learning models
+        let hasPreferences = (patterns["preferences"] as? [String: Any]) != nil
+        if hasPreferences {
+            learningProgress = clamp(learningProgress + 0.02, min: 0.0, max: 1.0)
+        }
+    }
+    
+    private func fetchSuggestion(from contextData: [String: Any], context: ModelContext) -> AISuggestion? {
+        guard let suggestionId = contextData["suggestionId"] as? String,
+              let uuid = UUID(uuidString: suggestionId) else {
+            return nil
+        }
+        
+        let descriptor = FetchDescriptor<AISuggestion>(
+            predicate: #Predicate { $0.id == uuid }
+        )
+        
+        return try? context.fetch(descriptor).first
+    }
+    
+    private func getOrCreateAIConfiguration(context: ModelContext) -> AIConfiguration {
+        let descriptor = FetchDescriptor<AIConfiguration>()
+        
+        if let existing = try? context.fetch(descriptor).first {
+            return existing
+        }
+        
+        let configuration = AIConfiguration(userId: getCurrentUserId())
+        context.insert(configuration)
+        return configuration
+    }
+    
+    private func clamp(_ value: Double, min: Double, max: Double) -> Double {
+        Swift.max(min, Swift.min(max, value))
     }
     
     private func mapInsightCategory(_ category: InsightCategory) -> AIInsightType {

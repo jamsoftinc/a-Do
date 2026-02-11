@@ -113,30 +113,3 @@ struct MemberDetailRowView: View {
         }
     }
 }
-
-#Preview {
-    // Explicitly type the models used in preview to avoid type inference issues
-    let workspace: Workspace = Workspace(name: "Sample Team", ownerID: "user123", ownerName: "John Doe")
-
-    // Add some sample members with explicit type annotations
-    let member1: WorkspaceMember = WorkspaceMember(
-        userID: "user123",
-        email: "john@example.com",
-        name: "John Doe",
-        role: .owner,
-        workspace: workspace
-    )
-    let member2: WorkspaceMember = WorkspaceMember(
-        userID: "user456",
-        email: "jane@example.com",
-        name: "Jane Smith",
-        role: .member,
-        workspace: workspace
-    )
-
-    // Explicitly type the array to disambiguate the expression
-    workspace.members = [member1, member2]
-
-    return WorkspaceMembersView(workspace: workspace)
-        .modelContainer(for: [Workspace.self, WorkspaceMember.self])
-}

@@ -10,6 +10,7 @@ import SwiftData
 
 struct CollaborationView: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
     @State private var collaborationManager = CollaborationManager.shared
     
     @Query private var workspaces: [Workspace]
@@ -48,6 +49,20 @@ struct CollaborationView: View {
             }
             .navigationTitle("Collaboration")
             .toolbar {
+                ToolbarItemGroup(placement: .navigationBarLeading) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+
+                    Button {
+                        goHome()
+                    } label: {
+                        Image(systemName: "house.fill")
+                    }
+                }
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         if selectedTab == 0 {
@@ -76,6 +91,11 @@ struct CollaborationView: View {
                 Text("No workspaces available")
             }
         }
+    }
+
+    private func goHome() {
+        NotificationCenter.default.post(name: .appNavigateHome, object: nil)
+        dismiss()
     }
     
     // MARK: - Workspaces Tab

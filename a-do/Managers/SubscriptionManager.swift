@@ -38,21 +38,13 @@ final class SubscriptionManager {
     
     private init() {
         // Initialize subscription status
-        self.subscriptionStatus = SubscriptionStatus(userId: "current-user")
+        self.subscriptionStatus = SubscriptionStatus(userId: SecurityUtils.getCurrentUserID())
 
         startTransactionListener()
 
         // Check for existing subscriptions on launch
         Task {
             await updateSubscriptionStatus()
-        }
-    }
-    
-    deinit {
-        // Cancel listener task on deinit
-        // Note: accessing main actor isolated property from deinit
-        Task { @MainActor in
-            updateListenerTask?.cancel()
         }
     }
     
@@ -165,7 +157,6 @@ final class SubscriptionManager {
         logger.info("Updating subscription status...")
         
         do {
-            var currentEntitlement: Transaction?
             var highestTransaction: Transaction?
             
             // Check all active subscriptions
@@ -180,8 +171,6 @@ final class SubscriptionManager {
                 } else {
                     highestTransaction = transaction
                 }
-                
-                currentEntitlement = transaction
             }
             
             await updateLocalSubscriptionStatus(from: highestTransaction)
@@ -195,7 +184,7 @@ final class SubscriptionManager {
         await MainActor.run {
             // Ensure subscription status exists
             if self.subscriptionStatus == nil {
-                self.subscriptionStatus = SubscriptionStatus(userId: "current-user")
+                self.subscriptionStatus = SubscriptionStatus(userId: SecurityUtils.getCurrentUserID())
             }
 
             guard let transaction = transaction else {
@@ -289,6 +278,7 @@ final class SubscriptionManager {
     // MARK: - Free Trial
     
     func startFreeTrial(context: ModelContext) {
+        #if DEBUG
         logger.info("Starting 7-day free trial...")
         
         let calendar = Calendar.current
@@ -308,6 +298,10 @@ final class SubscriptionManager {
         } catch {
             logger.error("Failed to save trial status: \(error.localizedDescription)")
         }
+        #else
+        logger.warning("Local trial creation is disabled in release builds. Use StoreKit introductory offers.")
+        errorMessage = "Free trial is currently unavailable. Please select a subscription plan."
+        #endif
     }
     
     // MARK: - Helper Methods

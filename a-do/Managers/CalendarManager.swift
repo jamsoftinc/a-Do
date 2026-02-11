@@ -152,8 +152,7 @@ final class CalendarManager {
         // Remove duplicates and add to event
         let uniqueAttendees = Array(Set(allAttendees)).filter { !$0.isEmpty }
         
-        // Add attendees to the event notes for now
-        // This ensures compatibility across all iOS versions
+        // Add attendees to event notes for broad iOS compatibility.
         if !uniqueAttendees.isEmpty {
             var attendeeNote = "\n\nAttendees:"
             for email in uniqueAttendees {

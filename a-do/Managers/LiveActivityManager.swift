@@ -6,7 +6,9 @@
 //
 
 import Foundation
+#if canImport(ActivityKit) && !targetEnvironment(macCatalyst)
 import ActivityKit
+#endif
 import WidgetKit
 import Observation
 import os
@@ -32,14 +34,15 @@ final class LiveActivityManager {
             logger.warning("Live Activities is a Pro feature")
             return
         }
-        
+
+#if canImport(ActivityKit) && !targetEnvironment(macCatalyst)
         logger.info("Starting Live Activity for focus session: \(session.name)")
-        
+
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
             logger.warning("Live Activities are not enabled")
             return
         }
-        
+
         let activityContent = ActivityContent(
             state: FocusActivityAttributes.ContentState(
                 sessionName: session.name,
@@ -68,9 +71,13 @@ final class LiveActivityManager {
         } catch {
             logger.error("Failed to start Live Activity: \(error.localizedDescription)")
         }
+#else
+        logger.info("Live Activities are unavailable on Mac Catalyst")
+#endif
     }
     
     func updateFocusSessionActivity(session: FocusSession) {
+#if canImport(ActivityKit) && !targetEnvironment(macCatalyst)
         guard let activity = getActivity(for: session.id) else {
             logger.warning("No activity found for session: \(session.id)")
             return
@@ -92,9 +99,13 @@ final class LiveActivityManager {
         Task {
             await activity.update(content)
         }
+#else
+        logger.info("Skipping Live Activity update on Mac Catalyst")
+#endif
     }
     
     func endFocusSessionActivity(session: FocusSession) {
+#if canImport(ActivityKit) && !targetEnvironment(macCatalyst)
         guard let activity = getActivity(for: session.id) else {
             logger.warning("No activity found for session: \(session.id)")
             return
@@ -116,7 +127,9 @@ final class LiveActivityManager {
         Task {
             await activity.end(content, dismissalPolicy: .immediate)
         }
-        
+#else
+        logger.info("Skipping Live Activity end on Mac Catalyst")
+#endif
         removeActivityID(for: session.id)
     }
     
@@ -134,16 +147,19 @@ final class LiveActivityManager {
         UserDefaults.standard.removeObject(forKey: "focus_activity_\(sessionID.uuidString)")
     }
     
+#if canImport(ActivityKit) && !targetEnvironment(macCatalyst)
     private func getActivity(for sessionID: UUID) -> Activity<FocusActivityAttributes>? {
         guard let activityID = getActivityID(for: sessionID) else { return nil }
         
         let activities = Activity<FocusActivityAttributes>.activities
         return activities.first { $0.id == activityID }
     }
+#endif
 }
 
 // MARK: - Activity Attributes
 
+#if canImport(ActivityKit) && !targetEnvironment(macCatalyst)
 struct FocusActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         var sessionName: String
@@ -169,3 +185,4 @@ struct FocusActivityAttributes: ActivityAttributes {
     
     var name: String = "Focus Session"
 }
+#endif

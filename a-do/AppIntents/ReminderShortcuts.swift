@@ -5,6 +5,7 @@ import Combine
 struct AddQuickReminder: AppIntent {
     static var title: LocalizedStringResource = "Add Quick Reminder"
     static var description = IntentDescription("Creates a reminder with a title and optional due time")
+    static var openAppWhenRun: Bool = false
 
     @Parameter(title: "Title") var reminderTitle: String
     @Parameter(title: "Due In Minutes", default: 0) var dueInMinutes: Int
@@ -16,30 +17,37 @@ struct AddQuickReminder: AppIntent {
         }
         let context = ModelContext(container)
         let due: Date? = dueInMinutes > 0 ? Date().addingTimeInterval(Double(dueInMinutes) * 60) : nil
-        let reminder = Reminder(title: reminderTitle, dueDate: due)
-        context.insert(reminder)
+        let requests = await AIManager.shared.buildCaptureRequests(
+            from: reminderTitle,
+            fallbackDueDate: due
+        )
 
-        do {
-            try context.save()
-        } catch {
-            return .result(dialog: "Failed to save reminder. Please try again.")
-        }
-
-        // Schedule notifications on MainActor to ensure thread safety
-        let reminderTitleCopy = reminderTitle
-        let dueCopy = due
-        let reminderId = reminder.persistentModelID
-        _ = await MainActor.run {
-            Task { [reminderId, dueCopy, reminderTitleCopy] in
-                await NotificationManager.shared.scheduleNotifications(for: reminderId, dueDate: dueCopy, leadTimes: [], title: reminderTitleCopy)
+        var createdCount = 0
+        for var request in requests {
+            if request.dueDate == nil {
+                request.dueDate = due
+            }
+            do {
+                _ = try await ReminderCreationService.shared.createReminder(request: request, in: context)
+                createdCount += 1
+            } catch {
+                continue
             }
         }
-        return .result(dialog: "Added reminder: \(reminderTitle)")
+
+        if createdCount == 0 {
+            return .result(dialog: "Failed to save reminder. Please try again.")
+        }
+        if createdCount == 1 {
+            return .result(dialog: "Added reminder: \(requests.first?.title ?? reminderTitle)")
+        }
+        return .result(dialog: "Added \(createdCount) reminders.")
     }
 }
 
 struct OpenTodayList: AppIntent {
     static var title: LocalizedStringResource = "Open Today List"
+    static var openAppWhenRun: Bool = true
     func perform() async throws -> some IntentResult {
         // Use the centralized AppGroupDefaults utility
         await MainActor.run {
@@ -52,6 +60,7 @@ struct OpenTodayList: AppIntent {
 struct SendTextForReminder: AppIntent {
     static var title: LocalizedStringResource = "Send Text For Reminder"
     static var description = IntentDescription("Open the app to send a text for the specified reminder")
+    static var openAppWhenRun: Bool = true
 
     @Parameter(title: "Reminder ID") var reminderId: String
 
@@ -105,6 +114,7 @@ struct IncrementHabit: AppIntent {
 struct OpenHabitsView: AppIntent {
     static var title: LocalizedStringResource = "Open Habits"
     static var description = IntentDescription("Open the habits tracking view")
+    static var openAppWhenRun: Bool = true
 
     func perform() async throws -> some IntentResult {
         // Set a flag for the app to open habits view

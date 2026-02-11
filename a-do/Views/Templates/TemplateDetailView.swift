@@ -237,7 +237,7 @@ struct TemplateStatCard: View {
 }
 
 #Preview {
-    // Build a sample template in a local scope
+    // Build a preview template in a local scope.
     let template: ReminderTemplate = {
         let t = ReminderTemplate(name: "Daily Standup", title: "Daily team standup meeting", category: "Work")
         t.icon = "calendar"

@@ -13,7 +13,10 @@ struct InsightDetailView: View {
     let insight: AIInsight
     
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @State private var showingBookmarkTooltip = false
+    
+    private let aiDataService = AIDataService.shared
     
     var body: some View {
         NavigationStack {
@@ -150,7 +153,7 @@ struct InsightDetailView: View {
         case .gauge:
             gaugeView
         default:
-            placeholderChart
+            emptyChart(message: "Visualization is not available for this insight")
         }
     }
     
@@ -160,22 +163,33 @@ struct InsightDetailView: View {
                 .font(.subheadline.weight(.medium))
                 .foregroundColor(.primary)
             
-            Chart {
-                ForEach(Array(sampleLineData.enumerated()), id: \.offset) { index, value in
-                    LineMark(
-                        x: .value("Period", index),
-                        y: .value("Value", value)
-                    )
-                    .foregroundStyle(typeColor)
-                    .symbol(Circle().strokeBorder(lineWidth: 2))
+            if trendDataPoints.isEmpty {
+                emptyChart(message: "No trend data yet")
+                    .frame(height: 180)
+            } else {
+                Chart {
+                    ForEach(trendDataPoints, id: \.date) { point in
+                        LineMark(
+                            x: .value("Date", point.date, unit: .day),
+                            y: .value("Score", point.score)
+                        )
+                        .foregroundStyle(typeColor)
+                        .symbol(Circle().strokeBorder(lineWidth: 2))
+                        
+                        AreaMark(
+                            x: .value("Date", point.date, unit: .day),
+                            y: .value("Score", point.score)
+                        )
+                        .foregroundStyle(typeColor.opacity(0.15))
+                    }
                 }
-            }
-            .frame(height: 200)
-            .chartYScale(domain: 0...100)
-            .chartXAxis {
-                AxisMarks(values: .automatic) { _ in
-                    AxisGridLine()
-                    AxisTick()
+                .frame(height: 200)
+                .chartYScale(domain: trendChartYDomain)
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                        AxisGridLine()
+                        AxisTick()
+                    }
                 }
             }
         }
@@ -187,16 +201,22 @@ struct InsightDetailView: View {
                 .font(.subheadline.weight(.medium))
                 .foregroundColor(.primary)
             
-            Chart {
-                ForEach(sampleBarData, id: \.category) { data in
-                    BarMark(
-                        x: .value("Category", data.category),
-                        y: .value("Value", data.value)
-                    )
-                    .foregroundStyle(data.color)
+            if habitCompletionBars.isEmpty {
+                emptyChart(message: "No habit progress data yet")
+                    .frame(height: 180)
+            } else {
+                Chart {
+                    ForEach(habitCompletionBars, id: \.category) { data in
+                        BarMark(
+                            x: .value("Category", data.category),
+                            y: .value("Completion", data.value)
+                        )
+                        .foregroundStyle(data.color)
+                    }
                 }
+                .frame(height: 200)
+                .chartYScale(domain: 0...100)
             }
-            .frame(height: 200)
         }
     }
     
@@ -206,40 +226,45 @@ struct InsightDetailView: View {
                 .font(.subheadline.weight(.medium))
                 .foregroundColor(.primary)
             
-            HStack {
-                Chart {
-                    ForEach(samplePieData, id: \.category) { data in
-                        SectorMark(
-                            angle: .value("Value", data.value),
-                            innerRadius: .ratio(0.4),
-                            angularInset: 1
-                        )
-                        .foregroundStyle(data.color)
-                        .opacity(0.8)
-                    }
-                }
-                .frame(width: 150, height: 150)
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(samplePieData, id: \.category) { data in
-                        HStack {
-                            Circle()
-                                .fill(data.color)
-                                .frame(width: 8, height: 8)
-                            
-                            Text(data.category)
-                                .font(.caption)
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                            
-                            Text("\(Int(data.value))%")
-                                .font(.caption.weight(.medium))
-                                .foregroundColor(.secondary)
+            if timeDistributionSlices.isEmpty {
+                emptyChart(message: "No time distribution data yet")
+                    .frame(height: 180)
+            } else {
+                HStack {
+                    Chart {
+                        ForEach(timeDistributionSlices, id: \.category) { data in
+                            SectorMark(
+                                angle: .value("Value", data.value),
+                                innerRadius: .ratio(0.4),
+                                angularInset: 1
+                            )
+                            .foregroundStyle(data.color)
+                            .opacity(0.85)
                         }
                     }
+                    .frame(width: 150, height: 150)
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(timeDistributionSlices, id: \.category) { data in
+                            HStack {
+                                Circle()
+                                    .fill(data.color)
+                                    .frame(width: 8, height: 8)
+                                
+                                Text(data.category)
+                                    .font(.caption)
+                                    .foregroundColor(.primary)
+                                
+                                Spacer()
+                                
+                                Text("\(Int(data.value))%")
+                                    .font(.caption.weight(.medium))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -250,11 +275,11 @@ struct InsightDetailView: View {
                 .font(.subheadline.weight(.medium))
                 .foregroundColor(.primary)
             
-            Gauge(value: 0.75, in: 0...1) {
+            Gauge(value: gaugeProgressValue, in: 0...1) {
                 Text("Progress")
                     .font(.caption)
             } currentValueLabel: {
-                Text("75%")
+                Text("\(Int(gaugeProgressValue * 100))%")
                     .font(.title2.weight(.semibold))
                     .foregroundColor(typeColor)
             }
@@ -264,13 +289,13 @@ struct InsightDetailView: View {
         }
     }
     
-    private var placeholderChart: some View {
+    private func emptyChart(message: String) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "chart.bar")
                 .font(.system(size: 40))
                 .foregroundColor(.secondary)
             
-            Text("Visualization not available")
+            Text(message)
                 .font(.body)
                 .foregroundColor(.secondary)
         }
@@ -540,29 +565,85 @@ struct InsightDetailView: View {
         }
     }
     
-    // MARK: - Sample Data
+    // MARK: - Data Mapping
     
-    private var sampleLineData: [Double] {
-        [65, 72, 68, 75, 82, 79, 85]
+    private var trendDataPoints: [ProductivityDataPoint] {
+        aiDataService.getProductivityTrendData(
+            context: modelContext,
+            days: max(3, daysForTimeframe)
+        )
     }
     
-    private var sampleBarData: [BarData] {
-        [
-            BarData(category: "Mon", value: 75, color: .blue),
-            BarData(category: "Tue", value: 82, color: .blue),
-            BarData(category: "Wed", value: 68, color: .blue),
-            BarData(category: "Thu", value: 90, color: .blue),
-            BarData(category: "Fri", value: 85, color: .blue)
-        ]
+    private var habitCompletionBars: [BarData] {
+        aiDataService.getHabitCompletionData(context: modelContext, days: daysForTimeframe)
+            .map { habitData in
+                BarData(
+                    category: habitData.name,
+                    value: min(100, max(0, habitData.completionRate * 100)),
+                    color: Color(hex: habitData.color) ?? typeColor
+                )
+            }
+            .prefix(6)
+            .map { $0 }
     }
     
-    private var samplePieData: [PieData] {
-        [
-            PieData(category: "Work", value: 45, color: .blue),
-            PieData(category: "Learning", value: 25, color: .green),
-            PieData(category: "Personal", value: 20, color: .orange),
-            PieData(category: "Other", value: 10, color: .gray)
-        ]
+    private var timeDistributionSlices: [PieData] {
+        aiDataService.getTimeDistributionData(context: modelContext, days: daysForTimeframe)
+            .map { distribution in
+                PieData(
+                    category: distribution.category,
+                    value: distribution.percentage,
+                    color: Color(hex: distribution.color) ?? typeColor
+                )
+            }
+            .filter { $0.value > 0 }
+            .prefix(6)
+            .map { $0 }
+    }
+    
+    private var trendChartYDomain: ClosedRange<Double> {
+        let values = trendDataPoints.map(\.score)
+        guard let minValue = values.min(), let maxValue = values.max() else {
+            return 0...100
+        }
+        
+        let lower = max(0, minValue - 10)
+        let upper = min(100, maxValue + 10)
+        if lower == upper {
+            return lower...(upper + 1)
+        }
+        return lower...upper
+    }
+    
+    private var daysForTimeframe: Int {
+        switch insight.timeframe {
+        case .day: return 1
+        case .week: return 7
+        case .month: return 30
+        case .quarter: return 90
+        case .year: return 365
+        }
+    }
+    
+    private var decodedMetrics: [String: Double] {
+        guard let data = insight.metricsData else { return [:] }
+        return (try? JSONDecoder().decode([String: Double].self, from: data)) ?? [:]
+    }
+    
+    private var gaugeProgressValue: Double {
+        if let explicitProgress = decodedMetrics["progress"] {
+            return min(1, max(0, explicitProgress))
+        }
+        
+        if let completionRate = decodedMetrics["completionRate"] {
+            return min(1, max(0, completionRate))
+        }
+        
+        if insight.type == .burnoutRisk {
+            return min(1, max(0, 1.0 - insight.confidence))
+        }
+        
+        return min(1, max(0, insight.confidence))
     }
     
     // MARK: - Actions

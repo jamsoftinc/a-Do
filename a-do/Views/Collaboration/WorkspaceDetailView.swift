@@ -252,11 +252,36 @@ struct WorkspaceDetailView: View {
                 .font(AppTheme.Typography.headline)
                 .foregroundColor(AppTheme.Colors.textPrimary)
             
-            Text("Activity tracking coming soon")
-                .font(AppTheme.Typography.body)
-                .foregroundColor(AppTheme.Colors.textSecondary)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding()
+            if recentActivities.isEmpty {
+                Text("No activity recorded yet")
+                    .font(AppTheme.Typography.body)
+                    .foregroundColor(AppTheme.Colors.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding()
+            } else {
+                LazyVStack(spacing: 10) {
+                    ForEach(recentActivities.prefix(8), id: \.id) { activity in
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: activity.type.icon)
+                                .font(.caption)
+                                .foregroundColor(AppTheme.Colors.accent)
+                                .frame(width: 16, height: 16)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(activity.details)
+                                    .font(AppTheme.Typography.caption1)
+                                    .foregroundColor(AppTheme.Colors.textPrimary)
+                                
+                                Text(activity.timestamp.formatted(date: .abbreviated, time: .shortened))
+                                    .font(AppTheme.Typography.caption2)
+                                    .foregroundColor(AppTheme.Colors.textSecondary)
+                            }
+                            
+                            Spacer()
+                        }
+                    }
+                }
+            }
         }
     }
     
@@ -266,11 +291,24 @@ struct WorkspaceDetailView: View {
         workspace.ownerID == SecurityUtils.getCurrentUserID()
     }
     
+    private var recentActivities: [ShareActivity] {
+        let reminders = workspace.sharedReminders ?? []
+        return reminders
+            .flatMap { $0.activities ?? [] }
+            .sorted { $0.timestamp > $1.timestamp }
+    }
+    
     // MARK: - Actions
     
     private func deleteWorkspace() {
-        // Workspace deletion functionality
-        // Delete workspace
+        context.delete(workspace)
+        
+        do {
+            try context.save()
+            dismiss()
+        } catch {
+            collaborationManager.shareError = error.localizedDescription
+        }
     }
 }
 
@@ -397,12 +435,3 @@ struct SharedListRowView: View {
         .padding(.vertical, 4)
     }
 }
-
-#Preview {
-    let workspace = Workspace(name: "Sample Team", ownerID: "user123", ownerName: "John Doe")
-    workspace.workspaceDescription = "Sample workspace for collaboration"
-    
-    return WorkspaceDetailView(workspace: workspace)
-        .modelContainer(for: [Workspace.self, WorkspaceMember.self, SharedList.self])
-}
-

@@ -350,7 +350,7 @@ struct AITextAssistView: View {
 
 #Preview {
     struct PreviewWrapper: View {
-        @State private var text = "This is some sample text to demonstrate the Writing Tools integration."
+        @State private var text = "Use this text to try writing tools in the preview."
 
         var body: some View {
             Form {

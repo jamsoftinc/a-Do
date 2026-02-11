@@ -141,7 +141,7 @@ struct InboxView: View {
                                 }
                                 .swipeActions(edge: .leading) {
                                     Button("Mark Important") {
-                                        // Note: Flag functionality not available in current Reminder model
+                                        markImportant(reminder)
                                     }
                                     .tint(.orange)
                                 }
@@ -257,6 +257,7 @@ struct InboxView: View {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
         } catch {
             // Handle error silently in production
         }
@@ -267,6 +268,17 @@ struct InboxView: View {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+        } catch {
+            // Handle error silently in production
+        }
+    }
+
+    private func markImportant(_ reminder: Reminder) {
+        reminder.priority = .high
+        do {
+            try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
         } catch {
             // Handle error silently in production
         }

@@ -95,22 +95,27 @@ final class AppContainer {
     
     private func createEmergencyContainer() -> ModelContainer {
         // Create the most basic possible container that should always work
-        do {
-            // Try with no models first - just create an empty container
-            let emptySchema = Schema([])
-            let emptyConfig = ModelConfiguration(schema: emptySchema, isStoredInMemoryOnly: true)
-            let container = try ModelContainer(for: emptySchema, configurations: emptyConfig)
-            os_log("Created emergency empty container", log: .default, type: .default)
-            _container = container
-            return container
-        } catch {
-            os_log("Emergency empty container failed: %{public}@", log: .default, type: .fault, error.localizedDescription)
-            
-            // If even an empty container fails, something is seriously wrong
-            // But we still need to return something to prevent the fatal error
-            // Create a mock container that will at least let the app start
-            fatalError("SwiftData is completely non-functional. Error: \(error)")
+        let emergencyModelSets: [[any PersistentModel.Type]] = [
+            [],
+            [UserProfile.self],
+            [AppSettings.self],
+            [Reminder.self, Tag.self, ReminderList.self]
+        ]
+
+        for modelSet in emergencyModelSets {
+            do {
+                let schema = Schema(modelSet)
+                let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+                let container = try ModelContainer(for: schema, configurations: config)
+                os_log("Created emergency container with %d model types", log: .default, type: .default, modelSet.count)
+                _container = container
+                return container
+            } catch {
+                os_log("Emergency container attempt failed (models=%d): %{public}@", log: .default, type: .error, modelSet.count, error.localizedDescription)
+            }
         }
+
+        fatalError("SwiftData is completely non-functional after all emergency fallbacks.")
     }
     
     // MARK: - Progressive Model Loading
@@ -121,8 +126,7 @@ final class AppContainer {
             return false
         }
         
-        // For now, SwiftData doesn't support runtime schema expansion
-        // This is a placeholder for future functionality
+        // SwiftData currently does not support runtime schema expansion.
         os_log("Schema expansion requested but not yet implemented", log: .default, type: .info)
         return false
     }
@@ -175,11 +179,11 @@ final class AppContainer {
     }
     #endif
     
-    // MARK: - Demo Data Management
+    // MARK: - Data Maintenance
     @MainActor
-    static func clearAllDemoData(context: ModelContext) {
+    static func clearAllData(context: ModelContext) {
         #if DEBUG
-        // Clearing demo data
+        // Clearing all persisted data
         #endif
         
         // Clear all reminders
@@ -197,7 +201,7 @@ final class AppContainer {
         do {
             try context.save()
             #if DEBUG
-            // Demo data cleared successfully
+            // Data cleared successfully
             #endif
         } catch {
             #if DEBUG

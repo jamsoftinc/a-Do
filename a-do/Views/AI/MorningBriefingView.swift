@@ -13,51 +13,54 @@ struct MorningBriefingView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var briefingManager = MorningBriefingManager.shared
     @State private var currentPage = 0
-    // Using simple colors for MeshGradient for now, would be dynamic in production
+    // Gradient colors can be adjusted from briefing content metadata.
     @State private var gradientColors: [Color] = [.blue, .purple, .orange]
     
     var body: some View {
         ZStack {
-            // Background
-            #if canImport(SwiftUI) && os(iOS)
-            if #available(iOS 18.0, *) {
-                // iOS 18+ MeshGradient (Simulated syntax for future iOS versions)
-                 MeshGradient(
-                    width: 3, 
-                    height: 3, 
-                    points: [
-                        .init(0, 0), .init(0.5, 0), .init(1, 0),
-                        .init(0, 0.5), .init(0.5, 0.5), .init(1, 0.5),
-                        .init(0, 1), .init(0.5, 1), .init(1, 1)
-                    ], 
-                    colors: [
-                        .indigo, .purple, .blue,
-                        .blue, .cyan, .teal,
-                        .indigo, .blue, .purple
-                    ]
-                )
+            // Background - Use app's primary purple theme
+            AppTheme.Gradients.primary
                 .ignoresSafeArea()
-                .opacity(0.3)
-            } else {
-                LinearGradient(colors: [.indigo, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
-                    .ignoresSafeArea()
-            }
-            #else
-            Color.black.ignoresSafeArea()
-            #endif
             
             VStack {
-                // Stories Progress Bar
-                HStack(spacing: 4) {
-                    ForEach(0..<3) { index in
-                        Capsule()
-                            .fill(index <= currentPage ? Color.white : Color.white.opacity(0.3))
-                            .frame(height: 4)
-                            .animation(.smooth, value: currentPage)
+                VStack(spacing: 12) {
+                    HStack {
+                        Button {
+                            goHome()
+                        } label: {
+                            Image(systemName: "house.fill")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(.white)
+                                .padding(8)
+                                .background(Color.black.opacity(0.2), in: Circle())
+                        }
+
+                        Spacer()
+
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(.white)
+                                .padding(8)
+                                .background(Color.black.opacity(0.2), in: Circle())
+                        }
                     }
+                    .padding(.horizontal)
+                    .padding(.top, 20)
+
+                    // Stories Progress Bar
+                    HStack(spacing: 4) {
+                        ForEach(0..<3) { index in
+                            Capsule()
+                                .fill(index <= currentPage ? Color.white : Color.white.opacity(0.3))
+                                .frame(height: 4)
+                                .animation(.smooth, value: currentPage)
+                        }
+                    }
+                    .padding(.horizontal)
                 }
-                .padding(.top, 60)
-                .padding(.horizontal)
                 
                 Spacer()
                 
@@ -67,7 +70,7 @@ struct MorningBriefingView: View {
                         BriefingCardView(
                             title: "Good Morning",
                             text: content.greeting,
-                            icon: "sun.max.fill"
+                            icon: content.weatherIcon
                         )
                         .tag(0)
                         
@@ -129,6 +132,11 @@ struct MorningBriefingView: View {
                 }
             }
         }
+    }
+
+    private func goHome() {
+        NotificationCenter.default.post(name: .appNavigateHome, object: nil)
+        dismiss()
     }
 }
 

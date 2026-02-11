@@ -23,7 +23,7 @@ struct AIInsightsDashboardWrapper: View {
             ) {
                 showPaywall = true
             }
-            .sheet(isPresented: $showPaywall) {
+            .fullScreenCover(isPresented: $showPaywall) {
                 PaywallView()
             }
         }
@@ -36,6 +36,7 @@ struct ProUpgradePromptView: View {
     let description: String
     let icon: String
     let onUpgrade: () -> Void
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(spacing: 32) {
@@ -95,6 +96,33 @@ struct ProUpgradePromptView: View {
             }
             .padding(.horizontal, 32)
             .padding(.bottom, 32)
+        }
+        .overlay(alignment: .topLeading) {
+            Button {
+                NotificationCenter.default.post(name: .appNavigateHome, object: nil)
+                dismiss()
+            } label: {
+                Image(systemName: "house.fill")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(8)
+                    .background(Color.black.opacity(0.2), in: Circle())
+            }
+            .padding(.top, 16)
+            .padding(.leading, 16)
+        }
+        .overlay(alignment: .topTrailing) {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(.white)
+                    .padding(6)
+                    .background(Color.black.opacity(0.2), in: Circle())
+            }
+            .padding(.top, 16)
+            .padding(.trailing, 16)
         }
         .navigationTitle(title)
     }

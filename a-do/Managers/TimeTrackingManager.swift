@@ -56,6 +56,7 @@ final class TimeTrackingManager: ObservableObject {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             logger.info("Started time tracking for category: \(category)")
         } catch {
             logger.error("Failed to start time tracking: \(error.localizedDescription)")
@@ -71,6 +72,7 @@ final class TimeTrackingManager: ObservableObject {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             logger.info("Stopped time tracking. Duration: \(entry.formattedDuration)")
         } catch {
             logger.error("Failed to stop time tracking: \(error.localizedDescription)")
@@ -89,6 +91,7 @@ final class TimeTrackingManager: ObservableObject {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             logger.info("Paused time tracking")
         } catch {
             logger.error("Failed to pause time tracking: \(error.localizedDescription)")
@@ -104,6 +107,7 @@ final class TimeTrackingManager: ObservableObject {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             logger.info("Resumed time tracking")
         } catch {
             logger.error("Failed to resume time tracking: \(error.localizedDescription)")
@@ -271,6 +275,7 @@ final class TimeTrackingManager: ObservableObject {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             logger.info("Created time goal: \(title)")
         } catch {
             logger.error("Failed to create time goal: \(error.localizedDescription)")
@@ -291,6 +296,7 @@ final class TimeTrackingManager: ObservableObject {
         
         do {
             try context.save()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
             logger.info("Created time category: \(name)")
         } catch {
             logger.error("Failed to create time category: \(error.localizedDescription)")

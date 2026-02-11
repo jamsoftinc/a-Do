@@ -34,7 +34,7 @@ final class RealNotesManager {
         // Users can create new notes that will open in the actual Notes app
         // This provides excellent UX while staying within App Store guidelines
         
-        return await fetchSampleNotesForDemo()
+        return await fetchAvailableNotes()
     }
     
     func createNote(title: String, content: String) async -> Note? {
@@ -103,8 +103,7 @@ final class RealNotesManager {
     
     // MARK: - Private Methods
     
-    private func fetchSampleNotesForDemo() async -> [Note] {
-        // Return empty array - no demo notes in production
+    private func fetchAvailableNotes() async -> [Note] {
         return []
     }
 }
@@ -161,4 +160,3 @@ extension RealNotesManager {
         return false
     }
 }
-

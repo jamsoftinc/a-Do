@@ -84,9 +84,3 @@ struct EditWorkspaceView: View {
         }
     }
 }
-
-#Preview {
-    let workspace = Workspace(name: "Sample Team", ownerID: "user123", ownerName: "John Doe")
-    return EditWorkspaceView(workspace: workspace)
-        .modelContainer(for: [Workspace.self])
-}

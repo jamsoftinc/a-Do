@@ -24,9 +24,7 @@ final class AIBehavioralIntegrationCoordinator {
 
     // AI Managers
     private let aiManager = AIManager.shared
-    private let behavioralLearning = BehavioralLearningManager.shared
     private let mlPatternRecognition = MLPatternRecognitionManager.shared
-    private let aiDataService = AIDataService.shared
     
     // Integration state
     var isIntegrationActive: Bool = true
@@ -66,15 +64,16 @@ final class AIBehavioralIntegrationCoordinator {
         }
 
         guard isIntegrationActive else { return }
-
-        logger.info("Starting AI behavioral learning cycle")
         
-        // Get the current model context (in a real app, this would be injected)
-        // For this demonstration, we'll assume it's available
-        guard let context = getCurrentModelContext() else {
-            logger.error("No model context available for learning cycle")
-            return
-        }
+        let context = getCurrentModelContext()
+        await runLearningCycle(context: context)
+    }
+    
+    func runLearningCycle(context: ModelContext) async {
+        guard isProEnabled else { return }
+        guard isIntegrationActive else { return }
+        
+        logger.info("Starting AI behavioral learning cycle")
         
         // Step 1: Analyze user behavior patterns
         let behaviorPatterns = await mlPatternRecognition.analyzeUserBehaviorPatterns(context: context)
@@ -86,7 +85,7 @@ final class AIBehavioralIntegrationCoordinator {
         await updateAISuggestionAlgorithms(patterns: behaviorPatterns, context: context)
 
         // Step 4: Refresh AI suggestions with improved algorithms
-        await aiManager.generateSuggestions(userId: "current-user", context: context)
+        await aiManager.generateSuggestions(userId: SecurityUtils.getCurrentUserID(), context: context)
 
         // Step 5: Create insights from behavioral data
         await generateBehavioralInsights(insights: personalizedInsights, context: context)
@@ -99,36 +98,58 @@ final class AIBehavioralIntegrationCoordinator {
     
     private func updateAISuggestionAlgorithms(patterns: UserBehaviorAnalysis, context: ModelContext) async {
         logger.info("Updating AI algorithms with behavioral patterns")
+
+        let peakHours = patterns.timeUsagePatterns.peakProductivityHours
         
-        // For demonstration purposes, use sample data since the actual pattern types
-        // would need to be implemented based on the specific analysis structure
+        var successFactors: [String: Double] = [:]
+        if !patterns.habitPatterns.successRates.isEmpty {
+            let averageSuccess = patterns.habitPatterns.successRates.values.reduce(0, +) / Double(patterns.habitPatterns.successRates.count)
+            successFactors["average_success_rate"] = averageSuccess
+        } else {
+            successFactors["average_success_rate"] = 0.0
+        }
+        successFactors["overall_behavior_score"] = patterns.overallScore
         
-        // Update productivity patterns with sample peak hours
-        let samplePeakHours = [9, 10, 11, 14, 15] // 9-11 AM and 2-3 PM
-        await updateProductivitySuggestionTiming(peakHours: samplePeakHours, context: context)
+        let averageDelayHours = patterns.taskCompletionPatterns.averageCompletionDelay / 3600
+        let taskPatterns: [String: Any] = [
+            "average_delay_hours": averageDelayHours,
+            "procrastination_score": patterns.taskCompletionPatterns.procrastinationScore,
+            "optimal_completion_hours": patterns.taskCompletionPatterns.optimalCompletionHours
+        ]
         
-        // Update habit recommendation weights with sample data
-        let sampleSuccessFactors = ["morning_routine": 0.8, "evening_routine": 0.6, "consistency": 0.9]
-        await updateHabitSuggestionWeights(successFactors: sampleSuccessFactors, context: context)
+        var focusFactors: [String: Double] = [:]
+        let focusEffectivenessValues = patterns.productivityPatterns.focusTypeEffectiveness.values
+        if !focusEffectivenessValues.isEmpty {
+            let averageFocusScore = focusEffectivenessValues.reduce(0, +) / Double(focusEffectivenessValues.count)
+            focusFactors["average_focus_effectiveness"] = averageFocusScore
+        } else {
+            focusFactors["average_focus_effectiveness"] = 0.0
+        }
+        focusFactors["burnout_risk"] = patterns.productivityPatterns.burnoutRiskScore
+        focusFactors["consistency_score"] = patterns.timeUsagePatterns.consistencyScore
         
-        // Update task scheduling preferences with sample data
-        let sampleTaskPatterns = ["preferred_completion_times": ["morning": 0.7, "afternoon": 0.5]]
-        await updateTaskSchedulingSuggestions(patterns: sampleTaskPatterns, context: context)
+        await updateProductivitySuggestionTiming(peakHours: peakHours, context: context)
+        await updateHabitSuggestionWeights(successFactors: successFactors, context: context)
+        await updateTaskSchedulingSuggestions(patterns: taskPatterns, context: context)
+        await updateFocusSessionRecommendations(factors: focusFactors, context: context)
         
-        // Update focus session recommendations with sample data
-        let sampleFocusFactors = ["deep_work": 0.85, "short_bursts": 0.65, "optimal_session_length": 45.0]
-        await updateFocusSessionRecommendations(factors: sampleFocusFactors, context: context)
-        
-        logger.info("Updated AI algorithms with behavioral patterns (using sample data for demonstration)")
+        logger.info("Updated AI algorithms with learned behavioral patterns")
     }
     
     private func generateBehavioralInsights(insights: [PersonalizedInsight], context: ModelContext) async {
         logger.info("Generating behavioral insights for AI system")
         
+        let existingInsights = (try? context.fetch(FetchDescriptor<AIInsight>())) ?? []
+        let existingTitles = Set(existingInsights.map(\.title))
+        var insertedCount = 0
+        
         for insight in insights {
+            let title = "Behavioral Learning: \(insight.title)"
+            guard !existingTitles.contains(title) else { continue }
+            
             let aiInsight = AIInsight(
                 type: mapInsightCategoryToAIType(insight.category),
-                title: "Behavioral Learning: \(insight.title)",
+                title: title,
                 summary: insight.description,
                 confidence: insight.confidence
             )
@@ -145,11 +166,12 @@ final class AIBehavioralIntegrationCoordinator {
             aiInsight.addUserNotes("Generated from behavioral learning analysis. Tags: behavioral-learning, personalized")
             
             context.insert(aiInsight)
+            insertedCount += 1
         }
         
         do {
             try context.save()
-            logger.info("Created \(insights.count) behavioral insights")
+            logger.info("Created \(insertedCount) behavioral insights")
         } catch {
             logger.error("Failed to save behavioral insights: \(error.localizedDescription)")
         }
@@ -158,12 +180,17 @@ final class AIBehavioralIntegrationCoordinator {
     // MARK: - Specific Algorithm Updates
     
     private func updateProductivitySuggestionTiming(peakHours: [Int], context: ModelContext) async {
-        // Update AI configuration for productivity suggestions
         let config = await getOrCreateAIConfiguration(context: context)
-
-        // Store peak hours for future productivity suggestions
-        // In a real implementation, extend AIConfiguration with parameters dictionary
-        _ = peakHours.map { String($0) }.joined(separator: ",")
+        
+        if peakHours.count >= 6 {
+            config.suggestionFrequency = .hourly
+        } else if peakHours.count >= 3 {
+            config.suggestionFrequency = .daily
+        } else {
+            config.suggestionFrequency = .manual
+        }
+        
+        config.proactiveNotifications = !peakHours.isEmpty
         config.lastUpdated = Date()
 
         logger.info("Updated productivity peak hours: \(peakHours)")
@@ -171,10 +198,19 @@ final class AIBehavioralIntegrationCoordinator {
 
     private func updateHabitSuggestionWeights(successFactors: [String: Double], context: ModelContext) async {
         let config = await getOrCreateAIConfiguration(context: context)
-
-        // Update habit suggestion weights based on success factors
-        // In a real implementation, extend AIConfiguration with parameters dictionary
-        _ = successFactors // Acknowledge parameter for future implementation
+        
+        let averageSuccess = successFactors["average_success_rate"] ?? 0
+        config.personalizedRecommendations = averageSuccess >= 0.35
+        
+        // Lower confidence threshold when habits are unstable so more guidance can appear.
+        if averageSuccess < 0.35 {
+            config.minimumConfidenceThreshold = 0.55
+        } else if averageSuccess > 0.75 {
+            config.minimumConfidenceThreshold = 0.75
+        } else {
+            config.minimumConfidenceThreshold = 0.65
+        }
+        
         config.lastUpdated = Date()
 
         logger.info("Updated habit suggestion weights for \(successFactors.count) factors")
@@ -182,10 +218,16 @@ final class AIBehavioralIntegrationCoordinator {
 
     private func updateTaskSchedulingSuggestions(patterns: [String: Any], context: ModelContext) async {
         let config = await getOrCreateAIConfiguration(context: context)
-
-        // Extract timing preferences from patterns
-        // In a real implementation, extend AIConfiguration with parameters dictionary
-        _ = patterns["preferred_completion_times"] // Acknowledge for future implementation
+        
+        let averageDelayHours = (patterns["average_delay_hours"] as? Double) ?? 0
+        let procrastinationScore = (patterns["procrastination_score"] as? Double) ?? 0
+        
+        if averageDelayHours > 12 || procrastinationScore > 0.5 {
+            config.maxSuggestionsPerDay = 7
+        } else {
+            config.maxSuggestionsPerDay = 4
+        }
+        
         config.lastUpdated = Date()
 
         logger.info("Updated task scheduling suggestions based on completion patterns")
@@ -193,118 +235,28 @@ final class AIBehavioralIntegrationCoordinator {
 
     private func updateFocusSessionRecommendations(factors: [String: Double], context: ModelContext) async {
         let config = await getOrCreateAIConfiguration(context: context)
-
-        // Update focus session parameters based on effectiveness factors
-        // In a real implementation, extend AIConfiguration with parameters dictionary
-        _ = factors // Acknowledge parameter for future implementation
+        
+        let burnoutRisk = factors["burnout_risk"] ?? 0
+        let consistency = factors["consistency_score"] ?? 0
+        
+        if burnoutRisk > 0.6 {
+            config.proactiveNotifications = true
+            config.maxSuggestionsPerDay = max(config.maxSuggestionsPerDay, 6)
+        }
+        
+        if consistency < 0.4 {
+            config.suggestionFrequency = .realtime
+        }
+        
         config.lastUpdated = Date()
 
         logger.info("Updated focus session recommendations based on effectiveness factors")
     }
     
-    // MARK: - Demonstration Methods
-    
-    /// Demonstrates how the system would work with sample user interactions
-    func demonstrateLearningCycle(context: ModelContext) async {
-        guard isProEnabled else {
-            logger.warning("AI behavioral learning demonstration is a Pro feature")
-            return
-        }
-
-        logger.info("Running demonstration of behavioral learning system")
-
-        // Simulate user interactions
-        await simulateUserInteractions(context: context)
-        
-        // Run a learning cycle
-        await runLearningCycle()
-        
-        // Show results
-        await displayLearningResults(context: context)
-    }
-    
-    private func simulateUserInteractions(context: ModelContext) async {
-        logger.info("Simulating user interactions for demonstration")
-        
-        // Create sample reminder for task completion tracking
-        let sampleReminder = Reminder(
-            title: "Review project proposal",
-            details: "Go through the quarterly project proposal",
-            dueDate: Date().addingTimeInterval(3600) // Due in 1 hour
-        )
-        context.insert(sampleReminder)
-        
-        // Create sample habit
-        let sampleHabit = Habit(
-            title: "Drink Water",
-            description: "Stay hydrated throughout the day",
-            icon: "drop.fill",
-            color: "#007AFF"
-        )
-        context.insert(sampleHabit)
-        
-        // Create sample AI suggestion
-        let sampleSuggestion = AISuggestion(
-            type: .optimalTaskTiming,
-            title: "Optimize your morning routine",
-            description: "Based on your patterns, consider tackling important tasks between 9-11 AM",
-            confidence: 0.85
-        )
-        context.insert(sampleSuggestion)
-        
-        // Simulate user actions
-        behavioralLearning.trackTaskCompletion(
-            reminder: sampleReminder,
-            completedOnTime: true,
-            actualTime: 1800, // Completed in 30 minutes
-            modelContext: context
-        )
-        
-        behavioralLearning.trackHabitCompletion(
-            habit: sampleHabit,
-            completed: true,
-            timing: .onTime,
-            modelContext: context
-        )
-        
-        behavioralLearning.trackSuggestionInteraction(
-            suggestion: sampleSuggestion,
-            interaction: .applied,
-            modelContext: context
-        )
-        
-        try? context.save()
-    }
-    
-    private func displayLearningResults(context: ModelContext) async {
-        logger.info("Displaying learning results")
-        
-        // Fetch recent AI insights created by behavioral learning
-        let descriptor = FetchDescriptor<AIInsight>(
-            predicate: #Predicate { insight in
-                insight.userNotes.contains("behavioral-learning")
-            },
-            sortBy: [SortDescriptor(\AIInsight.createdAt, order: .reverse)]
-        )
-        
-        do {
-            let behavioralInsights = try context.fetch(descriptor)
-            logger.info("Found \(behavioralInsights.count) behavioral learning insights")
-            
-            for insight in behavioralInsights.prefix(5) {
-                logger.info("Insight: \(insight.title) - Confidence: \(insight.confidence)")
-            }
-        } catch {
-            logger.error("Failed to fetch behavioral insights: \(error.localizedDescription)")
-        }
-    }
-    
     // MARK: - Utility Methods
     
-    private func getCurrentModelContext() -> ModelContext? {
-        // In a real implementation, this would be injected or retrieved from the app context
-        // For now, returning nil to indicate this would need proper integration
-        return nil
+    private func getCurrentModelContext() -> ModelContext {
+        ModelContext(AppContainer.shared.getContainer())
     }
     
     private func getOrCreateAIConfiguration(context: ModelContext) async -> AIConfiguration {
@@ -315,7 +267,7 @@ final class AIBehavioralIntegrationCoordinator {
         }
         
         let config = AIConfiguration(
-            userId: "current-user"
+            userId: SecurityUtils.getCurrentUserID()
         )
         context.insert(config)
         return config
@@ -331,28 +283,3 @@ final class AIBehavioralIntegrationCoordinator {
         }
     }
 }
-
-// MARK: - Extensions for Pattern Analysis
-
-extension UserBehaviorPatterns {
-    var isNotEmpty: Bool { !isEmpty }
-    var isEmpty: Bool { count == 0 }
-    var count: Int { 0 } // Placeholder - would be implemented based on actual structure
-}
-
-extension HabitSuccessFactors {
-    var isNotEmpty: Bool { !isEmpty }
-    var isEmpty: Bool { count == 0 }
-    var count: Int { 0 } // Placeholder - would be implemented based on actual structure
-}
-
-// MARK: - Type Aliases for Placeholder Types
-
-typealias UserBehaviorPatterns = [String: Any]
-typealias HabitSuccessFactors = [String: Double]
-typealias FocusEffectivenessFactors = [String: Double]
-
-// TaskCompletionPatterns is defined in MLPatternRecognitionManager
-
-// Extensions for remaining placeholder types
-// Dictionary types already have isEmpty, count, and isNotEmpty properties

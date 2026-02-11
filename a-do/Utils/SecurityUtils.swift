@@ -8,6 +8,7 @@
 import Foundation
 import CryptoKit
 import UIKit
+import Security
 import os
 
 /// Security utilities for input validation, sanitization, and secure operations
@@ -158,6 +159,75 @@ struct SecurityUtils {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         
         return sanitized.isEmpty ? "untitled" : sanitized
+    }
+
+    // MARK: - Keychain Secret Storage
+
+    /// Stores a secret in the iOS Keychain.
+    /// Uses ThisDeviceOnly accessibility to reduce extraction/migration risk.
+    @discardableResult
+    static func storeSecret(_ secret: String, service: String, account: String) -> Bool {
+        guard !secret.isEmpty else { return false }
+        guard let secretData = secret.data(using: .utf8) else { return false }
+
+        let baseQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+        ]
+
+        let attributes: [String: Any] = [
+            kSecValueData as String: secretData,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+        ]
+
+        let status = SecItemCopyMatching(baseQuery as CFDictionary, nil)
+        if status == errSecSuccess {
+            let updateStatus = SecItemUpdate(baseQuery as CFDictionary, attributes as CFDictionary)
+            return updateStatus == errSecSuccess
+        }
+
+        var addQuery = baseQuery
+        for (key, value) in attributes {
+            addQuery[key] = value
+        }
+        let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
+        return addStatus == errSecSuccess
+    }
+
+    /// Retrieves a secret from the iOS Keychain.
+    static func retrieveSecret(service: String, account: String) -> String? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+            kSecReturnData as String: true,
+        ]
+
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        guard status == errSecSuccess,
+              let data = item as? Data,
+              let secret = String(data: data, encoding: .utf8),
+              !secret.isEmpty else {
+            return nil
+        }
+
+        return secret
+    }
+
+    /// Deletes a secret from the iOS Keychain.
+    @discardableResult
+    static func deleteSecret(service: String, account: String) -> Bool {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+        ]
+
+        let status = SecItemDelete(query as CFDictionary)
+        return status == errSecSuccess || status == errSecItemNotFound
     }
     
     // MARK: - Secure Random Generation

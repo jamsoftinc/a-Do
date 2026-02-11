@@ -11,6 +11,7 @@ import UserNotifications
 import Observation
 import os
 import CoreLocation
+import UIKit
 
 @MainActor
 @Observable
@@ -580,9 +581,45 @@ final class SmartNotificationManager: NSObject {
     }
     
     private func applyLocationContext(notification: SmartNotification) async {
-        // This would integrate with Core Location to determine current location context
-        // For now, we'll use a placeholder
-        notification.locationContext = "Home" // This would be determined by actual location
+        let locationManager = LocationManager.shared
+        
+        if let currentAddress = locationManager.currentAddress,
+           !currentAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            notification.locationContext = currentAddress
+            return
+        }
+        
+        if let cachedLocation = locationManager.currentLocation {
+            notification.locationContext = String(
+                format: "%.4f, %.4f",
+                cachedLocation.coordinate.latitude,
+                cachedLocation.coordinate.longitude
+            )
+            return
+        }
+        
+        if let resolvedLocation = await locationManager.getCurrentLocation() {
+            notification.locationContext = String(
+                format: "%.4f, %.4f",
+                resolvedLocation.coordinate.latitude,
+                resolvedLocation.coordinate.longitude
+            )
+            return
+        }
+        
+        // Fallback to semantic context when coordinates are unavailable.
+        switch notification.context {
+        case .home:
+            notification.locationContext = "Home context"
+        case .work, .meeting:
+            notification.locationContext = "Work context"
+        case .gym, .health:
+            notification.locationContext = "Fitness context"
+        case .commute, .travel:
+            notification.locationContext = "Transit context"
+        default:
+            notification.locationContext = nil
+        }
     }
     
     private func applyActivityContext(notification: SmartNotification) async {
@@ -610,9 +647,38 @@ final class SmartNotificationManager: NSObject {
     }
     
     private func applyDeviceContext(notification: SmartNotification) async {
-        // Determine device state (charging, battery level, do not disturb, etc.)
-        // For now, assume active state
-        notification.deviceContext = "Active"
+        UIDevice.current.isBatteryMonitoringEnabled = true
+        
+        let batteryLevel = UIDevice.current.batteryLevel
+        let batteryPercentage = batteryLevel >= 0 ? Int(batteryLevel * 100) : nil
+        let batteryState: String = {
+            switch UIDevice.current.batteryState {
+            case .charging: return "charging"
+            case .full: return "full"
+            case .unplugged: return "on battery"
+            case .unknown: return "battery unknown"
+            @unknown default: return "battery unknown"
+            }
+        }()
+        
+        let lowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled ? "low power" : "normal power"
+        let notificationSettings = await notificationCenter.notificationSettings()
+        let alertState: String = {
+            switch notificationSettings.alertSetting {
+            case .enabled: return "alerts enabled"
+            case .disabled: return "alerts disabled"
+            case .notSupported: return "alerts unsupported"
+            @unknown default: return "alerts unknown"
+            }
+        }()
+        
+        let brightness = Int(UIScreen.main.brightness * 100)
+        
+        if let batteryPercentage {
+            notification.deviceContext = "Battery \(batteryPercentage)% (\(batteryState)), \(lowPowerMode), brightness \(brightness)%, \(alertState)"
+        } else {
+            notification.deviceContext = "\(batteryState), \(lowPowerMode), brightness \(brightness)%, \(alertState)"
+        }
     }
     
     private func calculateAdaptiveScore(notification: SmartNotification, context: ModelContext) async -> Double {
@@ -958,4 +1024,3 @@ extension SmartNotificationManager: UNUserNotificationCenterDelegate {
         completionHandler([.banner, .sound, .badge])
     }
 }
-

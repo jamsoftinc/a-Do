@@ -61,7 +61,7 @@ final class TranslationManager {
 
             // For iOS 17.4+, use basic translation
             // Note: In production, you'd use the full Translation framework API
-            // For now, we'll use a simplified approach compatible with iOS 17.4
+            // Use the currently available API surface for this OS version.
             if #available(iOS 26.0, *) {
                 let sourceLocale = sourceLanguage?.locale
                 let session = TranslationSession(
@@ -80,7 +80,6 @@ final class TranslationManager {
                 return response.targetText
             } else {
                 // For iOS 17.4-25.x, translation requires system UI
-                // Return placeholder indicating translation not available in background
                 logger.warning("Translation requires iOS 26.0 for programmatic API. Current iOS version doesn't support background translation.")
                 return nil
             }

@@ -11,6 +11,7 @@ import Charts
 
 struct AIInsightsDashboard: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     @State private var aiManager = AIManager.shared
     @State private var aiDataService = AIDataService.shared
     @State private var selectedTimeframe: AIInsightTimeframe = .week
@@ -57,6 +58,28 @@ struct AIInsightsDashboard: View {
             .navigationTitle("AI Insights")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
+                ToolbarItemGroup(placement: .navigationBarLeading) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(8)
+                            .background(Color.black.opacity(0.2), in: Circle())
+                    }
+
+                    Button {
+                        goHome()
+                    } label: {
+                        Image(systemName: "house.fill")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(8)
+                            .background(Color.black.opacity(0.2), in: Circle())
+                    }
+                }
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     refreshButton
                 }
@@ -72,6 +95,11 @@ struct AIInsightsDashboard: View {
                 loadRealData()
             }
         }
+    }
+
+    private func goHome() {
+        NotificationCenter.default.post(name: .appNavigateHome, object: nil)
+        dismiss()
     }
     
     // MARK: - Header Section
@@ -407,7 +435,10 @@ struct AIInsightsDashboard: View {
     
     private func refreshInsights() {
         Task {
-            await aiManager.generateInsights(userId: "current-user", context: modelContext)
+            await aiManager.generateInsights(
+                userId: SecurityUtils.getCurrentUserID(),
+                context: modelContext
+            )
         }
     }
     

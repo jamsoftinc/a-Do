@@ -23,4 +23,5 @@ struct ContentView: View {
 #Preview {
     ContentView()
         .modelContainer(for: UserProfile.self, inMemory: true)
+        .environment(AppRouter())
 }

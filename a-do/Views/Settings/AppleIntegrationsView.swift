@@ -356,6 +356,12 @@ struct AppleIntegrationsView: View {
             .navigationTitle("Apple Integrations")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Home") {
+                        goHome()
+                    }
+                }
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
                         dismiss()
@@ -392,6 +398,11 @@ struct AppleIntegrationsView: View {
         } message: {
             Text("This will reset all Apple integration settings to their default values. This action cannot be undone.")
         }
+    }
+
+    private func goHome() {
+        NotificationCenter.default.post(name: .appNavigateHome, object: nil)
+        dismiss()
     }
 }
 

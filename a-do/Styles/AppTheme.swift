@@ -6,13 +6,13 @@ struct AppTheme {
     // MARK: - Color Palette
     struct Colors {
         // Primary brand colors
-        static let primary = Color(red: 0.4, green: 0.2, blue: 0.8) // Deep purple
-        static let primaryLight = Color(red: 0.5, green: 0.3, blue: 0.9) // Lighter purple
-        static let primaryDark = Color(red: 0.3, green: 0.1, blue: 0.7) // Darker purple
+        static let primary = Color(red: 0.2, green: 0.42, blue: 0.86) // Ocean blue
+        static let primaryLight = Color(red: 0.32, green: 0.56, blue: 0.95) // Sky blue
+        static let primaryDark = Color(red: 0.12, green: 0.31, blue: 0.72) // Deep blue
         
         // Secondary colors
-        static let secondary = Color(red: 0.9, green: 0.4, blue: 0.6) // Pink accent
-        static let accent = Color(red: 0.2, green: 0.8, blue: 0.6) // Teal accent
+        static let secondary = Color(red: 0.9, green: 0.56, blue: 0.2) // Warm orange
+        static let accent = Color(red: 0.12, green: 0.67, blue: 0.44) // Emerald accent
         
         // Background colors - Much lighter for better readability
         static let background = Color(red: 0.98, green: 0.98, blue: 1.0) // Very light blue-white
@@ -160,5 +160,4 @@ extension View {
         self.foregroundColor(AppTheme.Colors.textTertiary)
     }
 }
-
 

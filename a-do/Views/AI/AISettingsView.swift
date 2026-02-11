@@ -10,7 +10,9 @@ import SwiftData
 
 struct AISettingsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     @State private var aiManager = AIManager.shared
+    @State private var geminiManager = GeminiManager.shared
     @State private var configuration: AIConfiguration?
     
     // Local state for settings
@@ -39,6 +41,9 @@ struct AISettingsView: View {
             Form {
                 // General AI Settings
                 generalSettingsSection
+
+                // AI Provider
+                providerStatusSection
                 
                 // Frequency Settings
                 frequencySettingsSection
@@ -58,6 +63,28 @@ struct AISettingsView: View {
             .navigationTitle("AI Settings")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
+                ToolbarItemGroup(placement: .navigationBarLeading) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(8)
+                            .background(Color.black.opacity(0.2), in: Circle())
+                    }
+
+                    Button {
+                        goHome()
+                    } label: {
+                        Image(systemName: "house.fill")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(8)
+                            .background(Color.black.opacity(0.2), in: Circle())
+                    }
+                }
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if hasChanges {
                         Button("Save") {
@@ -85,6 +112,7 @@ struct AISettingsView: View {
                 Text(privacyLevel.description)
             }
             .onAppear {
+                _ = geminiManager.refreshConfigurationStatus()
                 loadSettings()
             }
             .onChange(of: isAIEnabled) { _, _ in hasChanges = true }
@@ -97,6 +125,11 @@ struct AISettingsView: View {
             .onChange(of: personalizedRecommendations) { _, _ in hasChanges = true }
             .onChange(of: proactiveNotifications) { _, _ in hasChanges = true }
         }
+    }
+
+    private func goHome() {
+        NotificationCenter.default.post(name: .appNavigateHome, object: nil)
+        dismiss()
     }
     
     // MARK: - General Settings Section
@@ -134,6 +167,80 @@ struct AISettingsView: View {
         } footer: {
             Text("AI analyzes your productivity patterns to provide personalized suggestions and insights.")
         }
+    }
+
+    // MARK: - Provider Settings Section
+
+    private var providerStatusSection: some View {
+        Section {
+            HStack {
+                Image(systemName: "cpu")
+                    .foregroundColor(.mint)
+                    .frame(width: 24)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Hybrid AI Routing")
+                        .font(.body.weight(.medium))
+
+                    Text("Best model selected automatically per feature")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+            }
+
+            HStack {
+                Image(systemName: "applelogo")
+                    .foregroundColor(.primary)
+                    .frame(width: 24)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Apple Intelligence")
+                        .font(.caption.weight(.semibold))
+                    Text("Primary engine for on-device suggestions")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+            }
+            .padding(.vertical, 2)
+
+            HStack {
+                Image(systemName: geminiManager.isConfigured ? "checkmark.shield.fill" : "xmark.shield")
+                    .foregroundColor(geminiManager.isConfigured ? .green : .secondary)
+                    .frame(width: 24)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Google Gemini (3+)")
+                        .font(.caption.weight(.semibold))
+                    Text(geminiManager.isConfigured ? "Enabled for Pro cloud-generation features" :
+                            (geminiManager.hasBundledAPIKey
+                             ? "Key detected. Tap retry if status is stale."
+                             : "Unavailable until developer API key is configured"))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+            }
+
+            if !geminiManager.isConfigured {
+                Button {
+                    _ = geminiManager.refreshConfigurationStatus()
+                } label: {
+                    Text("Retry Gemini Key Detection")
+                        .font(.caption.weight(.semibold))
+                }
+            }
+        } header: {
+            Text("AI Engine")
+        } footer: {
+            Text("End users do not choose providers. Gemini is Pro-only and used automatically when configured.")
+        }
+        .disabled(!isAIEnabled)
+        .opacity(isAIEnabled ? 1.0 : 0.6)
     }
     
     // MARK: - Frequency Settings Section
@@ -521,7 +628,11 @@ struct AISettingsView: View {
     // MARK: - Actions
     
     private func loadSettings() {
-        configuration = aiManager.getConfiguration(userId: "current-user", context: modelContext)
+        let userId = SecurityUtils.getCurrentUserID()
+        configuration = aiManager.getConfiguration(
+            userId: userId,
+            context: modelContext
+        )
         
         if let config = configuration {
             isAIEnabled = config.isAIEnabled
@@ -539,8 +650,9 @@ struct AISettingsView: View {
     }
     
     private func saveSettings() {
+        let userId = SecurityUtils.getCurrentUserID()
         aiManager.updateConfiguration(
-            userId: "current-user",
+            userId: userId,
             isEnabled: isAIEnabled,
             suggestionFrequency: suggestionFrequency,
             insightFrequency: insightFrequency,
@@ -621,6 +733,13 @@ struct SuggestionTypesSelectionView: View {
             .navigationTitle("Suggestion Types")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Home") {
+                        NotificationCenter.default.post(name: .appNavigateHome, object: nil)
+                        dismiss()
+                    }
+                }
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
                         dismiss()
@@ -691,6 +810,13 @@ struct InsightTypesSelectionView: View {
             .navigationTitle("Insight Types")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Home") {
+                        NotificationCenter.default.post(name: .appNavigateHome, object: nil)
+                        dismiss()
+                    }
+                }
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
                         dismiss()

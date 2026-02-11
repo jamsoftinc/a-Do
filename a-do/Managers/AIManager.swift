@@ -14,6 +14,36 @@ import Observation
 import os
 import FoundationModels
 
+enum AIProvider: String, CaseIterable, Codable {
+    case appleFoundationModels = "apple_foundation_models"
+    case googleGemini3 = "google_gemini_3"
+
+    var displayName: String {
+        switch self {
+        case .appleFoundationModels:
+            return "Apple On-Device"
+        case .googleGemini3:
+            return "Google Gemini 3"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .appleFoundationModels:
+            return "Private on-device processing when available"
+        case .googleGemini3:
+            return "Cloud AI using your configured Gemini API key"
+        }
+    }
+}
+
+enum AIFeatureRoute: String, Codable {
+    case morningBriefing
+    case weeklyReview
+    case suggestions
+    case insights
+}
+
 @MainActor
 @Observable
 final class AIManager {
@@ -55,6 +85,26 @@ final class AIManager {
     }
     
     // MARK: - Configuration Management
+
+    func provider(for feature: AIFeatureRoute, userId _: String) -> AIProvider {
+        // Gemini is strictly Pro-only.
+        guard isProEnabled else { return .appleFoundationModels }
+        let isGeminiReady = GeminiManager.shared.refreshConfigurationStatus()
+
+        // Hybrid routing:
+        // - Long-form narrative generation can benefit from Gemini cloud models.
+        // - Core suggestion/insight loops remain on Apple on-device AI by default.
+        switch feature {
+        case .morningBriefing, .weeklyReview:
+            return isGeminiReady ? .googleGemini3 : .appleFoundationModels
+        case .suggestions, .insights:
+            return .appleFoundationModels
+        }
+    }
+
+    var isGeminiAvailableForPro: Bool {
+        isProEnabled && GeminiManager.shared.refreshConfigurationStatus()
+    }
     
     func getConfiguration(userId: String, context: ModelContext) -> AIConfiguration {
         if let config = configuration, config.userId == userId {
@@ -111,7 +161,7 @@ final class AIManager {
             logger.error("Failed to update AI configuration: \(error.localizedDescription)")
         }
     }
-    
+
     // MARK: - Suggestion Generation
 
     func generateSuggestions(userId: String, context: ModelContext) async {
@@ -1194,4 +1244,536 @@ struct GoalProgressAnalysis {
     let summary: String
     let detailedAnalysis: String
     let recommendations: [String]
+}
+
+// MARK: - Pro AI Feature Models
+
+struct ProSearchCommand: Codable, Sendable {
+    var isCommand: Bool
+    var summary: String
+    var maxDurationMinutes: Int?
+    var beforeHour: Int?
+    var beforeMinute: Int?
+    var dueWindow: String?
+    var priority: String?
+    var includeCompleted: Bool?
+    var requireUnscheduled: Bool?
+}
+
+struct AINotificationCoachPlan: Codable, Sendable {
+    var title: String
+    var body: String
+    var leadTimesMinutes: [Int]
+    var rationale: String?
+}
+
+// MARK: - Pro AI Feature Helpers
+
+extension AIManager {
+    private struct AICaptureTaskPlan: Codable {
+        let tasks: [AICaptureTask]
+    }
+
+    private struct AICaptureTask: Codable {
+        let title: String
+        let details: String?
+        let dueDate: String?
+        let priority: String?
+        let tags: [String]?
+    }
+
+    private struct AIFocusRankingResponse: Codable {
+        let orderedReminderIDs: [String]
+        let reasoning: String?
+    }
+
+    /// Pro-only multi-task capture parser used by quick add, voice, OCR, and handwriting flows.
+    /// Falls back to non-AI parsing when Gemini is unavailable.
+    func buildCaptureRequests(
+        from rawInput: String,
+        fallbackDueDate: Date? = nil
+    ) async -> [ReminderCreationService.Request] {
+        let trimmed = rawInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return [] }
+
+        // Preserve base behavior for free users (single-item NLP parse).
+        guard isProEnabled else {
+            return [
+                ReminderCreationService.Request(
+                    title: trimmed,
+                    details: nil,
+                    dueDate: fallbackDueDate,
+                    useNaturalLanguageParsing: true
+                )
+            ]
+        }
+
+        if isGeminiAvailableForPro {
+            let prompt = """
+            Convert this raw capture text into actionable reminder tasks.
+            Return ONLY valid JSON with schema:
+            {
+              "tasks": [
+                {
+                  "title": "string",
+                  "details": "string or null",
+                  "dueDate": "ISO8601 date string, or null",
+                  "priority": "high|medium|low|none or null",
+                  "tags": ["string"]
+                }
+              ]
+            }
+
+            Rules:
+            - Split into multiple tasks when the input clearly contains multiple action items.
+            - Keep each title short and actionable.
+            - Use null for unknown dates.
+            - Do not invent data.
+            Input:
+            \(trimmed)
+            """
+
+            if let plan = try? await GeminiManager.shared.generateStructuredResponse(
+                prompt: prompt,
+                as: AICaptureTaskPlan.self,
+                temperature: 0.2,
+                maxOutputTokens: 1024
+            ) {
+                let mapped = mapCapturePlanToRequests(plan, fallbackDueDate: fallbackDueDate)
+                if !mapped.isEmpty {
+                    return mapped
+                }
+            }
+        }
+
+        // Fallback: split by common capture delimiters and keep NLP enabled for each task.
+        let lineCandidates = trimmed
+            .split(whereSeparator: { $0 == "\n" || $0 == ";" })
+            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        let entries = (lineCandidates.isEmpty ? [trimmed] : lineCandidates).prefix(10)
+        return entries.map {
+            ReminderCreationService.Request(
+                title: $0,
+                details: nil,
+                dueDate: fallbackDueDate,
+                useNaturalLanguageParsing: true
+            )
+        }
+    }
+
+    /// Pro-only queue optimizer for Focus mode.
+    func rankRemindersForFocus(_ reminders: [Reminder], focusType: FocusType) async -> [UUID] {
+        let openReminders = reminders.filter { !$0.isCompleted }
+        guard !openReminders.isEmpty else { return [] }
+
+        if !isProEnabled {
+            return openReminders
+                .sorted { lhs, rhs in
+                    switch (lhs.dueDate, rhs.dueDate) {
+                    case let (l?, r?): return l < r
+                    case (_?, nil): return true
+                    case (nil, _?): return false
+                    case (nil, nil): return lhs.createdAt > rhs.createdAt
+                    }
+                }
+                .map(\.uuid)
+        }
+
+        if isGeminiAvailableForPro {
+            let formatter = ISO8601DateFormatter()
+            let payload = openReminders.map { reminder in
+                [
+                    "id": reminder.uuid.uuidString,
+                    "title": reminder.title,
+                    "details": reminder.details ?? "",
+                    "dueDate": reminder.dueDate.map { formatter.string(from: $0) } ?? "",
+                    "priority": reminder.priority.title.lowercased(),
+                    "energyLevel": reminder.energyLevel.title.lowercased()
+                ]
+            }
+
+            if let data = try? JSONSerialization.data(withJSONObject: payload),
+               let json = String(data: data, encoding: .utf8) {
+                let prompt = """
+                Rank these tasks for a \(focusType.displayName) focus session.
+                Return ONLY valid JSON:
+                {
+                  "orderedReminderIDs": ["id1","id2"],
+                  "reasoning": "short reason"
+                }
+                Prioritize urgency, importance, and likely completion momentum.
+                Tasks:
+                \(json)
+                """
+
+                if let ranking = try? await GeminiManager.shared.generateStructuredResponse(
+                    prompt: prompt,
+                    as: AIFocusRankingResponse.self,
+                    temperature: 0.2,
+                    maxOutputTokens: 512
+                ) {
+                    let validIDSet = Set(openReminders.map { $0.uuid.uuidString })
+                    var ordered = ranking.orderedReminderIDs.filter { validIDSet.contains($0) }
+                    let missing = openReminders.map { $0.uuid.uuidString }.filter { !ordered.contains($0) }
+                    ordered.append(contentsOf: missing)
+                    return ordered.compactMap(UUID.init(uuidString:))
+                }
+            }
+        }
+
+        return openReminders
+            .sorted { scoreForFocus($0, focusType: focusType) > scoreForFocus($1, focusType: focusType) }
+            .map(\.uuid)
+    }
+
+    /// Pro-only natural language command parser for smart search.
+    func parseNaturalLanguageSearchCommand(_ query: String) async -> ProSearchCommand? {
+        guard isProEnabled else { return nil }
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        guard looksLikeSearchCommand(trimmed) else { return nil }
+
+        if isGeminiAvailableForPro {
+            let prompt = """
+            Parse this search request into structured filters.
+            Return ONLY valid JSON:
+            {
+              "isCommand": true|false,
+              "summary": "short summary",
+              "maxDurationMinutes": Int or null,
+              "beforeHour": 0-23 or null,
+              "beforeMinute": 0-59 or null,
+              "dueWindow": "today|tomorrow|this_week|overdue|any" or null,
+              "priority": "high|medium|low|none" or null,
+              "includeCompleted": true|false or null,
+              "requireUnscheduled": true|false or null
+            }
+            Query:
+            \(trimmed)
+            """
+
+            if let parsed = try? await GeminiManager.shared.generateStructuredResponse(
+                prompt: prompt,
+                as: ProSearchCommand.self,
+                temperature: 0.1,
+                maxOutputTokens: 384
+            ) {
+                if parsed.isCommand {
+                    return parsed
+                }
+            }
+        }
+
+        return heuristicSearchCommand(from: trimmed)
+    }
+
+    /// Pro-only notification coaching. Returns nil when Gemini is unavailable.
+    func coachReminderNotification(
+        reminder: Reminder,
+        dueDate: Date,
+        defaultLeadTimes: [TimeInterval]
+    ) async -> AINotificationCoachPlan? {
+        guard isGeminiAvailableForPro else { return nil }
+
+        let maxLeadMinutes = max(0, Int(dueDate.timeIntervalSinceNow / 60))
+        let defaultMinutes = defaultLeadTimes
+            .map { Int($0 / 60) }
+            .filter { $0 >= 0 && $0 <= maxLeadMinutes }
+            .sorted()
+
+        let dueDescription = dueDate.formatted(date: .abbreviated, time: .shortened)
+        let prompt = """
+        Create a concise reminder notification plan.
+        Return ONLY valid JSON:
+        {
+          "title": "string <= 80 chars",
+          "body": "string <= 160 chars",
+          "leadTimesMinutes": [int],
+          "rationale": "short rationale"
+        }
+        Constraints:
+        - leadTimesMinutes must be non-negative and <= \(maxLeadMinutes)
+        - avoid spam; prefer 1-3 lead times
+        - tone should be clear and motivating
+
+        Reminder:
+        - Title: \(reminder.title)
+        - Details: \(reminder.details ?? "")
+        - Priority: \(reminder.priority.title)
+        - Due: \(dueDescription)
+        - Default lead times (minutes): \(defaultMinutes)
+        """
+
+        guard let plan = try? await GeminiManager.shared.generateStructuredResponse(
+            prompt: prompt,
+            as: AINotificationCoachPlan.self,
+            temperature: 0.25,
+            maxOutputTokens: 384
+        ) else {
+            return nil
+        }
+
+        let safeTitle = plan.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let safeBody = plan.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !safeTitle.isEmpty, !safeBody.isEmpty else { return nil }
+
+        let sanitizedLeadTimes = Array(
+            Set(plan.leadTimesMinutes.filter { $0 >= 0 && $0 <= maxLeadMinutes })
+        ).sorted()
+
+        return AINotificationCoachPlan(
+            title: String(safeTitle.prefix(80)),
+            body: String(safeBody.prefix(160)),
+            leadTimesMinutes: sanitizedLeadTimes.isEmpty ? defaultMinutes : sanitizedLeadTimes,
+            rationale: plan.rationale
+        )
+    }
+
+    private func mapCapturePlanToRequests(
+        _ plan: AICaptureTaskPlan,
+        fallbackDueDate: Date?
+    ) -> [ReminderCreationService.Request] {
+        plan.tasks
+            .prefix(10)
+            .compactMap { task in
+                let baseTitle = task.title.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !baseTitle.isEmpty else { return nil }
+                let tags = (task.tags ?? [])
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+                    .map { "#\($0.replacingOccurrences(of: " ", with: ""))" }
+                let title = ([baseTitle] + tags).joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+
+                return ReminderCreationService.Request(
+                    title: title,
+                    details: {
+                        let cleaned = task.details?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                        return cleaned.isEmpty ? nil : cleaned
+                    }(),
+                    dueDate: parseFlexibleDate(task.dueDate) ?? fallbackDueDate,
+                    priority: priority(from: task.priority),
+                    useNaturalLanguageParsing: false
+                )
+            }
+    }
+
+    private func scoreForFocus(_ reminder: Reminder, focusType: FocusType) -> Double {
+        var score = 0.0
+
+        switch reminder.priority {
+        case .high: score += 35
+        case .medium: score += 20
+        case .low: score += 10
+        case .none: score += 5
+        }
+
+        if let due = reminder.dueDate {
+            let hoursUntil = due.timeIntervalSinceNow / 3600
+            if hoursUntil < 0 {
+                score += 35
+            } else if hoursUntil <= 4 {
+                score += 30
+            } else if hoursUntil <= 24 {
+                score += 20
+            } else if hoursUntil <= 72 {
+                score += 10
+            }
+        } else {
+            score -= 5
+        }
+
+        switch focusType {
+        case .work, .study, .creative:
+            switch reminder.energyLevel {
+            case .high: score += 10
+            case .medium: score += 6
+            case .low: score += 2
+            }
+        case .personal, .meditation:
+            switch reminder.energyLevel {
+            case .low: score += 10
+            case .medium: score += 6
+            case .high: score += 2
+            }
+        case .exercise, .reading, .custom:
+            score += 4
+        }
+
+        return score
+    }
+
+    private func priority(from stringValue: String?) -> Priority {
+        guard let value = stringValue?.lowercased() else { return .none }
+        switch value {
+        case "high", "urgent": return .high
+        case "medium", "normal": return .medium
+        case "low": return .low
+        default: return .none
+        }
+    }
+
+    private func parseFlexibleDate(_ value: String?) -> Date? {
+        guard let raw = value?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
+            return nil
+        }
+
+        let isoFormatter = ISO8601DateFormatter()
+        if let date = isoFormatter.date(from: raw) {
+            return date
+        }
+
+        let lower = raw.lowercased()
+        let calendar = Calendar.current
+        let now = Date()
+
+        switch lower {
+        case "today":
+            return calendar.date(bySettingHour: 17, minute: 0, second: 0, of: now)
+        case "tomorrow":
+            guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: now) else { return nil }
+            return calendar.date(bySettingHour: 9, minute: 0, second: 0, of: tomorrow)
+        case "next week":
+            return calendar.date(byAdding: .weekOfYear, value: 1, to: now)
+        case "next month":
+            return calendar.date(byAdding: .month, value: 1, to: now)
+        default:
+            break
+        }
+
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "h:mm a"
+        if let timeOnly = formatter.date(from: raw),
+           let merged = calendar.date(
+                bySettingHour: calendar.component(.hour, from: timeOnly),
+                minute: calendar.component(.minute, from: timeOnly),
+                second: 0,
+                of: now
+           ) {
+            return merged
+        }
+
+        return nil
+    }
+
+    private func looksLikeSearchCommand(_ query: String) -> Bool {
+        let lower = query.lowercased()
+        let commandKeywords = [
+            "can do in", "before", "after", "overdue", "today", "tomorrow",
+            "this week", "high priority", "low priority", "unscheduled",
+            "without due", "show tasks", "show reminders"
+        ]
+
+        if commandKeywords.contains(where: { lower.contains($0) }) {
+            return true
+        }
+
+        return lower.range(of: #"\b\d+\s*(m|min|minutes|h|hr|hours)\b"#, options: .regularExpression) != nil
+    }
+
+    private func heuristicSearchCommand(from query: String) -> ProSearchCommand? {
+        let lower = query.lowercased()
+        var command = ProSearchCommand(
+            isCommand: true,
+            summary: "Command search filters applied",
+            maxDurationMinutes: nil,
+            beforeHour: nil,
+            beforeMinute: nil,
+            dueWindow: nil,
+            priority: nil,
+            includeCompleted: false,
+            requireUnscheduled: nil
+        )
+
+        if let durationMatch = lower.range(
+            of: #"\b(\d+)\s*(m|min|minutes|h|hr|hours)\b"#,
+            options: .regularExpression
+        ) {
+            let token = String(lower[durationMatch])
+            let digits = token.components(separatedBy: CharacterSet.decimalDigits.inverted)
+                .compactMap(Int.init)
+                .first
+            if let value = digits {
+                command.maxDurationMinutes = token.contains("h") ? value * 60 : value
+            }
+        }
+
+        if let beforeMatch = lower.range(
+            of: #"before\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?"#,
+            options: .regularExpression
+        ) {
+            let beforeToken = String(lower[beforeMatch])
+            let numberParts = beforeToken.components(separatedBy: CharacterSet.decimalDigits.inverted)
+                .compactMap(Int.init)
+            if let hourValue = numberParts.first {
+                var hour = max(0, min(23, hourValue))
+                let minute = numberParts.count > 1 ? max(0, min(59, numberParts[1])) : 0
+                if beforeToken.contains("pm"), hour < 12 {
+                    hour += 12
+                }
+                if beforeToken.contains("am"), hour == 12 {
+                    hour = 0
+                }
+                command.beforeHour = hour
+                command.beforeMinute = minute
+            }
+        }
+
+        if lower.contains("overdue") {
+            command.dueWindow = "overdue"
+        } else if lower.contains("tomorrow") {
+            command.dueWindow = "tomorrow"
+        } else if lower.contains("today") {
+            command.dueWindow = "today"
+        } else if lower.contains("this week") || lower.contains("week") {
+            command.dueWindow = "this_week"
+        }
+
+        if lower.contains("high priority") || lower.contains("urgent") {
+            command.priority = "high"
+        } else if lower.contains("medium priority") {
+            command.priority = "medium"
+        } else if lower.contains("low priority") {
+            command.priority = "low"
+        }
+
+        if lower.contains("unscheduled") || lower.contains("without due") || lower.contains("no due date") {
+            command.requireUnscheduled = true
+        }
+
+        if lower.contains("completed") {
+            command.includeCompleted = true
+        }
+
+        let hasFilters = command.maxDurationMinutes != nil ||
+            command.beforeHour != nil ||
+            command.dueWindow != nil ||
+            command.priority != nil ||
+            command.requireUnscheduled == true
+
+        guard hasFilters else { return nil }
+
+        var summaryParts: [String] = []
+        if let maxDurationMinutes = command.maxDurationMinutes {
+            summaryParts.append("<= \(maxDurationMinutes) min")
+        }
+        if let hour = command.beforeHour {
+            let minute = command.beforeMinute ?? 0
+            summaryParts.append(String(format: "before %02d:%02d", hour, minute))
+        }
+        if let dueWindow = command.dueWindow {
+            summaryParts.append(dueWindow.replacingOccurrences(of: "_", with: " "))
+        }
+        if let priority = command.priority {
+            summaryParts.append("\(priority) priority")
+        }
+        if command.requireUnscheduled == true {
+            summaryParts.append("unscheduled")
+        }
+        command.summary = summaryParts.isEmpty ? command.summary : summaryParts.joined(separator: " • ")
+
+        return command
+    }
 }

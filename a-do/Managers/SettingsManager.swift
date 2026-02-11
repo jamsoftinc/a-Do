@@ -251,6 +251,7 @@ final class SettingsManager {
     func setTheme(_ theme: String, context: ModelContext) {
         let settings = getSettings(context: context)
         settings.theme = theme
+        UserDefaults.standard.set(theme, forKey: "appTheme")
         
         saveSettings(context: context)
         logger.info("Theme set to \(theme)")
@@ -259,9 +260,36 @@ final class SettingsManager {
     func setAccentColor(_ color: String, context: ModelContext) {
         let settings = getSettings(context: context)
         settings.accentColor = color
+        UserDefaults.standard.set(color, forKey: "appAccentColor")
         
         saveSettings(context: context)
         logger.info("Accent color set to \(color)")
+    }
+
+    func getTheme(context: ModelContext) -> String {
+        let settings = getSettings(context: context)
+        return settings.theme
+    }
+
+    func getAccentColor(context: ModelContext) -> String {
+        let settings = getSettings(context: context)
+        return settings.accentColor
+    }
+    
+    func setTemperatureUnit(_ unit: String, context: ModelContext) {
+        let settings = getSettings(context: context)
+        settings.temperatureUnit = unit
+        
+        // Also store in UserDefaults for quick access by MorningBriefingManager
+        UserDefaults.standard.set(unit, forKey: "temperatureUnit")
+        
+        saveSettings(context: context)
+        logger.info("Temperature unit set to \(unit)")
+    }
+    
+    func getTemperatureUnit(context: ModelContext) -> String {
+        let settings = getSettings(context: context)
+        return settings.temperatureUnit
     }
     
     // MARK: - Data Settings
@@ -314,9 +342,12 @@ final class SettingsManager {
         settings.contactsEnabled = true
         settings.microphoneEnabled = true
         settings.theme = "system"
-        settings.accentColor = "#7C4DFF"
+        settings.accentColor = "#336BDB"
         settings.autoBackupEnabled = true
         settings.backupFrequency = "weekly"
+
+        UserDefaults.standard.set("system", forKey: "appTheme")
+        UserDefaults.standard.set("#336BDB", forKey: "appAccentColor")
         
         saveSettings(context: context)
         logger.info("Settings reset to defaults")

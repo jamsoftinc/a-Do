@@ -18,13 +18,11 @@ struct ADoApp: App {
         // Configure global navigation bar appearance
         configureGlobalAppearance()
         
-        // Initialize location manager and request permission
-        let locationManager = LocationManager.shared
-        locationManager.requestAuthorization(always: false)
-        
         // Initialize subscription manager
         _ = SubscriptionManager.shared
         _ = EntitlementManager.shared
+        _ = GeminiManager.shared
+        GeminiManager.shared.bootstrapAPIKeyIfNeeded()
         
         // Initialize memory monitor
         _ = MemoryMonitor.shared
@@ -79,6 +77,8 @@ struct RootView: View {
     @State private var container: ModelContainer?
     @State private var syncManager = SyncProgressManager.shared
     @State private var isInitialSyncComplete = false
+    @AppStorage("appTheme") private var appTheme: String = "system"
+    @AppStorage("appAccentColor") private var appAccentColor: String = "#336BDB"
     
     @State private var showMorningBriefing = false
     @State private var isThoughtStreamActive = false
@@ -98,10 +98,19 @@ struct RootView: View {
                     ContentView()
                         .modelContainer(container)
                         .environment(router)
+                        .tint(Color(hex: appAccentColor) ?? AppTheme.Colors.primary)
+                        .preferredColorScheme(preferredColorScheme)
                         .onOpenURL { url in router.handle(url: url) }
                         .task { 
                             router.checkGroupDeeplinkFlag() 
                             checkMorningBriefingStatus()
+                            refreshWidgetSnapshotsIfPossible()
+                        }
+                        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ReminderCreated"))) { _ in
+                            refreshWidgetSnapshotsIfPossible()
+                        }
+                        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                            refreshWidgetSnapshotsIfPossible()
                         }
                         .fullScreenCover(isPresented: $showMorningBriefing) {
                             MorningBriefingView()
@@ -114,6 +123,9 @@ struct RootView: View {
                     .task {
                         // Initialize container on background thread
                         container = AppContainer.shared.getContainer()
+                        if let container {
+                            StartupSmokeChecks.run(container: container)
+                        }
                     }
                 }
         
@@ -145,7 +157,19 @@ struct RootView: View {
         .onChange(of: syncManager.isInitialSyncInProgress) { _, inProgress in
             if !inProgress {
                 isInitialSyncComplete = true
+                refreshWidgetSnapshotsIfPossible()
             }
+        }
+    }
+
+    private var preferredColorScheme: ColorScheme? {
+        switch appTheme {
+        case "light":
+            return .light
+        case "dark":
+            return .dark
+        default:
+            return nil
         }
     }
     
@@ -237,6 +261,15 @@ struct RootView: View {
         await MainActor.run {
             syncManager.finishSync()
         }
+
+        await MainActor.run {
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+        }
+    }
+
+    private func refreshWidgetSnapshotsIfPossible() {
+        guard let container else { return }
+        let context = ModelContext(container)
+        WidgetSnapshotManager.shared.refreshSnapshots(context: context)
     }
 }
-
