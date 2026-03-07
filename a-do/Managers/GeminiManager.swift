@@ -2,41 +2,46 @@
 //  GeminiManager.swift
 //  a-do
 //
-//  Google Gemini API client for Pro users.
-//  NOTE: Without a backend proxy, API keys shipped in-app are at risk of extraction.
+//  Firebase AI Logic client for Gemini-backed Pro features.
 //
 
+import FirebaseAILogic
+import FirebaseCore
+import FirebaseRemoteConfig
 import Foundation
 import Observation
 import os
 
 enum GeminiAPIError: LocalizedError {
     case proRequired
-    case missingAPIKey
+    case firebaseNotConfigured
+    case invalidModelConfiguration
     case rateLimited
-    case invalidEndpoint
-    case unsupportedModelVersion
     case invalidResponse
-    case apiError(statusCode: Int, message: String)
+    case apiError(message: String)
 
     var errorDescription: String? {
         switch self {
         case .proRequired:
             return "Gemini requires a Pro subscription."
-        case .missingAPIKey:
-            return "Gemini API key is not configured."
+        case .firebaseNotConfigured:
+            return "Firebase AI is not configured. Add GoogleService-Info.plist to the app target and enable Firebase AI Logic."
+        case .invalidModelConfiguration:
+            return "No valid Gemini model is configured."
         case .rateLimited:
             return "Gemini requests are temporarily rate limited."
-        case .invalidEndpoint:
-            return "Invalid Gemini endpoint configuration."
-        case .unsupportedModelVersion:
-            return "Only Gemini 3 and later models are allowed."
         case .invalidResponse:
             return "Gemini returned an invalid response."
-        case let .apiError(statusCode, message):
-            return "Gemini API error (\(statusCode)): \(message)"
+        case let .apiError(message):
+            return "Gemini API error: \(message)"
         }
     }
+}
+
+private struct RemoteGeminiModel: Decodable {
+    let id: String?
+    let model: String?
+    let name: String?
 }
 
 @MainActor
@@ -45,32 +50,20 @@ final class GeminiManager {
     static let shared = GeminiManager()
 
     private let logger = Logger(subsystem: "a-do", category: "Gemini")
-    private let keychainService = "com.ado.app.gemini"
-    private let keychainAccount = "api-key"
-    private let modelIDPreferenceKey = "gemini.model.id"
-    private let defaultModelID = "gemini-3.0-flash"
-    // Source-level fallback for App Store builds when Info.plist injection is unavailable.
-    // This still has extraction risk; use quota limits and rotate as needed.
-    private let sourceFallbackAPIKey = "AIzaSyBJSCzTW3w0IiqAnrfrjJRp-IZaxbLSWf4"
+    private let remoteConfigModelListKey = "gemini_model_list"
+    private let remoteConfigMinimumFetchInterval: TimeInterval = 3600
+    private let remoteConfigFetchTimeout: TimeInterval = 10
+
+    private var didConfigureRemoteConfig = false
 
     var isConfigured: Bool = false
     var isProcessing: Bool = false
+    var isRemoteConfigReady: Bool = false
+    var availableModelIDs: [String] = []
     var lastError: String?
-    var hasBundledAPIKey: Bool {
-        embeddedAPIKey() != nil
-    }
 
-    /// Uses bundle override first, then user-default override, then a safe default.
-    var modelID: String {
-        if let embedded = validatedGeminiModelID(Bundle.main.object(forInfoDictionaryKey: "GEMINI_MODEL_ID") as? String) {
-            return embedded
-        }
-
-        if let preferred = validatedGeminiModelID(UserDefaults.standard.string(forKey: modelIDPreferenceKey)) {
-            return preferred
-        }
-
-        return defaultModelID
+    var modelID: String? {
+        availableModelIDs.first
     }
 
     private init() {
@@ -79,61 +72,49 @@ final class GeminiManager {
 
     // MARK: - Configuration
 
+    func bootstrapIfNeeded() {
+        guard refreshConfigurationStatus() else { return }
+
+        Task {
+            await refreshRemoteConfiguration()
+        }
+    }
+
+    /// Compatibility wrapper for older call sites.
     func bootstrapAPIKeyIfNeeded() {
-        _ = refreshConfigurationStatus()
+        bootstrapIfNeeded()
     }
 
     @discardableResult
     func refreshConfigurationStatus() -> Bool {
-        if let key = storedAPIKey(), !key.isEmpty {
-            isConfigured = true
-            return true
-        }
-
-        guard let embeddedKey = embeddedAPIKey() else {
+        guard FirebaseApp.app() != nil else {
             isConfigured = false
+            isRemoteConfigReady = false
+            availableModelIDs = []
+            lastError = GeminiAPIError.firebaseNotConfigured.localizedDescription
             return false
         }
 
-        if SecurityUtils.storeSecret(embeddedKey, service: keychainService, account: keychainAccount) {
-            logger.info("Gemini API key was loaded from app configuration.")
-        } else {
-            logger.error("Failed to persist Gemini API key into Keychain. Using bundled key fallback.")
-        }
+        configureRemoteConfigIfNeeded()
+        updateAvailableModelsFromRemoteConfig()
 
-        // Treat bundled key as configured even if keychain persistence fails.
         isConfigured = true
+        lastError = nil
         return true
     }
 
-    /// Allows developer-only key provisioning flow (not exposed to end users).
-    @discardableResult
-    func setDeveloperAPIKey(_ key: String) -> Bool {
-        guard let sanitized = sanitizedConfigurationValue(key) else {
-            return false
-        }
+    func refreshRemoteConfiguration() async {
+        guard refreshConfigurationStatus(), let remoteConfig else { return }
 
-        let stored = SecurityUtils.storeSecret(sanitized, service: keychainService, account: keychainAccount)
-        isConfigured = stored
-        if !stored {
-            lastError = "Failed to store Gemini API key"
+        do {
+            _ = try await remoteConfig.fetchAndActivate()
+            updateAvailableModelsFromRemoteConfig()
+            lastError = nil
+        } catch {
+            logger.error("Remote Config fetch failed: \(error.localizedDescription)")
+            updateAvailableModelsFromRemoteConfig()
+            lastError = "Remote Config fetch failed: \(error.localizedDescription)"
         }
-        return stored
-    }
-
-    @discardableResult
-    func clearStoredAPIKey() -> Bool {
-        let deleted = SecurityUtils.deleteSecret(service: keychainService, account: keychainAccount)
-        isConfigured = false
-        return deleted
-    }
-
-    func setPreferredModelID(_ modelID: String) {
-        guard let sanitized = validatedGeminiModelID(modelID) else {
-            lastError = GeminiAPIError.unsupportedModelVersion.localizedDescription
-            return
-        }
-        UserDefaults.standard.set(sanitized, forKey: modelIDPreferenceKey)
     }
 
     // MARK: - Generation
@@ -182,128 +163,126 @@ final class GeminiManager {
             throw GeminiAPIError.rateLimited
         }
 
-        guard let apiKey = activeAPIKey() else {
-            throw GeminiAPIError.missingAPIKey
+        guard refreshConfigurationStatus() else {
+            throw GeminiAPIError.firebaseNotConfigured
         }
 
-        let requestedModel = modelOverride ?? self.modelID
-        guard let model = validatedGeminiModelID(requestedModel) else {
-            throw GeminiAPIError.unsupportedModelVersion
-        }
-        guard let endpoint = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):generateContent") else {
-            throw GeminiAPIError.invalidEndpoint
+        let requestedModel = modelOverride ?? modelID
+        guard let modelName = validatedGeminiModelID(requestedModel) else {
+            throw GeminiAPIError.invalidModelConfiguration
         }
 
-        let requestPayload = GenerateContentRequest(
-            contents: [
-                .init(
-                    role: "user",
-                    parts: [.init(text: prompt)]
-                )
-            ],
-            generationConfig: .init(
-                responseMimeType: responseMimeType,
-                temperature: max(0.0, min(1.0, temperature)),
-                maxOutputTokens: max(128, maxOutputTokens)
-            )
+        let generationConfig = GenerationConfig(
+            temperature: Float(max(0.0, min(1.0, temperature))),
+            maxOutputTokens: max(128, maxOutputTokens),
+            responseMIMEType: responseMimeType
         )
 
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(apiKey, forHTTPHeaderField: "x-goog-api-key")
-        request.httpBody = try JSONEncoder().encode(requestPayload)
-        request.timeoutInterval = 30
+        let model = FirebaseAI.firebaseAI().generativeModel(
+            modelName: modelName,
+            generationConfig: generationConfig
+        )
 
         isProcessing = true
         defer { isProcessing = false }
 
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-
-            guard let httpResponse = response as? HTTPURLResponse else {
+            let response = try await model.generateContent(prompt)
+            guard let responseText = response.text?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !responseText.isEmpty else {
                 throw GeminiAPIError.invalidResponse
             }
 
-            guard (200...299).contains(httpResponse.statusCode) else {
-                let message = parseErrorMessage(from: data) ?? "Unknown Gemini API error"
-                logger.error("Gemini request failed with status \(httpResponse.statusCode): \(message)")
-                throw GeminiAPIError.apiError(statusCode: httpResponse.statusCode, message: message)
-            }
-
-            let decoded = try JSONDecoder().decode(GenerateContentResponse.self, from: data)
-            let text = decoded.candidates?
-                .first?
-                .content?
-                .parts
-                .compactMap(\.text)
-                .joined(separator: "\n")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-
-            guard let responseText = text, !responseText.isEmpty else {
-                throw GeminiAPIError.invalidResponse
-            }
-
+            lastError = nil
             return responseText
         } catch let error as GeminiAPIError {
             lastError = error.localizedDescription
             throw error
         } catch {
-            logger.error("Gemini network/request error: \(error.localizedDescription)")
-            lastError = error.localizedDescription
-            throw GeminiAPIError.invalidResponse
+            logger.error("Firebase AI request failed: \(error.localizedDescription)")
+            let mappedError = mapFirebaseError(error)
+            lastError = mappedError.localizedDescription
+            throw mappedError
         }
     }
 
     // MARK: - Internal Helpers
 
-    private func activeAPIKey() -> String? {
-        if !refreshConfigurationStatus() {
-            return nil
-        }
-
-        if let key = storedAPIKey(), !key.isEmpty {
-            return key
-        }
-
-        if let bundledKey = embeddedAPIKey() {
-            return bundledKey
-        }
-
-        guard let key = storedAPIKey(), !key.isEmpty else {
-            isConfigured = false
-            return nil
-        }
-
-        isConfigured = true
-        return key
+    private var remoteConfig: RemoteConfig? {
+        guard FirebaseApp.app() != nil else { return nil }
+        return RemoteConfig.remoteConfig()
     }
 
-    private func embeddedAPIKey() -> String? {
-        let candidates = ["GEMINI_API_KEY", "GOOGLE_GEMINI_API_KEY"]
-        for candidate in candidates {
-            if let value = sanitizedConfigurationValue(Bundle.main.object(forInfoDictionaryKey: candidate) as? String) {
-                return value
+    private func configureRemoteConfigIfNeeded() {
+        guard !didConfigureRemoteConfig, let remoteConfig else { return }
+
+        let settings = RemoteConfigSettings()
+        settings.minimumFetchInterval = remoteConfigMinimumFetchInterval
+        settings.fetchTimeout = remoteConfigFetchTimeout
+        remoteConfig.configSettings = settings
+
+        didConfigureRemoteConfig = true
+    }
+
+    private func updateAvailableModelsFromRemoteConfig() {
+        let parsedModels = parseRemoteModelList(from: remoteConfig?.configValue(forKey: remoteConfigModelListKey).stringValue)
+        availableModelIDs = parsedModels
+        isRemoteConfigReady = !parsedModels.isEmpty
+    }
+
+    private func parseRemoteModelList(from rawValue: String?) -> [String] {
+        guard let rawValue = sanitizedConfigurationValue(rawValue) else {
+            return []
+        }
+
+        if let jsonData = rawValue.data(using: .utf8) {
+            if let decodedStrings = try? JSONDecoder().decode([String].self, from: jsonData) {
+                return deduplicatedValidatedModels(decodedStrings)
+            }
+
+            if let decodedObjects = try? JSONDecoder().decode([RemoteGeminiModel].self, from: jsonData) {
+                let rawModels = decodedObjects.compactMap { candidate in
+                    candidate.id ?? candidate.model ?? candidate.name
+                }
+                return deduplicatedValidatedModels(rawModels)
             }
         }
 
-        if let sourceValue = sanitizedConfigurationValue(sourceFallbackAPIKey) {
-            logger.debug("Using source fallback Gemini API key")
-            return sourceValue
-        }
+        let delimitedModels = rawValue
+            .split(whereSeparator: { $0 == "," || $0 == "\n" || $0 == ";" })
+            .map { String($0) }
 
-        return nil
+        return deduplicatedValidatedModels(delimitedModels)
     }
 
-    private func storedAPIKey() -> String? {
-        SecurityUtils.retrieveSecret(service: keychainService, account: keychainAccount)
+    private func deduplicatedValidatedModels(_ models: [String]) -> [String] {
+        var seen: Set<String> = []
+        var validatedModels: [String] = []
+
+        for candidate in models {
+            guard let normalized = validatedGeminiModelID(candidate), seen.insert(normalized).inserted else {
+                continue
+            }
+            validatedModels.append(normalized)
+        }
+
+        return validatedModels
     }
 
-    private func parseErrorMessage(from data: Data) -> String? {
-        guard let envelope = try? JSONDecoder().decode(GeminiErrorEnvelope.self, from: data) else {
-            return nil
+    private func mapFirebaseError(_ error: Error) -> GeminiAPIError {
+        let description = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if description.contains("429") || description.localizedCaseInsensitiveContains("rate") {
+            return .rateLimited
         }
-        return envelope.error.message
+
+        if description.localizedCaseInsensitiveContains("FirebaseApp")
+            || description.localizedCaseInsensitiveContains("GoogleService-Info")
+            || description.localizedCaseInsensitiveContains("app was found") {
+            return .firebaseNotConfigured
+        }
+
+        return .apiError(message: description.isEmpty ? "Unknown Firebase AI error" : description)
     }
 
     private func extractJSONObjectString(from raw: String) -> String? {
@@ -328,73 +307,15 @@ final class GeminiManager {
     private func sanitizedConfigurationValue(_ value: String?) -> String? {
         guard let value else { return nil }
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-
-        // Ignore unresolved build setting placeholders.
-        if trimmed.hasPrefix("$(") || trimmed.contains("GEMINI_API_KEY") {
-            return nil
-        }
-
-        return trimmed
+        return trimmed.isEmpty ? nil : trimmed
     }
 
-    /// Accepts only Gemini model IDs with major version 3 or later.
     private func validatedGeminiModelID(_ value: String?) -> String? {
         guard let normalized = sanitizedConfigurationValue(value)?.lowercased() else { return nil }
-        guard normalized.hasPrefix("gemini-") else { return nil }
-
-        let suffix = normalized.dropFirst("gemini-".count)
-        let majorDigits = String(suffix.prefix { $0.isNumber })
-        guard let majorVersion = Int(majorDigits), majorVersion >= 3 else {
+        guard normalized.hasPrefix("gemini-"), normalized.count > "gemini-".count else {
             return nil
         }
 
         return normalized
     }
-}
-
-// MARK: - Gemini API Payloads
-
-private struct GenerateContentRequest: Encodable {
-    let contents: [RequestContent]
-    let generationConfig: GenerationConfig
-}
-
-private struct RequestContent: Encodable {
-    let role: String
-    let parts: [RequestPart]
-}
-
-private struct RequestPart: Encodable {
-    let text: String
-}
-
-private struct GenerationConfig: Encodable {
-    let responseMimeType: String
-    let temperature: Double
-    let maxOutputTokens: Int
-}
-
-private struct GenerateContentResponse: Decodable {
-    let candidates: [Candidate]?
-}
-
-private struct Candidate: Decodable {
-    let content: CandidateContent?
-}
-
-private struct CandidateContent: Decodable {
-    let parts: [CandidatePart]
-}
-
-private struct CandidatePart: Decodable {
-    let text: String?
-}
-
-private struct GeminiErrorEnvelope: Decodable {
-    let error: GeminiErrorPayload
-}
-
-private struct GeminiErrorPayload: Decodable {
-    let message: String
 }

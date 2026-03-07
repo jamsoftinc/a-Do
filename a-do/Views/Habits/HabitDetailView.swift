@@ -24,7 +24,7 @@ struct HabitDetailView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
                     // Header Card
@@ -265,24 +265,21 @@ struct HabitDetailStatisticsCards: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            StatisticCard(
+            StatisticItem(
                 title: "Current Streak",
                 value: "\(habit.currentStreak)",
-                icon: "flame.fill",
                 color: .orange
             )
-            
-            StatisticCard(
+
+            StatisticItem(
                 title: "Longest Streak",
                 value: "\(habit.longestStreak)",
-                icon: "trophy.fill",
                 color: .yellow
             )
-            
-            StatisticCard(
+
+            StatisticItem(
                 title: "Completion Rate",
                 value: "\(Int(habit.completionRate * 100))%",
-                icon: "chart.bar.fill",
                 color: .blue
             )
         }

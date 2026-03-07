@@ -8,12 +8,50 @@
 import SwiftUI
 import SwiftData
 import UIKit
+import FirebaseCore
+
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        FirebaseBootstrapper.configureIfNeeded()
+        return true
+    }
+}
+
+enum FirebaseBootstrapper {
+    private static var didConfigure = false
+
+    static func configureIfNeeded() {
+        guard !didConfigure else { return }
+
+        if let options = FirebaseOptions.defaultOptions() {
+            FirebaseApp.configure(options: options)
+            didConfigure = true
+            return
+        }
+
+        guard let plistPath = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
+              let options = FirebaseOptions(contentsOfFile: plistPath) else {
+            assertionFailure("GoogleService-Info.plist is missing from the app bundle or unreadable.")
+            return
+        }
+
+        FirebaseApp.configure(options: options)
+        didConfigure = true
+    }
+}
 
 @main
 struct ADoApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     init() {
         // Initialize app group defaults early to prevent CFPrefsPlistSource errors
         _ = AppGroupDefaults.shared
+
+        FirebaseBootstrapper.configureIfNeeded()
         
         // Configure global navigation bar appearance
         configureGlobalAppearance()
@@ -22,49 +60,33 @@ struct ADoApp: App {
         _ = SubscriptionManager.shared
         _ = EntitlementManager.shared
         _ = GeminiManager.shared
-        GeminiManager.shared.bootstrapAPIKeyIfNeeded()
+        GeminiManager.shared.bootstrapIfNeeded()
         
         // Initialize memory monitor
         _ = MemoryMonitor.shared
     }
     
     private func configureGlobalAppearance() {
-        // Navigation bar appearance
+        // Navigation bar — system default (translucent, adapts to light/dark)
         let appearance = UINavigationBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor(AppTheme.Colors.primary)
-        appearance.titleTextAttributes = [
-            .foregroundColor: UIColor.white,
-            .font: UIFont.systemFont(ofSize: 17, weight: .semibold)
-        ]
-        appearance.largeTitleTextAttributes = [
-            .foregroundColor: UIColor.white,
-            .font: UIFont.systemFont(ofSize: 34, weight: .bold)
-        ]
-        
+        appearance.configureWithDefaultBackground()
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().compactAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
-        UINavigationBar.appearance().tintColor = UIColor.white
-        
-        // Toolbar appearance
+
+        // Toolbar — system default
         let toolbarAppearance = UIToolbarAppearance()
-        toolbarAppearance.configureWithOpaqueBackground()
-        toolbarAppearance.backgroundColor = UIColor(AppTheme.Colors.surface)
+        toolbarAppearance.configureWithDefaultBackground()
         UIToolbar.appearance().standardAppearance = toolbarAppearance
         UIToolbar.appearance().compactAppearance = toolbarAppearance
-        UIToolbar.appearance().tintColor = UIColor.white
-        
-        // Tab bar appearance
+
+        // Tab bar — system default
         let tabBarAppearance = UITabBarAppearance()
-        tabBarAppearance.configureWithOpaqueBackground()
-        tabBarAppearance.backgroundColor = UIColor(AppTheme.Colors.surface)
+        tabBarAppearance.configureWithDefaultBackground()
         UITabBar.appearance().standardAppearance = tabBarAppearance
         UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
-        UITabBar.appearance().tintColor = UIColor.white
-        UITabBar.appearance().unselectedItemTintColor = UIColor(AppTheme.Colors.textTertiary)
     }
-    
+
     var body: some Scene {
         WindowGroup {
             RootView()

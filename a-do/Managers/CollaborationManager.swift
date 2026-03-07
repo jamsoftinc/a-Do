@@ -18,7 +18,7 @@ final class CollaborationManager: ObservableObject {
     static let shared = CollaborationManager()
     
     private let logger = Logger(subsystem: "a-do", category: "Collaboration")
-    private let container = CKContainer(identifier: CloudKitManager.containerIdentifier)
+    private let container = CKContainer.default()
 
     // Current user info - Secure user identification
     var currentUserID: String?
@@ -44,14 +44,16 @@ final class CollaborationManager: ObservableObject {
         do {
             let userRecordID = try await container.userRecordID()
             currentUserID = userRecordID.recordName
-            
-            let userRecord = try await container.publicCloudDatabase.record(for: userRecordID)
-            currentUserName = userRecord["firstName"] as? String ?? "Unknown"
-            currentUserEmail = userRecord["emailAddress"] as? String ?? ""
-            
-            logger.info("Fetched user info: \(self.currentUserName ?? "Unknown")")
+
+            if currentUserName == nil || currentUserName?.isEmpty == true {
+                currentUserName = "iCloud User"
+            }
+            currentUserEmail = currentUserEmail ?? ""
+
+            logger.info("Fetched CloudKit user record identifier")
         } catch {
-            logger.error("Failed to fetch user info: \(error.localizedDescription)")
+            let message = Self.userFacingMessage(for: error)
+            logger.error("Failed to fetch user info: \(message)")
             shareError = "Failed to get user information"
             
             // Set fallback values for production
@@ -738,5 +740,18 @@ final class CollaborationManager: ObservableObject {
         }
 
         return comment
+    }
+
+    nonisolated private static func userFacingMessage(for error: Error) -> String {
+        if let ckError = error as? CKError, ckError.code == .badContainer {
+            return "This app build is not authorized for the configured CloudKit container."
+        }
+
+        let description = error.localizedDescription
+        if description.localizedCaseInsensitiveContains("invalid bundle id for container") {
+            return "This app build is not authorized for the configured CloudKit container."
+        }
+
+        return description
     }
 }

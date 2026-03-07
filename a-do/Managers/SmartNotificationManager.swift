@@ -352,6 +352,9 @@ final class SmartNotificationManager: NSObject {
     // MARK: - Notification Processing
     
     private func setupPeriodicProcessing() {
+        processingTimer?.invalidate()
+        analyticsTimer?.invalidate()
+
         // Process notifications every minute
         processingTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             Task { @MainActor in

@@ -6,7 +6,7 @@ struct MainTabView: View {
     @Environment(AppRouter.self) private var router
     @Environment(\.modelContext) private var context
     @AppStorage("appAccentColor") private var appAccentColor: String = "#336BDB"
-    
+
     @State private var showingTodayFromDeepLink = false
     @State private var showingSmartSearchFromDeepLink = false
     @State private var showingAISuggestions = false
@@ -14,7 +14,7 @@ struct MainTabView: View {
     @State private var showingAISettings = false
     @State private var deepLinkSearchQuery = ""
     @State private var deepLinkAlertMessage: String?
-    
+
     enum Tab {
         case home
         case calendar
@@ -22,15 +22,15 @@ struct MainTabView: View {
         case habits
         case settings
     }
-    
+
     var body: some View {
         TabView(selection: $selectedTab) {
             HomeView()
                 .tabItem {
-                    Label("Home", systemImage: "house.fill")
+                    Label("Home", systemImage: "house")
                 }
                 .tag(Tab.home)
-            
+
             CalendarView()
                 .tabItem {
                     Label("Calendar", systemImage: "calendar")
@@ -41,25 +41,25 @@ struct MainTabView: View {
                 FocusDashboardView()
             }
             .tabItem {
-                Label("Focus", systemImage: "target")
+                Label("Focus", systemImage: "scope")
             }
             .tag(Tab.focus)
-            
+
             HabitsView()
                 .tabItem {
-                    Label("Habits", systemImage: "chart.line.uptrend.xyaxis")
+                    Label("Habits", systemImage: "chart.bar")
                 }
                 .tag(Tab.habits)
-            
+
             NavigationStack {
                 SettingsPageView()
             }
             .tabItem {
-                Label("Settings", systemImage: "gearshape.fill")
+                Label("Settings", systemImage: "gearshape")
             }
             .tag(Tab.settings)
         }
-        .tint(Color(hex: appAccentColor) ?? AppTheme.Colors.primary)
+        .tint(Color(hex: appAccentColor) ?? .accentColor)
         .onAppear {
             if let destination = router.destination {
                 handleDeepLink(destination)
@@ -113,7 +113,7 @@ struct MainTabView: View {
         deepLinkSearchQuery = ""
         deepLinkAlertMessage = nil
     }
-    
+
     private func handleDeepLink(_ destination: DeepLinkDestination) {
         switch destination {
         case .smartToday:
@@ -149,7 +149,7 @@ struct MainTabView: View {
 
         router.destination = nil
     }
-    
+
     private func triggerSendText(for reminderId: UUID) {
         let descriptor = FetchDescriptor<Reminder>(
             predicate: #Predicate { $0.uuid == reminderId }

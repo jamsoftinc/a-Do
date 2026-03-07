@@ -12,7 +12,7 @@ struct AppleNotePickerView: View {
     @State private var newNoteContent = ""
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Group {
                 if isLoading {
                     ProgressView("Loading notes...")
@@ -115,7 +115,7 @@ struct CreateNoteView: View {
     @State private var isCreating = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section("Note Details") {
                     TextField("Title", text: $title)

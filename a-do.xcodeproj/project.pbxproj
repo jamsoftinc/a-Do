@@ -13,6 +13,11 @@
 		7C07D3CB2EB06AFB00BA0958 /* EnhancedWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C07D3C72EB06AFB00BA0958 /* EnhancedWidgets.swift */; };
 		7C07D3CC2EB06AFB00BA0958 /* HabitWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C07D3C92EB06AFB00BA0958 /* HabitWidgetBundle.swift */; };
 		7C07D3CD2EB06AFB00BA0958 /* HabitWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C07D3C82EB06AFB00BA0958 /* HabitWidget.swift */; };
+		7C67B6742F5B2984002B5600 /* FirebaseAILogic in Frameworks */ = {isa = PBXBuildFile; productRef = 7C67B6732F5B2984002B5600 /* FirebaseAILogic */; };
+		7C67B6762F5B2984002B5600 /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 7C67B6752F5B2984002B5600 /* FirebaseAppCheck */; };
+		7C67B6782F5B2984002B5600 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7C67B6772F5B2984002B5600 /* FirebaseCore */; };
+		7C67B67A2F5B2984002B5600 /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 7C67B6792F5B2984002B5600 /* FirebaseRemoteConfig */; };
+		7CBE5D732F5B6E1000D51726 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 7CBE5D722F5B6E1000D51726 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -36,6 +41,7 @@
 		7C07D3C72EB06AFB00BA0958 /* EnhancedWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnhancedWidgets.swift; sourceTree = "<group>"; };
 		7C07D3C82EB06AFB00BA0958 /* HabitWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitWidget.swift; sourceTree = "<group>"; };
 		7C07D3C92EB06AFB00BA0958 /* HabitWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitWidgetBundle.swift; sourceTree = "<group>"; };
+		7CBE5D722F5B6E1000D51726 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		7CC0E53E2E496AEC00116982 /* a-do.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "a-do.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7CD98A7A2E5A178200B00CBD /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		7CD98A7C2E5A178200B00CBD /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -65,6 +71,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7C67B6762F5B2984002B5600 /* FirebaseAppCheck in Frameworks */,
+				7C67B6782F5B2984002B5600 /* FirebaseCore in Frameworks */,
+				7C67B6742F5B2984002B5600 /* FirebaseAILogic in Frameworks */,
+				7C67B67A2F5B2984002B5600 /* FirebaseRemoteConfig in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,6 +94,7 @@
 		7CC0E5352E496AEC00116982 = {
 			isa = PBXGroup;
 			children = (
+				7CBE5D722F5B6E1000D51726 /* GoogleService-Info.plist */,
 				7C07D3CA2EB06AFB00BA0958 /* a-do_Widget */,
 				7C07D3AA2EB05C5000BA0958 /* a-do WidgetExtension.entitlements */,
 				7C07D3672EB03BF200BA0958 /* Configuration.storekit */,
@@ -153,6 +164,10 @@
 			);
 			name = "a-do";
 			packageProductDependencies = (
+				7C67B6732F5B2984002B5600 /* FirebaseAILogic */,
+				7C67B6752F5B2984002B5600 /* FirebaseAppCheck */,
+				7C67B6772F5B2984002B5600 /* FirebaseCore */,
+				7C67B6792F5B2984002B5600 /* FirebaseRemoteConfig */,
 			);
 			productName = Remember;
 			productReference = 7CC0E53E2E496AEC00116982 /* a-do.app */;
@@ -190,6 +205,9 @@
 			);
 			mainGroup = 7CC0E5352E496AEC00116982;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7C67B6722F5B2984002B5600 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7CC0E53F2E496AEC00116982 /* Products */;
 			projectDirPath = "";
@@ -213,6 +231,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7CBE5D732F5B6E1000D51726 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -248,7 +267,7 @@
 				CODE_SIGN_ENTITLEMENTS = "a-do WidgetExtension.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "a-do_Widget/Info.plist";
@@ -258,7 +277,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 4.3;
+				MARKETING_VERSION = 4.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-do.a-do-Widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -281,7 +300,7 @@
 				CODE_SIGN_ENTITLEMENTS = "a-do WidgetExtension.entitlements";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "a-do_Widget/Info.plist";
@@ -291,7 +310,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 4.3;
+				MARKETING_VERSION = 4.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-do.a-do-Widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -434,7 +453,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				ENABLE_APP_SANDBOX = YES;
@@ -473,7 +492,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 4.3;
+				MARKETING_VERSION = 4.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-do";
 				"PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]" = "JAMSoft.a-do.mac";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -501,7 +520,7 @@
 				CODE_SIGN_ENTITLEMENTS = "a-do/a-do.entitlements";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				ENABLE_APP_SANDBOX = YES;
@@ -538,7 +557,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 4.3;
+				MARKETING_VERSION = 4.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-do";
 				"PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]" = "JAMSoft.a-do.mac";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -588,6 +607,40 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		7C67B6722F5B2984002B5600 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.10.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		7C67B6732F5B2984002B5600 /* FirebaseAILogic */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7C67B6722F5B2984002B5600 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAILogic;
+		};
+		7C67B6752F5B2984002B5600 /* FirebaseAppCheck */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7C67B6722F5B2984002B5600 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAppCheck;
+		};
+		7C67B6772F5B2984002B5600 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7C67B6722F5B2984002B5600 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		7C67B6792F5B2984002B5600 /* FirebaseRemoteConfig */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7C67B6722F5B2984002B5600 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseRemoteConfig;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 7CC0E5362E496AEC00116982 /* Project object */;
 }

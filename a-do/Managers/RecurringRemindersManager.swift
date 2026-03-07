@@ -42,6 +42,8 @@ final class RecurringRemindersManager {
     // MARK: - Periodic Processing
     
     private func setupPeriodicProcessing() {
+        processingTimer?.invalidate()
+
         // Set up timer to process recurring reminders
         processingTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
             Task { @MainActor in
@@ -238,10 +240,7 @@ final class RecurringRemindersManager {
         }
 
         // Get context - if not provided, we need to get it from AppContainer
-        guard let ctx = context ?? (try? ModelContext(AppContainer.shared.getContainer())) else {
-            logger.error("Failed to get model context for recurring reminders processing")
-            return
-        }
+        let ctx = context ?? ModelContext(AppContainer.shared.getContainer())
 
         // Fetch all active recurring reminders
         let descriptor = FetchDescriptor<RecurringReminder>(
@@ -386,7 +385,6 @@ final class RecurringRemindersManager {
         guard let rule = recurring.recurrenceRule,
               recurring.isActive else { return }
         
-        let calendar = Calendar.current
         let now = Date()
         
         // Generate reminders for the next occurrence

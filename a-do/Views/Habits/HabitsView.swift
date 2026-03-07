@@ -14,69 +14,63 @@ struct HabitsView: View {
     @State private var showingCreateHabit = false
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Statistics Header
-                HabitStatisticsView(statistics: viewModel.statistics)
-                
-                // Search and Filter Bar
-                HabitSearchAndFilterView(
-                    searchText: $viewModel.searchText,
-                    selectedFilter: $viewModel.selectedFilter
-                )
-                
+        NavigationStack {
+            List {
+                // Statistics
+                Section {
+                    HabitStatisticsView(statistics: viewModel.statistics)
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
+
+                // Filter
+                Section {
+                    HabitFilterView(selectedFilter: $viewModel.selectedFilter)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                        .listRowBackground(Color.clear)
+                }
+
                 // Habits List
                 if viewModel.filteredHabits.isEmpty {
-                    HabitEmptyStateView(
-                        filter: viewModel.selectedFilter,
-                        searchText: viewModel.searchText
-                    )
+                    Section {
+                        ContentUnavailableView {
+                            Label(
+                                viewModel.searchText.isEmpty ? "No Habits" : "No Results",
+                                systemImage: viewModel.searchText.isEmpty ? "star" : "magnifyingglass"
+                            )
+                        } description: {
+                            Text(viewModel.searchText.isEmpty
+                                 ? "Create your first habit to start tracking."
+                                 : "Try adjusting your search terms.")
+                        }
+                        .listRowBackground(Color.clear)
+                    }
                 } else {
-                    ScrollView {
-                        LazyVStack(spacing: 12) {
-                            ForEach(viewModel.filteredHabits) { habit in
-                                HabitCardView(habit: habit) {
-                                    viewModel.selectHabit(habit)
-                                } onIncrement: {
-                                    viewModel.incrementHabit(habit)
-                                } onDecrement: {
-                                    viewModel.decrementHabit(habit)
-                                }
+                    Section {
+                        ForEach(viewModel.filteredHabits) { habit in
+                            HabitCardView(habit: habit) {
+                                viewModel.selectHabit(habit)
+                            } onIncrement: {
+                                viewModel.incrementHabit(habit)
+                            } onDecrement: {
+                                viewModel.decrementHabit(habit)
                             }
                         }
-                        .padding(.horizontal)
-                        .padding(.bottom, 100) // Space for floating button
                     }
                 }
             }
+            .listStyle(.insetGrouped)
+            .searchable(text: $viewModel.searchText, prompt: "Search habits")
             .navigationTitle("Habits")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
                         showingCreateHabit = true
-                    }) {
+                    } label: {
                         Image(systemName: "plus")
-                            .font(.title2)
-                            .foregroundColor(.white)
                     }
                 }
-            }
-            .overlay(alignment: .bottomTrailing) {
-                // Floating Action Button
-                Button(action: {
-                    showingCreateHabit = true
-                }) {
-                    Image(systemName: "plus")
-                        .font(.title2)
-                        .foregroundColor(.white)
-                        .frame(width: 56, height: 56)
-                        .background(AppTheme.Colors.primary)
-                        .clipShape(Circle())
-                        .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
-                }
-                .padding(.trailing, 20)
-                .padding(.bottom, 20)
             }
         }
         .onAppear {
@@ -106,131 +100,62 @@ struct HabitsView: View {
 // MARK: - Habit Statistics View
 struct HabitStatisticsView: View {
     let statistics: HabitStatistics
-    
-    var body: some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 20) {
-                StatisticCard(
-                    title: "Total",
-                    value: "\(statistics.totalHabits)",
-                    icon: "list.bullet",
-                    color: AppTheme.Colors.primary
-                )
-                
-                StatisticCard(
-                    title: "Active",
-                    value: "\(statistics.activeHabits)",
-                    icon: "play.circle",
-                    color: .green
-                )
-                
-                StatisticCard(
-                    title: "Today",
-                    value: "\(statistics.completedToday)",
-                    icon: "checkmark.circle",
-                    color: .orange
-                )
-            }
-            
-            HStack(spacing: 20) {
-                StatisticCard(
-                    title: "Streak",
-                    value: "\(statistics.totalStreak)",
-                    icon: "flame",
-                    color: .red
-                )
-                
-                StatisticCard(
-                    title: "Rate",
-                    value: "\(Int(statistics.averageCompletionRate * 100))%",
-                    icon: "chart.bar",
-                    color: .blue
-                )
-            }
-        }
-        .padding(.horizontal)
-        .padding(.vertical, 12)
-        .background(AppTheme.Colors.surface)
-    }
-}
 
-// MARK: - Statistic Card
-struct StatisticCard: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
-    
-    var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(color)
-            
-            Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(AppTheme.Colors.textPrimary)
-            
-            Text(title)
-                .font(.caption)
-                .foregroundColor(AppTheme.Colors.textSecondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(AppTheme.Colors.background)
-        .cornerRadius(12)
-    }
-}
-
-// MARK: - Search and Filter View
-struct HabitSearchAndFilterView: View {
-    @Binding var searchText: String
-    @Binding var selectedFilter: HabitFilter
-    
     var body: some View {
         VStack(spacing: 12) {
-            // Search Bar
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(AppTheme.Colors.textSecondary)
-                
-                TextField("Search habits...", text: $searchText)
-                    .textFieldStyle(PlainTextFieldStyle())
-                
-                if !searchText.isEmpty {
-                    Button(action: {
-                        searchText = ""
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(AppTheme.Colors.textSecondary)
-                    }
-                }
+            HStack(spacing: 16) {
+                StatisticItem(title: "Total", value: "\(statistics.totalHabits)", color: .accentColor)
+                StatisticItem(title: "Active", value: "\(statistics.activeHabits)", color: .green)
+                StatisticItem(title: "Today", value: "\(statistics.completedToday)", color: .orange)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(AppTheme.Colors.background)
-            .cornerRadius(10)
-            
-            // Filter Pills
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(HabitFilter.allCases, id: \.self) { filter in
-                        FilterPill(
-                            title: filter.displayName,
-                            icon: filter.icon,
-                            isSelected: selectedFilter == filter
-                        ) {
-                            selectedFilter = filter
-                        }
-                    }
-                }
-                .padding(.horizontal)
+
+            HStack(spacing: 16) {
+                StatisticItem(title: "Streak", value: "\(statistics.totalStreak)", color: .red)
+                StatisticItem(title: "Rate", value: "\(Int(statistics.averageCompletionRate * 100))%", color: .blue)
             }
         }
-        .padding(.horizontal)
         .padding(.vertical, 8)
-        .background(AppTheme.Colors.surface)
+    }
+}
+
+// MARK: - Statistic Item
+struct StatisticItem: View {
+    let title: String
+    let value: String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.title3.bold())
+                .foregroundStyle(color)
+
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Filter View
+struct HabitFilterView: View {
+    @Binding var selectedFilter: HabitFilter
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(HabitFilter.allCases, id: \.self) { filter in
+                    FilterPill(
+                        title: filter.displayName,
+                        icon: filter.icon,
+                        isSelected: selectedFilter == filter
+                    ) {
+                        selectedFilter = filter
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -253,91 +178,13 @@ struct FilterPill: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background(isSelected ? AppTheme.Colors.primary : AppTheme.Colors.background)
-            .foregroundColor(isSelected ? .white : AppTheme.Colors.textPrimary)
-            .cornerRadius(16)
+            .background(isSelected ? Color.accentColor : Color(.tertiarySystemFill),
+                        in: Capsule())
+            .foregroundStyle(isSelected ? .white : Color(.label))
         }
     }
 }
 
-// MARK: - Empty State View
-struct HabitEmptyStateView: View {
-    let filter: HabitFilter
-    let searchText: String
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: emptyStateIcon)
-                .font(.system(size: 60))
-                .foregroundColor(AppTheme.Colors.textSecondary)
-            
-            VStack(spacing: 8) {
-                Text(emptyStateTitle)
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(AppTheme.Colors.textPrimary)
-                
-                Text(emptyStateMessage)
-                    .font(.body)
-                    .foregroundColor(AppTheme.Colors.textSecondary)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
-    }
-    
-    private var emptyStateIcon: String {
-        if !searchText.isEmpty {
-            return "magnifyingglass"
-        }
-        
-        switch filter {
-        case .all:
-            return "star"
-        case .active:
-            return "play.circle"
-        case .completed:
-            return "checkmark.circle"
-        case .incomplete:
-            return "circle"
-        }
-    }
-    
-    private var emptyStateTitle: String {
-        if !searchText.isEmpty {
-            return "No habits found"
-        }
-        
-        switch filter {
-        case .all:
-            return "No habits yet"
-        case .active:
-            return "No active habits"
-        case .completed:
-            return "No completed habits"
-        case .incomplete:
-            return "No incomplete habits"
-        }
-    }
-    
-    private var emptyStateMessage: String {
-        if !searchText.isEmpty {
-            return "Try adjusting your search terms"
-        }
-        
-        switch filter {
-        case .all:
-            return "Create your first habit to start tracking your progress"
-        case .active:
-            return "All your habits are currently inactive"
-        case .completed:
-            return "No habits completed today yet"
-        case .incomplete:
-            return "All your active habits are completed today"
-        }
-    }
-}
 
 #Preview {
     HabitsView()

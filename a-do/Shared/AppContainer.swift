@@ -53,6 +53,7 @@ final class AppContainer {
         
         // If diagnostic approach failed completely, try emergency fallback
         os_log("Diagnostic container creation failed, attempting emergency fallback", log: .default, type: .error)
+        SwiftDataUtils.resetPersistentStores()
         return createEmergencyContainer()
     }
     
@@ -121,7 +122,7 @@ final class AppContainer {
     // MARK: - Progressive Model Loading
     // This allows adding more models after the initial container is created
     func expandSchema(with additionalModels: [any PersistentModel.Type]) -> Bool {
-        guard let currentContainer = _container else {
+        guard _container != nil else {
             os_log("No existing container to expand", log: .default, type: .error)
             return false
         }
@@ -133,22 +134,16 @@ final class AppContainer {
     
     // MARK: - Diagnostics
     func validateModels(_ models: [any PersistentModel.Type]) -> [String] {
-        var issues: [String] = []
-        
         for modelType in models {
             let typeName = String(describing: modelType)
             
             // Check if the model type can be instantiated (basic validation)
-            do {
-                let schema = Schema([modelType])
-                // If we can create a schema with just this model, it's probably valid
-                os_log("Model %{public}@ appears valid", log: .default, type: .debug, typeName)
-            } catch {
-                issues.append("Model \(typeName) failed validation: \(error.localizedDescription)")
-            }
+            _ = Schema([modelType])
+            // If we can create a schema with just this model, it's probably valid
+            os_log("Model %{public}@ appears valid", log: .default, type: .debug, typeName)
         }
         
-        return issues
+        return []
     }
     
     // MARK: - Safe Container Reset
@@ -161,21 +156,14 @@ final class AppContainer {
     #if DEBUG
     func testContainerCreation() -> String {
         resetContainer()
-        do {
-            let container = getContainer()
-            let diagnostics = SwiftDataUtils.createDiagnosticContainer().diagnostics
-            return """
-            Container Creation Test Results:
-            ✅ Container created successfully
-            📊 Diagnostics:
-            \(diagnostics.summary)
-            """
-        } catch {
-            return """
-            Container Creation Test Results:
-            ❌ Container creation failed: \(error.localizedDescription)
-            """
-        }
+        _ = getContainer()
+        let diagnostics = SwiftDataUtils.createDiagnosticContainer().diagnostics
+        return """
+        Container Creation Test Results:
+        ✅ Container created successfully
+        📊 Diagnostics:
+        \(diagnostics.summary)
+        """
     }
     #endif
     

@@ -97,29 +97,11 @@ struct ProUpgradePromptView: View {
             .padding(.horizontal, 32)
             .padding(.bottom, 32)
         }
-        .overlay(alignment: .topLeading) {
-            Button {
-                NotificationCenter.default.post(name: .appNavigateHome, object: nil)
-                dismiss()
-            } label: {
-                Image(systemName: "house.fill")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .padding(8)
-                    .background(Color.black.opacity(0.2), in: Circle())
-            }
-            .padding(.top, 16)
-            .padding(.leading, 16)
-        }
         .overlay(alignment: .topTrailing) {
             Button {
                 dismiss()
             } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(.white)
-                    .padding(6)
-                    .background(Color.black.opacity(0.2), in: Circle())
+                Image(systemName: "xmark")
             }
             .padding(.top, 16)
             .padding(.trailing, 16)

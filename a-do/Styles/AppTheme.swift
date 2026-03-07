@@ -2,89 +2,95 @@ import SwiftUI
 
 // MARK: - App Theme
 struct AppTheme {
-    
-    // MARK: - Color Palette
+
+    // MARK: - Color Palette (System Semantic Colors)
     struct Colors {
-        // Primary brand colors
-        static let primary = Color(red: 0.2, green: 0.42, blue: 0.86) // Ocean blue
-        static let primaryLight = Color(red: 0.32, green: 0.56, blue: 0.95) // Sky blue
-        static let primaryDark = Color(red: 0.12, green: 0.31, blue: 0.72) // Deep blue
-        
-        // Secondary colors
-        static let secondary = Color(red: 0.9, green: 0.56, blue: 0.2) // Warm orange
-        static let accent = Color(red: 0.12, green: 0.67, blue: 0.44) // Emerald accent
-        
-        // Background colors - Much lighter for better readability
-        static let background = Color(red: 0.98, green: 0.98, blue: 1.0) // Very light blue-white
-        static let surface = Color.white // Pure white cards
-        static let surfaceLight = Color(red: 0.97, green: 0.97, blue: 0.99) // Very light gray
-        
-        // Text colors - Dark for contrast against light backgrounds
-        static let textPrimary = Color(red: 0.1, green: 0.1, blue: 0.2) // Dark blue-gray
-        static let textSecondary = Color(red: 0.3, green: 0.3, blue: 0.4) // Medium gray
-        static let textTertiary = Color(red: 0.5, green: 0.5, blue: 0.6) // Light gray
-        
-        // Status colors
-        static let success = Color(red: 0.2, green: 0.8, blue: 0.4) // Green
-        static let warning = Color(red: 0.9, green: 0.6, blue: 0.2) // Orange
-        static let error = Color(red: 0.9, green: 0.3, blue: 0.3) // Red
-        static let info = Color(red: 0.2, green: 0.6, blue: 0.9) // Blue
-        
-        // Priority colors
-        static let priorityHigh = Color(red: 0.9, green: 0.3, blue: 0.3) // Red
-        static let priorityMedium = Color(red: 0.9, green: 0.6, blue: 0.2) // Orange
-        static let priorityLow = Color(red: 0.2, green: 0.8, blue: 0.4) // Green
-        static let priorityNone = Color(red: 0.6, green: 0.6, blue: 0.7) // Gray
+        // Brand — uses the Asset Catalog AccentColor, overridable via @AppStorage
+        static let primary = Color.accentColor
+        static let primaryLight = Color.accentColor.opacity(0.7)
+        static let primaryDark = Color.accentColor
+
+        // Secondary colors — system palette
+        static let secondary = Color.orange
+        static let accent = Color.green
+
+        // Backgrounds — system semantic (auto light/dark mode)
+        static let background = Color(.systemGroupedBackground)
+        static let surface = Color(.secondarySystemGroupedBackground)
+        static let surfaceLight = Color(.tertiarySystemGroupedBackground)
+
+        // Text — system semantic (auto light/dark mode + accessibility)
+        static let textPrimary = Color(.label)
+        static let textSecondary = Color(.secondaryLabel)
+        static let textTertiary = Color(.tertiaryLabel)
+
+        // Status colors — system
+        static let success = Color.green
+        static let warning = Color.orange
+        static let error = Color.red
+        static let info = Color.blue
+
+        // Priority colors — matches Apple Reminders
+        static let priorityHigh = Color.red
+        static let priorityMedium = Color.orange
+        static let priorityLow = Color.blue
+        static let priorityNone = Color(.tertiaryLabel)
     }
-    
-    // MARK: - Gradients
+
+    // MARK: - Gradients (Minimal — only for hero/immersive moments)
     struct Gradients {
+        // Use ONLY for Morning Briefing, Paywall hero, onboarding — never content screens
         static let primary = LinearGradient(
-            colors: [Colors.primary, Colors.primaryLight],
+            colors: [Color.accentColor, Color.accentColor.opacity(0.7)],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
-        
+
         static let secondary = LinearGradient(
-            colors: [Colors.secondary, Colors.accent],
+            colors: [Color.orange, Color.green],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
-        
+
+        // Flat system background — replaces the old gradient background
         static let background = LinearGradient(
-            colors: [Colors.background, Colors.surface],
+            colors: [Color(.systemGroupedBackground), Color(.systemGroupedBackground)],
             startPoint: .top,
             endPoint: .bottom
         )
-        
+
         static let card = LinearGradient(
-            colors: [Colors.surface, Colors.surfaceLight],
+            colors: [Color(.secondarySystemGroupedBackground), Color(.secondarySystemGroupedBackground)],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
-        
+
         static let cardShadow = LinearGradient(
-            colors: [Color.black.opacity(0.05), Color.black.opacity(0.02)],
+            colors: [Color.clear, Color.clear],
             startPoint: .top,
             endPoint: .bottom
         )
     }
-    
-    // MARK: - Typography
+
+    // MARK: - Typography (System Default — .rounded only for display numbers)
     struct Typography {
-        static let largeTitle = Font.system(size: 34, weight: .bold, design: .rounded)
-        static let title1 = Font.system(size: 28, weight: .bold, design: .rounded)
-        static let title2 = Font.system(size: 22, weight: .semibold, design: .rounded)
-        static let title3 = Font.system(size: 20, weight: .semibold, design: .rounded)
-        static let headline = Font.system(size: 17, weight: .semibold, design: .rounded)
-        static let body = Font.system(size: 17, weight: .regular, design: .rounded)
-        static let callout = Font.system(size: 16, weight: .regular, design: .rounded)
-        static let subheadline = Font.system(size: 15, weight: .regular, design: .rounded)
-        static let footnote = Font.system(size: 13, weight: .regular, design: .rounded)
-        static let caption1 = Font.system(size: 12, weight: .regular, design: .rounded)
-        static let caption2 = Font.system(size: 11, weight: .regular, design: .rounded)
+        static let largeTitle = Font.largeTitle.bold()
+        static let title1 = Font.title.bold()
+        static let title2 = Font.title2.weight(.semibold)
+        static let title3 = Font.title3.weight(.semibold)
+        static let headline = Font.headline
+        static let body = Font.body
+        static let callout = Font.callout
+        static let subheadline = Font.subheadline
+        static let footnote = Font.footnote
+        static let caption1 = Font.caption
+        static let caption2 = Font.caption2
+
+        // Rounded — for large numeric displays (counts, percentages, timers)
+        static let roundedNumber = Font.system(.title, design: .rounded).weight(.bold)
+        static let roundedCaption = Font.system(.caption, design: .rounded).weight(.semibold)
     }
-    
+
     // MARK: - Spacing
     struct Spacing {
         static let xs: CGFloat = 4
@@ -95,20 +101,20 @@ struct AppTheme {
         static let xxl: CGFloat = 24
         static let xxxl: CGFloat = 32
     }
-    
+
     // MARK: - Corner Radius
     struct CornerRadius {
         static let small: CGFloat = 8
-        static let medium: CGFloat = 12
-        static let large: CGFloat = 16
+        static let medium: CGFloat = 10
+        static let large: CGFloat = 14
         static let xl: CGFloat = 20
     }
-    
-    // MARK: - Shadows
+
+    // MARK: - Shadows (Minimal — Apple uses very subtle shadows)
     struct Shadows {
-        static let small = Shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-        static let medium = Shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
-        static let large = Shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 6)
+        static let small = Shadow(color: .black.opacity(0.04), radius: 2, x: 0, y: 1)
+        static let medium = Shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
+        static let large = Shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
     }
 }
 
@@ -139,25 +145,23 @@ extension AppTheme {
 // MARK: - View Modifiers
 extension View {
     func appBackground() -> some View {
-        self.background(AppTheme.Gradients.background)
+        self.background(Color(.systemGroupedBackground))
     }
-    
+
     func appCard() -> some View {
-        self.background(AppTheme.Gradients.card)
+        self.background(Color(.secondarySystemGroupedBackground))
             .cornerRadius(AppTheme.CornerRadius.medium)
-            .shadow(radius: 8, x: 0, y: 4)
     }
-    
+
     func primaryText() -> some View {
-        self.foregroundColor(AppTheme.Colors.textPrimary)
+        self.foregroundStyle(Color(.label))
     }
-    
+
     func secondaryText() -> some View {
-        self.foregroundColor(AppTheme.Colors.textSecondary)
+        self.foregroundStyle(Color(.secondaryLabel))
     }
-    
+
     func tertiaryText() -> some View {
-        self.foregroundColor(AppTheme.Colors.textTertiary)
+        self.foregroundStyle(Color(.tertiaryLabel))
     }
 }
-

@@ -34,33 +34,16 @@ struct CalendarView: View {
                     if EntitlementManager.shared.isProUser {
                         QuantumCalendarView()
                     } else {
-                        VStack(spacing: 16) {
-                            Image(systemName: "lock.circle.fill")
-                                .font(.system(size: 60))
-                                .foregroundStyle(AppTheme.Colors.primary)
-                            
-                            Text("Quantum Calendar")
-                                .font(.title2.bold())
-                            
+                        ContentUnavailableView {
+                            Label("Quantum Calendar", systemImage: "lock.fill")
+                        } description: {
                             Text("Upgrade to Pro to unlock visual time-blocking and AI execution slots.")
-                                .multilineTextAlignment(.center)
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal)
-                            
-                            Button {
+                        } actions: {
+                            Button("Upgrade to Pro") {
                                 showingPaywall = true
-                            } label: {
-                                Text("Upgrade to Pro")
-                                    .bold()
-                                    .foregroundStyle(.white)
-                                    .padding(.horizontal, 24)
-                                    .padding(.vertical, 12)
-                                    .background(AppTheme.Colors.primary)
-                                    .clipShape(Capsule())
                             }
+                            .buttonStyle(.borderedProminent)
                         }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(AppTheme.Gradients.background.ignoresSafeArea())
                     }
                 }
             }
@@ -84,7 +67,7 @@ struct CalendarView: View {
                 } label: {
                     Image(systemName: "chevron.left")
                         .font(.title3)
-                        .foregroundStyle(AppTheme.Colors.primary)
+                        .foregroundStyle(Color.accentColor)
                 }
 
                 Spacer()
@@ -92,7 +75,7 @@ struct CalendarView: View {
                 Text(monthYearString)
                     .font(.title2)
                     .fontWeight(.bold)
-                    .foregroundStyle(AppTheme.Colors.textPrimary)
+                    .foregroundStyle(Color(.label))
 
                 Spacer()
 
@@ -101,7 +84,7 @@ struct CalendarView: View {
                 } label: {
                     Image(systemName: "chevron.right")
                         .font(.title3)
-                        .foregroundStyle(AppTheme.Colors.primary)
+                        .foregroundStyle(Color.accentColor)
                 }
 
                 Button {
@@ -111,7 +94,7 @@ struct CalendarView: View {
                     Text("Today")
                         .font(.callout)
                         .fontWeight(.semibold)
-                        .foregroundStyle(AppTheme.Colors.primary)
+                        .foregroundStyle(Color.accentColor)
                 }
             }
             .padding(.horizontal)
@@ -123,7 +106,7 @@ struct CalendarView: View {
                     Text(symbol)
                         .font(.caption)
                         .fontWeight(.bold)
-                        .foregroundStyle(AppTheme.Colors.textSecondary)
+                        .foregroundStyle(Color(.secondaryLabel))
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -158,7 +141,7 @@ struct CalendarView: View {
             // Selected Date Events Section - Always visible
             selectedDateEventsSection
         }
-        .background(AppTheme.Gradients.background.ignoresSafeArea())
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
         .onAppear {
             // Auto-select today if no date selected
             if selectedDate == nil {
@@ -174,14 +157,14 @@ struct CalendarView: View {
             HStack {
                 Text(selectedDateHeaderText)
                     .font(.headline)
-                    .foregroundStyle(AppTheme.Colors.textPrimary)
+                    .foregroundStyle(Color(.label))
 
                 Spacer()
 
                 if let date = selectedDate {
                     Text(date, format: .dateTime.weekday(.wide))
                         .font(.subheadline)
-                        .foregroundStyle(AppTheme.Colors.textSecondary)
+                        .foregroundStyle(Color(.secondaryLabel))
                 }
             }
             .padding(.horizontal)
@@ -193,11 +176,11 @@ struct CalendarView: View {
                 VStack(spacing: 12) {
                     Image(systemName: "calendar.badge.checkmark")
                         .font(.system(size: 40))
-                        .foregroundStyle(AppTheme.Colors.textTertiary)
+                        .foregroundStyle(Color(.tertiaryLabel))
 
                     Text("No events")
                         .font(.subheadline)
-                        .foregroundStyle(AppTheme.Colors.textSecondary)
+                        .foregroundStyle(Color(.secondaryLabel))
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 30)
@@ -277,7 +260,7 @@ struct CalendarView: View {
             }
             .padding(.vertical)
         }
-        .background(AppTheme.Gradients.background.ignoresSafeArea())
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
         .refreshable {
             await calendarManager.loadEvents()
         }
@@ -372,11 +355,11 @@ struct DayCell: View {
         .frame(height: 44)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(isSelected ? AppTheme.Colors.primary.opacity(0.15) : Color.clear)
+                .fill(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(isSelected ? AppTheme.Colors.primary : Color.clear, lineWidth: 2)
+                .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
         )
     }
     
@@ -384,15 +367,15 @@ struct DayCell: View {
         if isToday {
             return .white
         } else if !isCurrentMonth {
-            return AppTheme.Colors.textTertiary
+            return Color(.tertiaryLabel)
         } else {
-            return AppTheme.Colors.textPrimary
+            return Color(.label)
         }
     }
     
     private var backgroundColor: Color {
         if isToday {
-            return AppTheme.Colors.primary
+            return Color.accentColor
         } else {
             return .clear
         }
@@ -411,7 +394,7 @@ struct EventRow: View {
                     Text(event.startDate, style: .time)
                         .font(.caption)
                         .fontWeight(.bold)
-                        .foregroundStyle(AppTheme.Colors.primary)
+                        .foregroundStyle(Color.accentColor)
                     
                     Rectangle()
                         .fill(Color(cgColor: event.calendar.cgColor))
@@ -428,9 +411,8 @@ struct EventRow: View {
                     Text(event.title)
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                        .primaryText()
                         .lineLimit(1)
-                    
+
                     if let location = event.location, !location.isEmpty {
                         HStack(spacing: 4) {
                             Image(systemName: "location.fill")
@@ -439,7 +421,7 @@ struct EventRow: View {
                                 .font(.caption2)
                                 .lineLimit(1)
                         }
-                        .secondaryText()
+                        .foregroundStyle(.secondary)
                     }
                 }
                 

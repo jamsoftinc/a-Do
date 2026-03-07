@@ -63,29 +63,15 @@ struct AISettingsView: View {
             .navigationTitle("AI Settings")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
-                ToolbarItemGroup(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button {
                         dismiss()
                     } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.headline.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .padding(8)
-                            .background(Color.black.opacity(0.2), in: Circle())
-                    }
-
-                    Button {
-                        goHome()
-                    } label: {
-                        Image(systemName: "house.fill")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .padding(8)
-                            .background(Color.black.opacity(0.2), in: Circle())
+                        Image(systemName: "xmark")
                     }
                 }
 
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .primaryAction) {
                     if hasChanges {
                         Button("Save") {
                             saveSettings()
@@ -138,7 +124,7 @@ struct AISettingsView: View {
         Section {
             HStack {
                 Image(systemName: "brain.head.profile")
-                    .foregroundColor(.blue)
+                    .foregroundStyle(.blue)
                     .frame(width: 24)
                 
                 VStack(alignment: .leading, spacing: 2) {
@@ -147,7 +133,7 @@ struct AISettingsView: View {
                     
                     Text("Enable AI-powered suggestions and insights")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 
                 Spacer()
@@ -159,7 +145,7 @@ struct AISettingsView: View {
             if !isAIEnabled {
                 Text("AI features are disabled. Enable to receive personalized suggestions and productivity insights.")
                     .font(.caption)
-                    .foregroundColor(.orange)
+                    .foregroundStyle(.orange)
                     .padding(.vertical, 4)
             }
         } header: {
@@ -175,7 +161,7 @@ struct AISettingsView: View {
         Section {
             HStack {
                 Image(systemName: "cpu")
-                    .foregroundColor(.mint)
+                    .foregroundStyle(.mint)
                     .frame(width: 24)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -184,7 +170,7 @@ struct AISettingsView: View {
 
                     Text("Best model selected automatically per feature")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
 
                 Spacer()
@@ -192,7 +178,7 @@ struct AISettingsView: View {
 
             HStack {
                 Image(systemName: "applelogo")
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                     .frame(width: 24)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -200,7 +186,7 @@ struct AISettingsView: View {
                         .font(.caption.weight(.semibold))
                     Text("Primary engine for on-device suggestions")
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
 
                 Spacer()
@@ -209,35 +195,61 @@ struct AISettingsView: View {
 
             HStack {
                 Image(systemName: geminiManager.isConfigured ? "checkmark.shield.fill" : "xmark.shield")
-                    .foregroundColor(geminiManager.isConfigured ? .green : .secondary)
+                    .foregroundStyle(geminiManager.isConfigured ? .green : .secondary)
                     .frame(width: 24)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Google Gemini (3+)")
+                    Text("Firebase Gemini")
                         .font(.caption.weight(.semibold))
-                    Text(geminiManager.isConfigured ? "Enabled for Pro cloud-generation features" :
-                            (geminiManager.hasBundledAPIKey
-                             ? "Key detected. Tap retry if status is stale."
-                             : "Unavailable until developer API key is configured"))
+                    Text(geminiManager.isConfigured
+                         ? "Enabled for Pro cloud-generation features via Firebase AI Logic"
+                         : "Unavailable until Firebase is configured in the app target")
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
 
                 Spacer()
             }
 
-            if !geminiManager.isConfigured {
+            HStack {
+                Image(systemName: geminiManager.isRemoteConfigReady ? "switch.2" : "exclamationmark.arrow.trianglehead.2.clockwise.rotate.90")
+                    .foregroundStyle(geminiManager.isRemoteConfigReady ? .blue : .secondary)
+                    .frame(width: 24)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Remote Config Model")
+                        .font(.caption.weight(.semibold))
+                    Text(geminiManager.isRemoteConfigReady
+                         ? "\((geminiManager.modelID ?? "Unknown")) selected from \(geminiManager.availableModelIDs.count) remote model(s)"
+                         : "No model selected until Firebase Remote Config provides gemini_model_list")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+            }
+
+            if let lastError = geminiManager.lastError, !lastError.isEmpty {
+                Text(lastError)
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+                    .padding(.vertical, 4)
+            }
+
+            if geminiManager.isConfigured {
                 Button {
-                    _ = geminiManager.refreshConfigurationStatus()
+                    Task {
+                        await geminiManager.refreshRemoteConfiguration()
+                    }
                 } label: {
-                    Text("Retry Gemini Key Detection")
+                    Text("Refresh Firebase AI Config")
                         .font(.caption.weight(.semibold))
                 }
             }
         } header: {
             Text("AI Engine")
         } footer: {
-            Text("End users do not choose providers. Gemini is Pro-only and used automatically when configured.")
+            Text("End users do not choose providers. Gemini is Pro-only and the active model comes from the Firebase Remote Config parameter gemini_model_list.")
         }
         .disabled(!isAIEnabled)
         .opacity(isAIEnabled ? 1.0 : 0.6)
@@ -250,7 +262,7 @@ struct AISettingsView: View {
             // Suggestion Frequency
             HStack {
                 Image(systemName: "lightbulb")
-                    .foregroundColor(.yellow)
+                    .foregroundStyle(.yellow)
                     .frame(width: 24)
                 
                 VStack(alignment: .leading, spacing: 2) {
@@ -259,7 +271,7 @@ struct AISettingsView: View {
                     
                     Text("How often to generate new suggestions")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 
                 Spacer()
@@ -276,7 +288,7 @@ struct AISettingsView: View {
             // Insight Frequency
             HStack {
                 Image(systemName: "chart.line.uptrend.xyaxis")
-                    .foregroundColor(.green)
+                    .foregroundStyle(.green)
                     .frame(width: 24)
                 
                 VStack(alignment: .leading, spacing: 2) {
@@ -285,7 +297,7 @@ struct AISettingsView: View {
                     
                     Text("How often to generate analytics insights")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 
                 Spacer()
@@ -302,7 +314,7 @@ struct AISettingsView: View {
             // Max Suggestions Per Day
             HStack {
                 Image(systemName: "number")
-                    .foregroundColor(.purple)
+                    .foregroundStyle(.purple)
                     .frame(width: 24)
                 
                 VStack(alignment: .leading, spacing: 2) {
@@ -311,7 +323,7 @@ struct AISettingsView: View {
                     
                     Text("Maximum suggestions shown per day")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 
                 Spacer()
@@ -336,7 +348,7 @@ struct AISettingsView: View {
             // Privacy Level
             HStack {
                 Image(systemName: "lock.shield")
-                    .foregroundColor(.orange)
+                    .foregroundStyle(.orange)
                     .frame(width: 24)
                 
                 VStack(alignment: .leading, spacing: 2) {
@@ -345,7 +357,7 @@ struct AISettingsView: View {
                     
                     Text(privacyLevel.displayName)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 
                 Spacer()
@@ -354,7 +366,7 @@ struct AISettingsView: View {
                     showingPrivacyInfo = true
                 }
                 .font(.caption)
-                .foregroundColor(.accentColor)
+                .foregroundStyle(Color.accentColor)
                 
                 Picker("Privacy", selection: $privacyLevel) {
                     ForEach(AIPrivacyLevel.allCases, id: \.self) { level in
@@ -407,7 +419,7 @@ struct AISettingsView: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Image(systemName: "slider.horizontal.3")
-                        .foregroundColor(.cyan)
+                        .foregroundStyle(.cyan)
                         .frame(width: 24)
                     
                     VStack(alignment: .leading, spacing: 2) {
@@ -416,7 +428,7 @@ struct AISettingsView: View {
                         
                         Text("Only show suggestions with \(Int(confidenceThreshold * 100))%+ confidence")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     
                     Spacer()
@@ -427,11 +439,11 @@ struct AISettingsView: View {
                 } minimumValueLabel: {
                     Text("30%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 } maximumValueLabel: {
                     Text("100%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .tint(.cyan)
             }
@@ -442,24 +454,24 @@ struct AISettingsView: View {
             } label: {
                 HStack {
                     Image(systemName: "checklist")
-                        .foregroundColor(.green)
+                        .foregroundStyle(.green)
                         .frame(width: 24)
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Suggestion Types")
                             .font(.body.weight(.medium))
-                            .foregroundColor(.primary)
+                            .foregroundStyle(.primary)
                         
                         Text("\(AISuggestionType.allCases.count - disabledSuggestionTypes.count) of \(AISuggestionType.allCases.count) enabled")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     
                     Spacer()
                     
                     Image(systemName: "chevron.right")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
             
@@ -469,24 +481,24 @@ struct AISettingsView: View {
             } label: {
                 HStack {
                     Image(systemName: "chart.bar.doc.horizontal")
-                        .foregroundColor(.purple)
+                        .foregroundStyle(.purple)
                         .frame(width: 24)
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Preferred Insights")
                             .font(.body.weight(.medium))
-                            .foregroundColor(.primary)
+                            .foregroundStyle(.primary)
                         
                         Text("\(preferredInsightTypes.count) types selected")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     
                     Spacer()
                     
                     Image(systemName: "chevron.right")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
             
@@ -518,7 +530,7 @@ struct AISettingsView: View {
                 
                 Text("Performance metrics are updated weekly based on your feedback and usage patterns.")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
             .padding(.vertical, 8)
             
@@ -531,11 +543,11 @@ struct AISettingsView: View {
         VStack(spacing: 4) {
             Text(value)
                 .font(.title3.weight(.semibold))
-                .foregroundColor(color)
+                .foregroundStyle(color)
             
             Text(title)
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
     }
     
@@ -548,11 +560,11 @@ struct AISettingsView: View {
             } label: {
                 HStack {
                     Image(systemName: "trash")
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                         .frame(width: 24)
                     
                     Text("Clear Suggestion History")
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                     
                     Spacer()
                 }
@@ -563,11 +575,11 @@ struct AISettingsView: View {
             } label: {
                 HStack {
                     Image(systemName: "arrow.clockwise")
-                        .foregroundColor(.orange)
+                        .foregroundStyle(.orange)
                         .frame(width: 24)
                     
                     Text("Reset AI Learning")
-                        .foregroundColor(.orange)
+                        .foregroundStyle(.orange)
                     
                     Spacer()
                 }
@@ -578,11 +590,11 @@ struct AISettingsView: View {
             } label: {
                 HStack {
                     Image(systemName: "square.and.arrow.up")
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                         .frame(width: 24)
                     
                     Text("Export AI Data")
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                     
                     Spacer()
                 }
@@ -606,7 +618,7 @@ struct AISettingsView: View {
     ) -> some View {
         HStack {
             Image(systemName: icon)
-                .foregroundColor(iconColor)
+                .foregroundStyle(iconColor)
                 .frame(width: 24)
             
             VStack(alignment: .leading, spacing: 2) {
@@ -615,7 +627,7 @@ struct AISettingsView: View {
                 
                 Text(subtitle)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
             
             Spacer()
@@ -701,7 +713,7 @@ struct SuggestionTypesSelectionView: View {
                 ForEach(AISuggestionType.allCases, id: \.self) { type in
                     HStack {
                         Image(systemName: type.icon)
-                            .foregroundColor(disabledTypes.contains(type) ? .gray : .accentColor)
+                            .foregroundStyle(disabledTypes.contains(type) ? Color.gray : Color.accentColor)
                             .frame(width: 24)
                         
                         VStack(alignment: .leading, spacing: 2) {
@@ -710,7 +722,7 @@ struct SuggestionTypesSelectionView: View {
                             
                             Text(typeDescription(for: type))
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                         
                         Spacer()
@@ -733,14 +745,7 @@ struct SuggestionTypesSelectionView: View {
             .navigationTitle("Suggestion Types")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Home") {
-                        NotificationCenter.default.post(name: .appNavigateHome, object: nil)
-                        dismiss()
-                    }
-                }
-
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
                         dismiss()
                     }
@@ -748,7 +753,7 @@ struct SuggestionTypesSelectionView: View {
             }
         }
     }
-    
+
     private func typeDescription(for type: AISuggestionType) -> String {
         switch type {
         case .dueDateOptimization:
@@ -778,7 +783,7 @@ struct InsightTypesSelectionView: View {
                 ForEach(AIInsightType.allCases, id: \.self) { type in
                     HStack {
                         Image(systemName: type.icon)
-                            .foregroundColor(preferredTypes.contains(type) ? .accentColor : .gray)
+                            .foregroundStyle(preferredTypes.contains(type) ? Color.accentColor : Color.gray)
                             .frame(width: 24)
                         
                         VStack(alignment: .leading, spacing: 2) {
@@ -787,7 +792,7 @@ struct InsightTypesSelectionView: View {
                             
                             Text(insightDescription(for: type))
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                         
                         Spacer()
@@ -810,14 +815,7 @@ struct InsightTypesSelectionView: View {
             .navigationTitle("Insight Types")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Home") {
-                        NotificationCenter.default.post(name: .appNavigateHome, object: nil)
-                        dismiss()
-                    }
-                }
-
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
                         dismiss()
                     }
@@ -825,7 +823,7 @@ struct InsightTypesSelectionView: View {
             }
         }
     }
-    
+
     private func insightDescription(for type: AIInsightType) -> String {
         switch type {
         case .productivityTrend:

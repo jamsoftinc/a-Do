@@ -26,7 +26,7 @@ final class SubscriptionManager {
     var errorMessage: String?
     
     // Transaction listener
-    private var updateListenerTask: Task<Void, Error>?
+    private var updateListenerTask: Task<Void, Never>?
     
     enum PurchaseState {
         case idle
@@ -128,8 +128,10 @@ final class SubscriptionManager {
     // MARK: - Transaction Listener
     
     private func startTransactionListener() {
-        updateListenerTask = Task.detached { [weak self] in
+        updateListenerTask?.cancel()
+        updateListenerTask = Task { [weak self] in
             for await result in Transaction.updates {
+                guard !Task.isCancelled else { break }
                 await self?.handleTransactionUpdate(result)
             }
         }
@@ -222,7 +224,7 @@ final class SubscriptionManager {
             }
             
             // Check if user is in trial period
-            let isInTrial = transaction.offerType == .introductory
+            let isInTrial = transaction.offer?.type == .introductory
             let trialEndDate = isInTrial ? expirationDate : nil
 
             self.subscriptionStatus?.isProSubscriber = true
@@ -261,7 +263,7 @@ final class SubscriptionManager {
     // MARK: - Subscription Management
     
     func openManageSubscriptions() async {
-        guard let windowScene = await UIApplication.shared.connectedScenes.first as? UIWindowScene else {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
             logger.error("No window scene available")
             return
         }

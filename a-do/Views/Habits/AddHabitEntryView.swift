@@ -20,7 +20,7 @@ struct AddHabitEntryView: View {
     @State private var showingDatePicker = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 24) {
                 // Header
                 VStack(spacing: 8) {
@@ -212,7 +212,7 @@ struct DatePickerSheet: View {
     @Binding var selectedDate: Date
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 20) {
                 Text("Select Date")
                     .font(.title2)

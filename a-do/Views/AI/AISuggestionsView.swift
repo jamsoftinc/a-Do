@@ -66,25 +66,11 @@ struct AISuggestionsView: View {
             .navigationTitle("AI Suggestions")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
-                ToolbarItemGroup(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     Button {
                         dismiss()
                     } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.headline.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .padding(8)
-                            .background(Color.black.opacity(0.2), in: Circle())
-                    }
-
-                    Button {
-                        goHome()
-                    } label: {
-                        Image(systemName: "house.fill")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .padding(8)
-                            .background(Color.black.opacity(0.2), in: Circle())
+                        Image(systemName: "xmark")
                     }
                 }
 
@@ -111,11 +97,6 @@ struct AISuggestionsView: View {
         }
     }
 
-    private func goHome() {
-        NotificationCenter.default.post(name: .appNavigateHome, object: nil)
-        dismiss()
-    }
-    
     // MARK: - Header Section
     
     private var headerSection: some View {

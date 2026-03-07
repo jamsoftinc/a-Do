@@ -49,17 +49,11 @@ struct CollaborationView: View {
             }
             .navigationTitle("Collaboration")
             .toolbar {
-                ToolbarItemGroup(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     Button {
                         dismiss()
                     } label: {
                         Image(systemName: "xmark")
-                    }
-
-                    Button {
-                        goHome()
-                    } label: {
-                        Image(systemName: "house.fill")
                     }
                 }
 
@@ -93,11 +87,6 @@ struct CollaborationView: View {
         }
     }
 
-    private func goHome() {
-        NotificationCenter.default.post(name: .appNavigateHome, object: nil)
-        dismiss()
-    }
-    
     // MARK: - Workspaces Tab
     
     private var workspacesTab: some View {

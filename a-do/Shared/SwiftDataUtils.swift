@@ -7,6 +7,7 @@ import os
 
 struct SwiftDataUtils {
     static let logger = Logger(subsystem: "com.yourapp.swiftdata", category: "utils")
+    private static let defaultStoreFileNames = ["default.store", "default.store-wal", "default.store-shm"]
     
     // MARK: - Model Validation
     
@@ -247,6 +248,28 @@ struct SwiftDataUtils {
     }
     
     // MARK: - Container Creation with Diagnostics
+
+    static func resetPersistentStores() {
+        let fileManager = FileManager.default
+        let candidateDirectories = [
+            fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first,
+            fileManager.containerURL(forSecurityApplicationGroupIdentifier: "group.com.ado.app")
+        ]
+
+        for directory in candidateDirectories.compactMap({ $0 }) {
+            for fileName in defaultStoreFileNames {
+                let storeURL = directory.appendingPathComponent(fileName)
+                guard fileManager.fileExists(atPath: storeURL.path) else { continue }
+
+                do {
+                    try fileManager.removeItem(at: storeURL)
+                    logger.warning("Removed corrupted SwiftData store at \(storeURL.path, privacy: .public)")
+                } catch {
+                    logger.error("Failed to remove SwiftData store at \(storeURL.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                }
+            }
+        }
+    }
 
     static func createDiagnosticContainer() -> (container: ModelContainer?, diagnostics: ContainerDiagnostics) {
         let schemaResult = buildValidSchema()

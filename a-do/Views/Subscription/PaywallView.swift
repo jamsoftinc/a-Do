@@ -26,7 +26,7 @@ struct PaywallView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                AppTheme.Gradients.background.ignoresSafeArea()
+                Color(.systemGroupedBackground).ignoresSafeArea()
                 
                 ScrollView {
                     VStack(spacing: 32) {
@@ -52,21 +52,9 @@ struct PaywallView: View {
             .navigationTitle("Unlock Pro")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        goHome()
-                    } label: {
-                        Image(systemName: "house.fill")
-                            .foregroundColor(.white)
-                            .imageScale(.large)
-                    }
-                }
-
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button(action: { dismissAction() }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.secondary)
-                            .imageScale(.large)
+                        Image(systemName: "xmark")
                     }
                 }
             }
@@ -88,31 +76,22 @@ struct PaywallView: View {
             // Icon
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [.purple, .blue],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 120, height: 120)
-                
+                    .fill(Color.accentColor)
+                    .frame(width: 80, height: 80)
+
                 Image(systemName: "sparkles")
-                    .font(.system(size: 60))
-                    .foregroundColor(.white)
+                    .font(.system(size: 36))
+                    .foregroundStyle(.white)
             }
             
-            // Title
             Text("Unlock All Pro Features")
-                .font(.system(size: 32, weight: .bold))
+                .font(.title.bold())
                 .multilineTextAlignment(.center)
-                .foregroundColor(AppTheme.Colors.textPrimary)
-            
-            // Subtitle
+
             Text("Get access to advanced pro level features.")
                 .font(.body)
                 .multilineTextAlignment(.center)
-                .foregroundColor(AppTheme.Colors.textSecondary)
+                .foregroundStyle(.secondary)
         }
     }
     
@@ -123,7 +102,7 @@ struct PaywallView: View {
             Text("Pro Features")
                 .font(.title3)
                 .fontWeight(.semibold)
-                .foregroundColor(AppTheme.Colors.textPrimary)
+                .foregroundStyle(Color(.label))
             
             LazyVStack(spacing: 12) {
                 ForEach(allProFeatures, id: \.rawValue) { feature in
@@ -134,7 +113,7 @@ struct PaywallView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(.ultraThinMaterial)
+                .fill(Color(.secondarySystemGroupedBackground))
         )
     }
     
@@ -146,18 +125,18 @@ struct PaywallView: View {
         HStack(spacing: 12) {
             Image(systemName: feature.icon)
                 .font(.title3)
-                .foregroundColor(.purple)
+                .foregroundStyle(Color.accentColor)
                 .frame(width: 30)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(feature.displayName)
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .foregroundColor(AppTheme.Colors.textPrimary)
+                    .foregroundStyle(Color(.label))
                 
                 Text(feature.description)
                     .font(.caption)
-                    .foregroundColor(AppTheme.Colors.textSecondary)
+                    .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
         }
@@ -170,17 +149,17 @@ struct PaywallView: View {
             HStack {
                 Image(systemName: "gift.fill")
                     .font(.title2)
-                    .foregroundColor(.green)
+                    .foregroundStyle(.green)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Start Your Free Trial")
                         .font(.headline)
                         .fontWeight(.semibold)
-                        .foregroundColor(AppTheme.Colors.textPrimary)
+                        .foregroundStyle(Color(.label))
                     
                     Text("Free trial handled directly by App Store on eligible plans")
                         .font(.subheadline)
-                        .foregroundColor(AppTheme.Colors.textSecondary)
+                        .foregroundStyle(.secondary)
                 }
                 
                 Spacer()
@@ -189,17 +168,17 @@ struct PaywallView: View {
             if hasStoreIntroOffer {
                 Text("Choose an eligible plan below. Apple applies your introductory trial automatically.")
                     .font(.caption)
-                    .foregroundColor(AppTheme.Colors.textSecondary)
+                    .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else if subscriptionManager.availableProducts.isEmpty {
                 Text("Loading App Store offers. Trial eligibility appears once products are available.")
                     .font(.caption)
-                    .foregroundColor(AppTheme.Colors.textSecondary)
+                    .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 Text("No introductory trial is currently available for this account.")
                     .font(.caption)
-                    .foregroundColor(AppTheme.Colors.textSecondary)
+                    .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
@@ -214,17 +193,10 @@ struct PaywallView: View {
                     Text("Start Free Trial")
                         .fontWeight(.semibold)
                 }
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
-                .background(
-                    LinearGradient(
-                        colors: [.green, .mint],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .cornerRadius(10)
+                .background(Color.green, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
             .buttonStyle(.plain)
             #endif
@@ -232,11 +204,7 @@ struct PaywallView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(.green.opacity(0.3), lineWidth: 1)
-                )
+                .fill(Color(.secondarySystemGroupedBackground))
         )
     }
     
@@ -272,13 +240,13 @@ struct PaywallView: View {
                         HStack(spacing: 6) {
                             Text(product.displayName)
                                 .font(.headline)
-                                .foregroundColor(AppTheme.Colors.textPrimary)
+                                .foregroundStyle(Color(.label))
                             
                             if product.isPopular {
                                 Text("POPULAR")
                                     .font(.caption2)
                                     .fontWeight(.bold)
-                                    .foregroundColor(.white)
+                                    .foregroundStyle(.white)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 4)
                                     .background(Color.orange)
@@ -289,28 +257,28 @@ struct PaywallView: View {
                         Text(product.price)
                             .font(.title2)
                             .fontWeight(.bold)
-                            .foregroundColor(AppTheme.Colors.textPrimary)
+                            .foregroundStyle(Color(.label))
                         
                         if let savings = product.savingsPercentage {
                             Text("Save \(savings)% per year")
                                 .font(.caption)
-                                .foregroundColor(.green)
+                                .foregroundStyle(.green)
                         }
                         
                         Text("per \(product.subscriptionType == .annual ? "year" : "month")")
                             .font(.caption)
-                            .foregroundColor(AppTheme.Colors.textSecondary)
+                            .foregroundStyle(.secondary)
                     }
                     
                     Spacer()
                     
                     if isSelected {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.purple)
+                            .foregroundStyle(Color.accentColor)
                             .font(.title2)
                     } else {
                         Image(systemName: "circle")
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .font(.title2)
                     }
                 }
@@ -318,10 +286,10 @@ struct PaywallView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(.ultraThinMaterial)
+                    .fill(Color(.secondarySystemGroupedBackground))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(isSelected ? .purple : .clear, lineWidth: 2)
+                            .stroke(isSelected ? Color.accentColor : .clear, lineWidth: 2)
                     )
             )
         }
@@ -344,13 +312,13 @@ struct PaywallView: View {
                         HStack(spacing: 6) {
                             Text(product.id.contains("annual") ? "Annual" : "Monthly")
                                 .font(.headline)
-                                .foregroundColor(AppTheme.Colors.textPrimary)
+                                .foregroundStyle(Color(.label))
                             
                             if isPopular {
                                 Text("POPULAR")
                                     .font(.caption2)
                                     .fontWeight(.bold)
-                                    .foregroundColor(.white)
+                                    .foregroundStyle(.white)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 4)
                                     .background(Color.orange)
@@ -361,16 +329,16 @@ struct PaywallView: View {
                         Text(product.localizedPrice)
                             .font(.title2)
                             .fontWeight(.bold)
-                            .foregroundColor(AppTheme.Colors.textPrimary)
+                            .foregroundStyle(Color(.label))
                         
                         if let savings = subscriptionType(for: product)?.savingsPercentage {
                             Text("Save \(savings)% per year")
                                 .font(.caption)
-                                .foregroundColor(.green)
+                                .foregroundStyle(.green)
                         } else if product.id.contains("monthly") {
                             Text("per month")
                                 .font(.caption)
-                                .foregroundColor(AppTheme.Colors.textSecondary)
+                                .foregroundStyle(.secondary)
                         }
                     }
                     
@@ -378,20 +346,20 @@ struct PaywallView: View {
                     
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.title2)
-                        .foregroundColor(isSelected ? .purple : .secondary)
+                        .foregroundStyle(isSelected ? Color.accentColor : .secondary)
                 }
                 
                 if isPopular {
                     Divider()
-                        .background(AppTheme.Colors.surfaceLight)
+                        .background(Color(.tertiarySystemGroupedBackground))
                     
                     HStack(spacing: 4) {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.caption)
-                            .foregroundColor(.green)
+                            .foregroundStyle(.green)
                         Text("Best Value")
                             .font(.caption)
-                            .foregroundColor(.green)
+                            .foregroundStyle(.green)
                     }
                 }
             }
@@ -399,14 +367,14 @@ struct PaywallView: View {
             .background {
                 if isSelected {
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(AppTheme.Colors.primary.opacity(0.1))
+                        .fill(Color.accentColor.opacity(0.1))
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
-                                .stroke(AppTheme.Colors.primary, lineWidth: 2)
+                                .stroke(Color.accentColor, lineWidth: 2)
                         )
                 } else {
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(.ultraThinMaterial)
+                        .fill(Color(.secondarySystemGroupedBackground))
                 }
             }
         }
@@ -421,7 +389,7 @@ struct PaywallView: View {
             Button(action: { dismissAction() }) {
                 Text("Continue with Base Version")
                     .font(.subheadline)
-                    .foregroundColor(AppTheme.Colors.textSecondary)
+                    .foregroundStyle(.secondary)
             }
             
             // Terms and restore
@@ -432,7 +400,7 @@ struct PaywallView: View {
                     }
                 }
                 .font(.caption)
-                .foregroundColor(AppTheme.Colors.textSecondary)
+                .foregroundStyle(.secondary)
                 
                 Button("Privacy Policy") {
                     if let url = URL(string: "https://jamsoftinc.com/privacy-policy") {
@@ -440,7 +408,7 @@ struct PaywallView: View {
                     }
                 }
                 .font(.caption)
-                .foregroundColor(AppTheme.Colors.textSecondary)
+                .foregroundStyle(.secondary)
                 
                 Button("Restore Purchases") {
                     Task {
@@ -448,7 +416,7 @@ struct PaywallView: View {
                     }
                 }
                 .font(.caption)
-                .foregroundColor(AppTheme.Colors.textSecondary)
+                .foregroundStyle(.secondary)
             }
         }
     }

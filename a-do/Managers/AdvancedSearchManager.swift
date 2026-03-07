@@ -37,6 +37,7 @@ final class AdvancedSearchManager: ObservableObject {
     // Search index
     private var searchIndex: [SearchIndex] = []
     private var lastIndexUpdate: Date?
+    private var indexingTimer: Timer?
     
     // Organization rules
     private var organizationRules: [OrganizationRule] = []
@@ -625,7 +626,8 @@ final class AdvancedSearchManager: ObservableObject {
     // MARK: - Search Index Management
     
     private func setupPeriodicIndexing() {
-        Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
+        indexingTimer?.invalidate()
+        indexingTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 await self?.updateSearchIndex()
             }

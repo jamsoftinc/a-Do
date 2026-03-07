@@ -203,7 +203,23 @@ final class RemindersManager {
     // MARK: - Automatic Sync
     
     func setupAutoSync() {
-        guard self.autoSyncEnabled else { return }
+        guard self.autoSyncEnabled else {
+            stopAutoSync()
+            return
+        }
+
+        syncTimer?.invalidate()
+        syncTimer = nil
+        NotificationCenter.default.removeObserver(
+            self,
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
+        NotificationCenter.default.removeObserver(
+            self,
+            name: UIApplication.willResignActiveNotification,
+            object: nil
+        )
         
         // Start timer for periodic sync
         syncTimer = Timer.scheduledTimer(withTimeInterval: syncInterval, repeats: true) { [weak self] _ in
@@ -237,12 +253,21 @@ final class RemindersManager {
     }
     
     @objc private func appDidBecomeActive() {
+        if backgroundTask != .invalid {
+            UIApplication.shared.endBackgroundTask(backgroundTask)
+            backgroundTask = .invalid
+        }
+
         Task { @MainActor in
             await performAutoSync()
         }
     }
     
     @objc private func appWillResignActive() {
+        if backgroundTask != .invalid {
+            UIApplication.shared.endBackgroundTask(backgroundTask)
+        }
+
         // Start background task for sync
         backgroundTask = UIApplication.shared.beginBackgroundTask { [weak self] in
             self?.backgroundTask = .invalid

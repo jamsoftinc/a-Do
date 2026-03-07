@@ -14,7 +14,6 @@ import os
 @MainActor
 final class CloudKitManager: ObservableObject {
     static let shared = CloudKitManager()
-    static let containerIdentifier = "iCloud.JAMSoft.a-do"
     
     @Published var isSignedIn: Bool = false
     @Published var syncStatus: CloudKitSyncStatus = .unknown
@@ -22,7 +21,7 @@ final class CloudKitManager: ObservableObject {
     @Published var syncError: String?
     @Published var isSyncEnabled: Bool = true
     
-    private let container = CKContainer(identifier: CloudKitManager.containerIdentifier)
+    private let container = CKContainer.default()
     private let logger = Logger(subsystem: "a-do", category: "CloudKit")
     
     private init() {
@@ -58,10 +57,11 @@ final class CloudKitManager: ObservableObject {
                     }
                 }
             } catch {
+                let message = Self.userFacingMessage(for: error)
                 await MainActor.run {
-                    self.syncError = "Failed to check CloudKit account: \(error.localizedDescription)"
-                    self.logger.error("CloudKit account check failed: \(error.localizedDescription)")
-                    self.updateSyncStatus(.failed(error.localizedDescription))
+                    self.syncError = "Failed to check CloudKit account: \(message)"
+                    self.logger.error("CloudKit account check failed: \(message)")
+                    self.updateSyncStatus(.failed(message))
                 }
             }
         }
@@ -159,6 +159,19 @@ final class CloudKitManager: ObservableObject {
         case .failed:
             return "icloud.slash.fill"
         }
+    }
+
+    nonisolated private static func userFacingMessage(for error: Error) -> String {
+        if let ckError = error as? CKError, ckError.code == .badContainer {
+            return "This app build is not authorized for the configured CloudKit container. Verify the app ID, iCloud capability, and assigned container in Signing & Capabilities."
+        }
+
+        let description = error.localizedDescription
+        if description.localizedCaseInsensitiveContains("invalid bundle id for container") {
+            return "This app build is not authorized for the configured CloudKit container. Verify the app ID, iCloud capability, and assigned container in Signing & Capabilities."
+        }
+
+        return description
     }
 }
 

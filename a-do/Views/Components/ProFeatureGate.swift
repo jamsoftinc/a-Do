@@ -11,16 +11,16 @@ struct ProFeatureGate<Content: View>: View {
     let feature: ProFeature
     let content: Content
     let fallback: (() -> Void)?
-    
+
     @State private var showingPaywall = false
     @State private var entitlementManager = EntitlementManager.shared
-    
+
     init(feature: ProFeature, @ViewBuilder content: () -> Content, fallback: (() -> Void)? = nil) {
         self.feature = feature
         self.content = content()
         self.fallback = fallback
     }
-    
+
     var body: some View {
         if entitlementManager.hasAccess(to: feature) {
             content
@@ -29,20 +29,20 @@ struct ProFeatureGate<Content: View>: View {
                 showingPaywall = true
             }) {
                 content
-                    .opacity(0.6)
+                    .opacity(0.5)
                     .overlay(
-                        VStack(spacing: 8) {
-                            Image(systemName: "crown.fill")
-                                .font(.title2)
-                                .foregroundColor(.purple)
-                            
+                        VStack(spacing: 6) {
+                            Image(systemName: "lock.fill")
+                                .font(.title3)
+                                .foregroundStyle(.secondary)
+
                             Text("Pro Feature")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.purple)
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(.secondary)
                         }
                         .padding(8)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                        .background(Color(.secondarySystemGroupedBackground),
+                                    in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                     )
             }
             .buttonStyle(.plain)
@@ -73,22 +73,16 @@ struct ProFeatureButton: View {
 
     var body: some View {
         Button(action: {
-            // Always call action - wrapper views handle Pro checking
             action()
         }) {
             HStack {
-                Image(systemName: icon)
-                    .foregroundColor(entitlementManager.hasAccess(to: feature) ? .primary : .purple)
-
-                Text(title)
-                    .foregroundColor(.primary)
-
+                Label(title, systemImage: icon)
                 Spacer()
-
-                // Always show Pro badge for Pro features
-                Image(systemName: "crown.fill")
-                    .foregroundColor(entitlementManager.hasAccess(to: feature) ? .orange : .purple)
-                    .font(.caption)
+                if !entitlementManager.hasAccess(to: feature) {
+                    Image(systemName: "lock.fill")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .sheet(isPresented: $showingPaywall) {
@@ -105,10 +99,10 @@ struct ProFeatureCard: View {
     let description: String
     let icon: String
     let action: () -> Void
-    
+
     @State private var showingPaywall = false
     @State private var entitlementManager = EntitlementManager.shared
-    
+
     init(feature: ProFeature, title: String, description: String, icon: String, action: @escaping () -> Void) {
         self.feature = feature
         self.title = title
@@ -116,7 +110,7 @@ struct ProFeatureCard: View {
         self.icon = icon
         self.action = action
     }
-    
+
     var body: some View {
         Button(action: {
             if entitlementManager.hasAccess(to: feature) {
@@ -129,37 +123,31 @@ struct ProFeatureCard: View {
                 HStack {
                     Image(systemName: icon)
                         .font(.title2)
-                        .foregroundColor(entitlementManager.hasAccess(to: feature) ? .blue : .purple)
-                    
+                        .foregroundStyle(entitlementManager.hasAccess(to: feature) ? Color.accentColor : .secondary)
+
                     Spacer()
-                    
+
                     if !entitlementManager.hasAccess(to: feature) {
-                        Image(systemName: "crown.fill")
-                            .foregroundColor(.purple)
+                        Image(systemName: "lock.fill")
                             .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                
+
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.headline)
-                        .foregroundColor(.primary)
-                    
+                        .foregroundStyle(Color(.label))
+
                     Text(description)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .multilineTextAlignment(.leading)
                 }
             }
             .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(entitlementManager.hasAccess(to: feature) ? .clear : .purple.opacity(0.3), lineWidth: 1)
-                    )
-            )
+            .background(Color(.secondarySystemGroupedBackground),
+                        in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
         .buttonStyle(.plain)
         .sheet(isPresented: $showingPaywall) {

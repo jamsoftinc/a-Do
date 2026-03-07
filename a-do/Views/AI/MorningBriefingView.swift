@@ -25,26 +25,12 @@ struct MorningBriefingView: View {
             VStack {
                 VStack(spacing: 12) {
                     HStack {
-                        Button {
-                            goHome()
-                        } label: {
-                            Image(systemName: "house.fill")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundColor(.white)
-                                .padding(8)
-                                .background(Color.black.opacity(0.2), in: Circle())
-                        }
-
                         Spacer()
 
                         Button {
                             dismiss()
                         } label: {
                             Image(systemName: "xmark")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundColor(.white)
-                                .padding(8)
-                                .background(Color.black.opacity(0.2), in: Circle())
                         }
                     }
                     .padding(.horizontal)
@@ -134,10 +120,6 @@ struct MorningBriefingView: View {
         }
     }
 
-    private func goHome() {
-        NotificationCenter.default.post(name: .appNavigateHome, object: nil)
-        dismiss()
-    }
 }
 
 struct BriefingCardView: View {

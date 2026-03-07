@@ -51,9 +51,9 @@ struct SmartSearchView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
-                        goHome()
+                        dismiss()
                     } label: {
-                        Image(systemName: "house.fill")
+                        Image(systemName: "xmark")
                     }
                 }
 
@@ -82,11 +82,6 @@ struct SmartSearchView: View {
         }
     }
 
-    private func goHome() {
-        NotificationCenter.default.post(name: .appNavigateHome, object: nil)
-        dismiss()
-    }
-    
     // MARK: - Search Header
     
     private var searchHeader: some View {

@@ -37,7 +37,7 @@ struct SettingsPageView: View {
                     } label: {
                         HStack {
                             Text("Name")
-                                .foregroundStyle(AppTheme.Colors.textPrimary)
+                                .foregroundStyle(Color(.label))
                             Spacer()
                             Text(profile.displayName)
                                 .foregroundStyle(.secondary)
@@ -121,7 +121,7 @@ struct SettingsPageView: View {
             Section {
                 NavigationLink(destination: SubscriptionManagementView()) {
                     Label("Subscription", systemImage: "crown.fill")
-                        .foregroundStyle(.purple)
+                        .foregroundStyle(Color.accentColor)
                 }
             }
             
@@ -143,7 +143,7 @@ struct SettingsPageView: View {
             .listRowBackground(Color.clear)
         }
         .navigationTitle("Settings")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .fullScreenCover(isPresented: $showingAppleIntegrations) {
             AppleIntegrationsView()
         }
