@@ -1,72 +1,121 @@
 import SwiftUI
+import UIKit
 
 // MARK: - App Theme
 struct AppTheme {
+    private static let defaultAccentHex = "#67A2DC"
 
-    // MARK: - Color Palette (System Semantic Colors)
-    struct Colors {
-        // Brand — uses the Asset Catalog AccentColor, overridable via @AppStorage
-        static let primary = Color.accentColor
-        static let primaryLight = Color.accentColor.opacity(0.7)
-        static let primaryDark = Color.accentColor
-
-        // Secondary colors — system palette
-        static let secondary = Color.orange
-        static let accent = Color.green
-
-        // Backgrounds — system semantic (auto light/dark mode)
-        static let background = Color(.systemGroupedBackground)
-        static let surface = Color(.secondarySystemGroupedBackground)
-        static let surfaceLight = Color(.tertiarySystemGroupedBackground)
-
-        // Text — system semantic (auto light/dark mode + accessibility)
-        static let textPrimary = Color(.label)
-        static let textSecondary = Color(.secondaryLabel)
-        static let textTertiary = Color(.tertiaryLabel)
-
-        // Status colors — system
-        static let success = Color.green
-        static let warning = Color.orange
-        static let error = Color.red
-        static let info = Color.blue
-
-        // Priority colors — matches Apple Reminders
-        static let priorityHigh = Color.red
-        static let priorityMedium = Color.orange
-        static let priorityLow = Color.blue
-        static let priorityNone = Color(.tertiaryLabel)
+    private enum Palette {
+        static let robotBlue = "#67A2DC"
+        static let eyeBlue = "#46BCFA"
+        static let frost = "#91D0EA"
+        static let copper = "#D1915B"
+        static let cream = "#F7F3EC"
+        static let mist = "#EAF6FB"
+        static let sky = "#D6EEF9"
+        static let slate = "#4E6885"
+        static let steel = "#82717D"
+        static let midnight = "#10233C"
+        static let deepSurface = "#14253A"
+        static let deepSurfaceAlt = "#1B3550"
+        static let deepText = "#F2F8FF"
+        static let deepSecondaryText = "#B7D2E9"
+        static let deepTertiaryText = "#7E9BB8"
+        static let success = "#28B86F"
+        static let error = "#D94F57"
     }
 
-    // MARK: - Gradients (Minimal — only for hero/immersive moments)
+    fileprivate static func color(_ hex: String, alpha: Double = 1.0) -> Color {
+        Color(hex: hex, alpha: alpha) ?? .accentColor
+    }
+
+    fileprivate static func dynamicColor(light: String, dark: String) -> Color {
+        Color(uiColor: dynamicUIColor(light: light, dark: dark))
+    }
+
+    fileprivate static func dynamicUIColor(light: String, dark: String) -> UIColor {
+        UIColor { traitCollection in
+            UIColor(hex: traitCollection.userInterfaceStyle == .dark ? dark : light) ?? .systemBackground
+        }
+    }
+
+    fileprivate static var currentAccentHex: String {
+        let stored = UserDefaults.standard.string(forKey: "appAccentColor")?.uppercased()
+        if let stored, !stored.isEmpty {
+            return stored
+        }
+
+        return defaultAccentHex
+    }
+
+    // MARK: - Color Palette
+    struct Colors {
+        static var primary: Color { AppTheme.color(AppTheme.currentAccentHex) }
+        static var primaryLight: Color { AppTheme.color(Palette.eyeBlue) }
+        static var primaryDark: Color { AppTheme.color("#4D86C1") }
+
+        static let secondary = AppTheme.color(Palette.copper)
+        static let accent = AppTheme.color(Palette.frost)
+
+        static let background = AppTheme.dynamicColor(light: Palette.mist, dark: Palette.midnight)
+        static let surface = AppTheme.dynamicColor(light: Palette.cream, dark: Palette.deepSurface)
+        static let surfaceLight = AppTheme.dynamicColor(light: Palette.sky, dark: Palette.deepSurfaceAlt)
+
+        static let textPrimary = AppTheme.dynamicColor(light: "#16324A", dark: Palette.deepText)
+        static let textSecondary = AppTheme.dynamicColor(light: Palette.slate, dark: Palette.deepSecondaryText)
+        static let textTertiary = AppTheme.dynamicColor(light: "#7A93AA", dark: Palette.deepTertiaryText)
+
+        static let success = AppTheme.color(Palette.success)
+        static let warning = AppTheme.color(Palette.copper)
+        static let error = AppTheme.color(Palette.error)
+        static let info = AppTheme.color(Palette.eyeBlue)
+
+        static let priorityHigh = error
+        static let priorityMedium = warning
+        static let priorityLow = primary
+        static let priorityNone = textTertiary
+    }
+
+    // MARK: - UIKit Colors
+    struct UIColors {
+        static let primary = AppTheme.dynamicUIColor(light: Palette.robotBlue, dark: Palette.eyeBlue)
+        static let background = AppTheme.dynamicUIColor(light: Palette.mist, dark: Palette.midnight)
+        static let surface = AppTheme.dynamicUIColor(light: Palette.cream, dark: Palette.deepSurface)
+        static let textPrimary = AppTheme.dynamicUIColor(light: "#16324A", dark: Palette.deepText)
+        static let textSecondary = AppTheme.dynamicUIColor(light: Palette.slate, dark: Palette.deepSecondaryText)
+    }
+
+    // MARK: - Gradients
     struct Gradients {
-        // Use ONLY for Morning Briefing, Paywall hero, onboarding — never content screens
         static let primary = LinearGradient(
-            colors: [Color.accentColor, Color.accentColor.opacity(0.7)],
+            colors: [Colors.primaryLight, Colors.primary],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
 
         static let secondary = LinearGradient(
-            colors: [Color.orange, Color.green],
+            colors: [AppTheme.color("#F0C48A"), Colors.secondary],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
 
-        // Flat system background — replaces the old gradient background
         static let background = LinearGradient(
-            colors: [Color(.systemGroupedBackground), Color(.systemGroupedBackground)],
-            startPoint: .top,
-            endPoint: .bottom
+            colors: [
+                AppTheme.dynamicColor(light: "#E8F7FF", dark: "#0A1730"),
+                AppTheme.dynamicColor(light: "#B7E3F7", dark: "#173357")
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
         )
 
         static let card = LinearGradient(
-            colors: [Color(.secondarySystemGroupedBackground), Color(.secondarySystemGroupedBackground)],
+            colors: [Colors.surface, Colors.surfaceLight],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
 
         static let cardShadow = LinearGradient(
-            colors: [Color.clear, Color.clear],
+            colors: [Colors.primary.opacity(0.08), Colors.accent.opacity(0.02)],
             startPoint: .top,
             endPoint: .bottom
         )
@@ -112,9 +161,9 @@ struct AppTheme {
 
     // MARK: - Shadows (Minimal — Apple uses very subtle shadows)
     struct Shadows {
-        static let small = Shadow(color: .black.opacity(0.04), radius: 2, x: 0, y: 1)
-        static let medium = Shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
-        static let large = Shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
+        static let small = Shadow(color: Colors.primary.opacity(0.08), radius: 6, x: 0, y: 2)
+        static let medium = Shadow(color: Colors.primary.opacity(0.12), radius: 12, x: 0, y: 4)
+        static let large = Shadow(color: Colors.primary.opacity(0.14), radius: 18, x: 0, y: 8)
     }
 }
 
@@ -145,23 +194,41 @@ extension AppTheme {
 // MARK: - View Modifiers
 extension View {
     func appBackground() -> some View {
-        self.background(Color(.systemGroupedBackground))
+        self.background(AppTheme.Colors.background)
     }
 
     func appCard() -> some View {
-        self.background(Color(.secondarySystemGroupedBackground))
+        self.background(AppTheme.Colors.surface)
             .cornerRadius(AppTheme.CornerRadius.medium)
     }
 
     func primaryText() -> some View {
-        self.foregroundStyle(Color(.label))
+        self.foregroundStyle(AppTheme.Colors.textPrimary)
     }
 
     func secondaryText() -> some View {
-        self.foregroundStyle(Color(.secondaryLabel))
+        self.foregroundStyle(AppTheme.Colors.textSecondary)
     }
 
     func tertiaryText() -> some View {
-        self.foregroundStyle(Color(.tertiaryLabel))
+        self.foregroundStyle(AppTheme.Colors.textTertiary)
+    }
+}
+
+private extension UIColor {
+    convenience init?(hex: String, alpha: CGFloat = 1.0) {
+        var formatted = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        if formatted.count == 3 {
+            let chars = Array(formatted)
+            formatted = String([chars[0], chars[0], chars[1], chars[1], chars[2], chars[2]])
+        }
+
+        guard formatted.count == 6, let intCode = Int(formatted, radix: 16) else { return nil }
+
+        let red = CGFloat((intCode >> 16) & 0xFF) / 255.0
+        let green = CGFloat((intCode >> 8) & 0xFF) / 255.0
+        let blue = CGFloat(intCode & 0xFF) / 255.0
+
+        self.init(red: red, green: green, blue: blue, alpha: alpha)
     }
 }

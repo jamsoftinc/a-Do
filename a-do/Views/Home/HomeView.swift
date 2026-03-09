@@ -76,7 +76,7 @@ struct HomeView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 20)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(AppTheme.Colors.background)
             .navigationTitle(greetingTitle)
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -271,7 +271,7 @@ struct HomeView: View {
                 }
             }
             .buttonStyle(.plain)
-            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(AppTheme.Colors.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 
@@ -321,7 +321,7 @@ struct HomeView: View {
                 }
             }
             .buttonStyle(.plain)
-            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(AppTheme.Colors.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 
@@ -347,7 +347,7 @@ struct HomeView: View {
                     .background(Color.accentColor, in: Capsule())
             }
             .padding(16)
-            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(AppTheme.Colors.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -433,7 +433,7 @@ struct HomeView: View {
                 .padding(.bottom, 8)
             }
         }
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(AppTheme.Colors.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     // MARK: - Row Components
@@ -612,6 +612,6 @@ struct HomeSummaryCard: View {
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 85)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(AppTheme.Colors.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }

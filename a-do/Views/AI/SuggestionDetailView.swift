@@ -98,7 +98,7 @@ struct SuggestionDetailView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(AppTheme.Colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -155,7 +155,7 @@ struct SuggestionDetailView: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(AppTheme.Colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -178,7 +178,7 @@ struct SuggestionDetailView: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(AppTheme.Colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -276,7 +276,7 @@ struct SuggestionDetailView: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(AppTheme.Colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -307,7 +307,7 @@ struct SuggestionDetailView: View {
                 .animation(.easeInOut(duration: 0.3), value: showingFullAnalysis)
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(AppTheme.Colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -361,7 +361,7 @@ struct SuggestionDetailView: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(AppTheme.Colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     

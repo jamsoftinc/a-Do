@@ -27,7 +27,7 @@ final class AppSettings {
     
     // UI Settings
     var theme: String = "system" // "light", "dark", "system"
-    var accentColor: String = "#336BDB"
+    var accentColor: String = "#67A2DC"
     var temperatureUnit: String = "fahrenheit" // "fahrenheit", "celsius"
     
     // Data Settings

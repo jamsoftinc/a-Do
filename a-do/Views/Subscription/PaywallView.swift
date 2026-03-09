@@ -26,7 +26,7 @@ struct PaywallView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(.systemGroupedBackground).ignoresSafeArea()
+                AppTheme.Colors.background.ignoresSafeArea()
                 
                 ScrollView {
                     VStack(spacing: 32) {
@@ -113,7 +113,7 @@ struct PaywallView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color(.secondarySystemGroupedBackground))
+                .fill(AppTheme.Colors.surface)
         )
     }
     
@@ -204,7 +204,7 @@ struct PaywallView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color(.secondarySystemGroupedBackground))
+                .fill(AppTheme.Colors.surface)
         )
     }
     
@@ -286,7 +286,7 @@ struct PaywallView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(.secondarySystemGroupedBackground))
+                    .fill(AppTheme.Colors.surface)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(isSelected ? Color.accentColor : .clear, lineWidth: 2)
@@ -351,7 +351,7 @@ struct PaywallView: View {
                 
                 if isPopular {
                     Divider()
-                        .background(Color(.tertiarySystemGroupedBackground))
+                        .background(AppTheme.Colors.surfaceLight)
                     
                     HStack(spacing: 4) {
                         Image(systemName: "checkmark.circle.fill")
@@ -374,7 +374,7 @@ struct PaywallView: View {
                         )
                 } else {
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(.secondarySystemGroupedBackground))
+                        .fill(AppTheme.Colors.surface)
                 }
             }
         }

@@ -121,7 +121,7 @@ struct InsightDetailView: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(AppTheme.Colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
     
@@ -137,7 +137,7 @@ struct InsightDetailView: View {
             chartView
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(AppTheme.Colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
     
@@ -324,7 +324,7 @@ struct InsightDetailView: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(AppTheme.Colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
     
@@ -343,7 +343,7 @@ struct InsightDetailView: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(AppTheme.Colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
     
@@ -408,7 +408,7 @@ struct InsightDetailView: View {
             notesSection
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(AppTheme.Colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
     

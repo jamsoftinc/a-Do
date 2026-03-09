@@ -27,7 +27,7 @@ struct LaunchScreenView: View {
                         Text("a-do")
                             .font(adaptiveFont)
                             .fontWeight(.bold)
-                            .foregroundColor(.white)
+                            .foregroundColor(AppTheme.Colors.textPrimary)
                             .opacity(showTitle ? 1.0 : 0.0)
                             .animation(.easeInOut(duration: 0.6), value: showTitle)
                     }
@@ -38,11 +38,11 @@ struct LaunchScreenView: View {
                     VStack(spacing: 12) {
                         ProgressView()
                             .scaleEffect(progressViewScale)
-                            .tint(.white.opacity(0.8))
+                            .tint(AppTheme.Colors.primary)
                         
                         Text("Loading...")
                             .font(adaptiveSubtitleFont)
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundColor(AppTheme.Colors.textSecondary)
                             .multilineTextAlignment(.center)
                     }
                     .padding(.bottom, bottomPadding)

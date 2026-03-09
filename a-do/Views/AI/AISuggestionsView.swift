@@ -245,7 +245,7 @@ struct AISuggestionsView: View {
             .buttonStyle(.borderedProminent)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGroupedBackground))
+        .background(AppTheme.Colors.background)
     }
     
     // MARK: - Computed Properties
@@ -618,7 +618,7 @@ struct SuggestionRowView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
         }
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(AppTheme.Colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
         .padding(.horizontal)

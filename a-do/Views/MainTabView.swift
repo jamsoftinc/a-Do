@@ -5,7 +5,7 @@ struct MainTabView: View {
     @State private var selectedTab: Tab = .home
     @Environment(AppRouter.self) private var router
     @Environment(\.modelContext) private var context
-    @AppStorage("appAccentColor") private var appAccentColor: String = "#336BDB"
+    @AppStorage("appAccentColor") private var appAccentColor: String = "#67A2DC"
 
     @State private var showingTodayFromDeepLink = false
     @State private var showingSmartSearchFromDeepLink = false

@@ -10,7 +10,7 @@ struct GlassCard<Content: View>: View {
     var body: some View {
         content
             .padding(16)
-            .background(Color(.secondarySystemGroupedBackground),
+            .background(AppTheme.Colors.surface,
                         in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }

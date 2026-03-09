@@ -41,7 +41,7 @@ struct ProFeatureGate<Content: View>: View {
                                 .foregroundStyle(.secondary)
                         }
                         .padding(8)
-                        .background(Color(.secondarySystemGroupedBackground),
+                        .background(AppTheme.Colors.surface,
                                     in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                     )
             }
@@ -146,7 +146,7 @@ struct ProFeatureCard: View {
                 }
             }
             .padding(16)
-            .background(Color(.secondarySystemGroupedBackground),
+            .background(AppTheme.Colors.surface,
                         in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
         .buttonStyle(.plain)

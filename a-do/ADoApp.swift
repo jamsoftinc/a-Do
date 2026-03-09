@@ -46,12 +46,15 @@ enum FirebaseBootstrapper {
 @main
 struct ADoApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    private let defaultAccentColor = "#67A2DC"
+    private let legacyAccentColor = "#336BDB"
 
     init() {
         // Initialize app group defaults early to prevent CFPrefsPlistSource errors
         _ = AppGroupDefaults.shared
 
         FirebaseBootstrapper.configureIfNeeded()
+        migrateAccentColorIfNeeded()
         
         // Configure global navigation bar appearance
         configureGlobalAppearance()
@@ -67,24 +70,46 @@ struct ADoApp: App {
     }
     
     private func configureGlobalAppearance() {
-        // Navigation bar — system default (translucent, adapts to light/dark)
         let appearance = UINavigationBarAppearance()
-        appearance.configureWithDefaultBackground()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = AppTheme.UIColors.background
+        appearance.titleTextAttributes = [.foregroundColor: AppTheme.UIColors.textPrimary]
+        appearance.largeTitleTextAttributes = [.foregroundColor: AppTheme.UIColors.textPrimary]
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().compactAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
 
-        // Toolbar — system default
         let toolbarAppearance = UIToolbarAppearance()
-        toolbarAppearance.configureWithDefaultBackground()
+        toolbarAppearance.configureWithOpaqueBackground()
+        toolbarAppearance.backgroundColor = AppTheme.UIColors.surface
         UIToolbar.appearance().standardAppearance = toolbarAppearance
         UIToolbar.appearance().compactAppearance = toolbarAppearance
 
-        // Tab bar — system default
         let tabBarAppearance = UITabBarAppearance()
-        tabBarAppearance.configureWithDefaultBackground()
+        tabBarAppearance.configureWithOpaqueBackground()
+        tabBarAppearance.backgroundColor = AppTheme.UIColors.surface
+        configureTabBarLayout(tabBarAppearance.stackedLayoutAppearance)
+        configureTabBarLayout(tabBarAppearance.inlineLayoutAppearance)
+        configureTabBarLayout(tabBarAppearance.compactInlineLayoutAppearance)
         UITabBar.appearance().standardAppearance = tabBarAppearance
         UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
+    }
+
+    private func configureTabBarLayout(_ layoutAppearance: UITabBarItemAppearance) {
+        layoutAppearance.normal.iconColor = AppTheme.UIColors.textSecondary
+        layoutAppearance.normal.titleTextAttributes = [.foregroundColor: AppTheme.UIColors.textSecondary]
+    }
+
+    private func migrateAccentColorIfNeeded() {
+        let defaults = UserDefaults.standard
+        guard let accentColor = defaults.string(forKey: "appAccentColor") else {
+            defaults.set(defaultAccentColor, forKey: "appAccentColor")
+            return
+        }
+
+        if accentColor.caseInsensitiveCompare(legacyAccentColor) == .orderedSame {
+            defaults.set(defaultAccentColor, forKey: "appAccentColor")
+        }
     }
 
     var body: some Scene {
@@ -100,7 +125,7 @@ struct RootView: View {
     @State private var syncManager = SyncProgressManager.shared
     @State private var isInitialSyncComplete = false
     @AppStorage("appTheme") private var appTheme: String = "system"
-    @AppStorage("appAccentColor") private var appAccentColor: String = "#336BDB"
+    @AppStorage("appAccentColor") private var appAccentColor: String = "#67A2DC"
     
     @State private var showMorningBriefing = false
     @State private var isThoughtStreamActive = false
@@ -141,12 +166,13 @@ struct RootView: View {
                 }
             } else {
                 // Show loading state while container initializes
-                ProgressView("Initializing...")
+                    ProgressView("Initializing...")
                     .task {
                         // Initialize container on background thread
                         container = AppContainer.shared.getContainer()
                         if let container {
                             StartupSmokeChecks.run(container: container)
+                            SettingsManager.shared.migrateAccentColorIfNeeded(context: ModelContext(container))
                         }
                     }
                 }

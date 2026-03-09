@@ -22,7 +22,7 @@ struct StaticLaunchScreenView: View {
                 Text("a-do")
                     .font(adaptiveFont)
                     .fontWeight(.bold)
-                    .foregroundColor(.white)
+                    .foregroundColor(AppTheme.Colors.textPrimary)
                 
                 Spacer()
             }

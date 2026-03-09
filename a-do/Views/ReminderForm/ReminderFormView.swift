@@ -46,7 +46,7 @@ struct ReminderFormView: View {
                 .padding(.vertical, 20)
             }
             .scrollIndicators(.hidden)
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .background(AppTheme.Colors.background.ignoresSafeArea())
             .navigationTitle(existingReminder == nil ? "New Reminder" : "Edit Reminder")
             .navigationBarTitleDisplayMode(.large)
             .toolbar { toolbarButtons }

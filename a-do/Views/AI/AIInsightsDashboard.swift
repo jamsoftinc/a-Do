@@ -171,7 +171,7 @@ struct AIInsightsDashboard: View {
                 .foregroundColor(.secondary)
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(AppTheme.Colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -246,7 +246,7 @@ struct AIInsightsDashboard: View {
             }
             .frame(height: 200)
             .padding()
-            .background(Color(.secondarySystemGroupedBackground))
+            .background(AppTheme.Colors.surface)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
@@ -276,7 +276,7 @@ struct AIInsightsDashboard: View {
             }
             .frame(height: 200)
             .padding()
-            .background(Color(.secondarySystemGroupedBackground))
+            .background(AppTheme.Colors.surface)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
@@ -308,7 +308,7 @@ struct AIInsightsDashboard: View {
             }
             .frame(height: 200)
             .padding()
-            .background(Color(.secondarySystemGroupedBackground))
+            .background(AppTheme.Colors.surface)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
@@ -475,7 +475,7 @@ struct InsightRowView: View {
                     .foregroundColor(.secondary)
             }
             .padding()
-            .background(Color(.secondarySystemGroupedBackground))
+            .background(AppTheme.Colors.surface)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)

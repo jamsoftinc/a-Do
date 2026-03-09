@@ -6,6 +6,8 @@ import os
 @Observable
 final class SettingsManager {
     static let shared = SettingsManager()
+    private let defaultAccentColor = "#67A2DC"
+    private let legacyAccentColor = "#336BDB"
     
     private var settings: AppSettings?
     private let logger = Logger(subsystem: "a-do", category: "Settings")
@@ -275,6 +277,26 @@ final class SettingsManager {
         let settings = getSettings(context: context)
         return settings.accentColor
     }
+
+    func migrateAccentColorIfNeeded(context: ModelContext) {
+        let settings = getSettings(context: context)
+        let storedAccentColor = UserDefaults.standard.string(forKey: "appAccentColor")
+        var didUpdateSettings = false
+
+        if settings.accentColor.caseInsensitiveCompare(legacyAccentColor) == .orderedSame {
+            settings.accentColor = defaultAccentColor
+            didUpdateSettings = true
+        }
+
+        if storedAccentColor == nil || storedAccentColor?.caseInsensitiveCompare(legacyAccentColor) == .orderedSame {
+            UserDefaults.standard.set(defaultAccentColor, forKey: "appAccentColor")
+        }
+
+        if didUpdateSettings {
+            saveSettings(context: context)
+            logger.info("Migrated legacy accent color to updated palette")
+        }
+    }
     
     func setTemperatureUnit(_ unit: String, context: ModelContext) {
         let settings = getSettings(context: context)
@@ -342,12 +364,12 @@ final class SettingsManager {
         settings.contactsEnabled = true
         settings.microphoneEnabled = true
         settings.theme = "system"
-        settings.accentColor = "#336BDB"
+        settings.accentColor = defaultAccentColor
         settings.autoBackupEnabled = true
         settings.backupFrequency = "weekly"
 
         UserDefaults.standard.set("system", forKey: "appTheme")
-        UserDefaults.standard.set("#336BDB", forKey: "appAccentColor")
+        UserDefaults.standard.set(defaultAccentColor, forKey: "appAccentColor")
         
         saveSettings(context: context)
         logger.info("Settings reset to defaults")

@@ -19,11 +19,11 @@ struct SettingsPageView: View {
     ]
 
     private let accentOptions: [(name: String, value: String)] = [
-        ("Ocean", "#336BDB"),
-        ("Emerald", "#1FA971"),
-        ("Sunset", "#E28A2E"),
-        ("Rose", "#D64D74"),
-        ("Graphite", "#4A5568")
+        ("Robot Blue", "#67A2DC"),
+        ("Glow", "#46BCFA"),
+        ("Copper", "#D1915B"),
+        ("Mist", "#91D0EA"),
+        ("Slate", "#82717D")
     ]
 
     var body: some View {

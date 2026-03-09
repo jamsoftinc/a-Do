@@ -141,7 +141,7 @@ struct CalendarView: View {
             // Selected Date Events Section - Always visible
             selectedDateEventsSection
         }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .background(AppTheme.Colors.background.ignoresSafeArea())
         .onAppear {
             // Auto-select today if no date selected
             if selectedDate == nil {
@@ -260,7 +260,7 @@ struct CalendarView: View {
             }
             .padding(.vertical)
         }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .background(AppTheme.Colors.background.ignoresSafeArea())
         .refreshable {
             await calendarManager.loadEvents()
         }
