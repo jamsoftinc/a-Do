@@ -14,30 +14,79 @@ final class WidgetSnapshotManager {
     private let focusKey = "widget_focus_v1"
     private let timeTrackingKey = "widget_time_tracking_v1"
     private let updatedAtKey = "widget_snapshot_updated_at"
+    private var pendingKinds: Set<WidgetSnapshotKind> = Set(WidgetSnapshotKind.allCases)
+    private var pendingContainer: ModelContainer?
+    private var refreshTask: Task<Void, Never>?
 
     private init() {}
 
-    func refreshSnapshots(context: ModelContext) {
-        guard let defaults = UserDefaults(suiteName: suiteName) else { return }
+    func refreshSnapshots(
+        context: ModelContext,
+        kinds: Set<WidgetSnapshotKind>? = nil
+    ) {
+        pendingKinds.formUnion(kinds ?? defaultKinds)
+        pendingContainer = context.container
+        refreshTask?.cancel()
 
-        let reminders = fetchReminderSnapshots(context: context)
-        let habits = fetchHabitSnapshots(context: context)
-        let focus = fetchFocusSnapshot(context: context)
-        let timeTracking = fetchTimeTrackingSnapshot(context: context)
+        refreshTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            guard let self else { return }
+            guard let container = self.pendingContainer else { return }
+
+            let kindsToRefresh = self.pendingKinds
+            self.pendingKinds = []
+            self.pendingContainer = nil
+
+            self.performRefresh(container: container, kinds: kindsToRefresh)
+        }
+    }
+
+    private func performRefresh(container: ModelContainer, kinds: Set<WidgetSnapshotKind>) {
+        guard let defaults = UserDefaults(suiteName: suiteName) else { return }
+        let context = ModelContext(container)
 
         do {
             let encoder = JSONEncoder()
             encoder.dateEncodingStrategy = .iso8601
-            defaults.set(try encoder.encode(reminders), forKey: remindersKey)
-            defaults.set(try encoder.encode(habits), forKey: habitsKey)
-            defaults.set(try encoder.encode(focus), forKey: focusKey)
-            defaults.set(try encoder.encode(timeTracking), forKey: timeTrackingKey)
+
+            if kinds.contains(.reminders) {
+                let reminders = fetchReminderSnapshots(context: context)
+                defaults.set(try encoder.encode(reminders), forKey: remindersKey)
+            }
+
+            if kinds.contains(.habits) {
+                let habits = fetchHabitSnapshots(context: context)
+                defaults.set(try encoder.encode(habits), forKey: habitsKey)
+            }
+
+            if kinds.contains(.focus) {
+                let focus = fetchFocusSnapshot(context: context)
+                defaults.set(try encoder.encode(focus), forKey: focusKey)
+            }
+
+            if kinds.contains(.timeTracking) {
+                let timeTracking = fetchTimeTrackingSnapshot(context: context)
+                defaults.set(try encoder.encode(timeTracking), forKey: timeTrackingKey)
+            }
+
             defaults.set(Date(), forKey: updatedAtKey)
 
-            WidgetCenter.shared.reloadTimelines(ofKind: "ReminderWidget")
-            WidgetCenter.shared.reloadTimelines(ofKind: "HabitWidget")
-            WidgetCenter.shared.reloadTimelines(ofKind: "FocusWidget")
-            WidgetCenter.shared.reloadTimelines(ofKind: "TimeTrackingWidget")
+            if kinds.contains(.reminders) {
+                WidgetCenter.shared.reloadTimelines(ofKind: "ReminderWidget")
+            }
+
+            if kinds.contains(.habits) {
+                WidgetCenter.shared.reloadTimelines(ofKind: "HabitWidget")
+            }
+
+            if kinds.contains(.focus) {
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusWidget")
+            }
+
+            if kinds.contains(.timeTracking) {
+                WidgetCenter.shared.reloadTimelines(ofKind: "TimeTrackingWidget")
+            }
+
             logger.info("Widget snapshots refreshed")
         } catch {
             logger.error("Failed to write widget snapshots: \(error.localizedDescription, privacy: .public)")
@@ -145,6 +194,10 @@ final class WidgetSnapshotManager {
             topCategories: topCategories
         )
     }
+
+    private var defaultKinds: Set<WidgetSnapshotKind> {
+        [.reminders, .habits, .focus, .timeTracking]
+    }
 }
 
 struct WidgetReminderSnapshot: Codable {
@@ -187,4 +240,11 @@ struct WidgetTimeTrackingSnapshot: Codable {
     var elapsedTime: TimeInterval
     var todaysTotal: TimeInterval
     var topCategories: [WidgetTimeCategorySnapshot]
+}
+
+enum WidgetSnapshotKind: CaseIterable, Hashable, Sendable {
+    case reminders
+    case habits
+    case focus
+    case timeTracking
 }

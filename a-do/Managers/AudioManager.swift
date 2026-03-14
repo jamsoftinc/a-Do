@@ -33,6 +33,7 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
 
     // Audio player - must be retained during playback
     private var audioPlayer: AVAudioPlayer?
+    private var captureCompletion: CheckedContinuation<Bool, Never>?
     
     private override init() {
         super.init()
@@ -75,11 +76,13 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
         
         guard microphoneGranted else {
             recordingError = "Microphone access denied. Please enable microphone access in Settings."
+            resumeCaptureCompletion(success: false)
             return
         }
         
         guard speechGranted else {
             recordingError = "Speech recognition access denied. Please enable speech recognition in Settings."
+            resumeCaptureCompletion(success: false)
             return
         }
         
@@ -130,6 +133,7 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
         } catch {
             recordingError = "Failed to start recording: \(error.localizedDescription)"
             Logger(subsystem: "a-do", category: "Audio").error("Recording start failed: \(String(describing: error))")
+            resumeCaptureCompletion(success: false)
         }
     }
     
@@ -146,6 +150,8 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
             Task {
                 await transcribeAudioFile(url: audioFileURL)
             }
+        } else {
+            resumeCaptureCompletion(success: false)
         }
         
         Logger(subsystem: "a-do", category: "Audio").info("Stopped voice recording, duration: \(self.recordingDuration)s")
@@ -168,8 +174,44 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
         recordingError = nil
         transcribedText = ""
         recordingDuration = 0
+        transcriptionError = nil
+        resumeCaptureCompletion(success: false)
         
         Logger(subsystem: "a-do", category: "Audio").info("Cancelled voice recording")
+    }
+
+    func awaitCaptureCompletion(timeoutNanoseconds: UInt64 = 5 * 60 * 1_000_000_000) async -> Bool {
+        if !isRecording && !isTranscribing {
+            return recordingError == nil && transcriptionError == nil
+        }
+
+        return await withTaskGroup(of: Bool.self) { group in
+            group.addTask { @MainActor in
+                await withCheckedContinuation { continuation in
+                    self.captureCompletion?.resume(returning: false)
+                    self.captureCompletion = continuation
+                }
+            }
+
+            group.addTask {
+                try? await Task.sleep(nanoseconds: timeoutNanoseconds)
+                return false
+            }
+
+            let completed = await group.next() ?? false
+            group.cancelAll()
+
+            if !completed {
+                await MainActor.run {
+                    if self.isRecording {
+                        self.stopRecording()
+                    }
+                    self.resumeCaptureCompletion(success: false)
+                }
+            }
+
+            return completed
+        }
     }
     
     // MARK: - Speech Recognition
@@ -181,11 +223,12 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
         do {
             let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
             
-            guard let recognizer = recognizer, recognizer.isAvailable else {
-                self.transcriptionError = "Speech recognition is not available"
-                self.isTranscribing = false
-                return
-            }
+                guard let recognizer = recognizer, recognizer.isAvailable else {
+                    self.transcriptionError = "Speech recognition is not available"
+                    self.isTranscribing = false
+                    self.resumeCaptureCompletion(success: false)
+                    return
+                }
             
             let request = SFSpeechURLRecognitionRequest(url: url)
             request.shouldReportPartialResults = false
@@ -202,12 +245,14 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
             
             self.transcribedText = result.bestTranscription.formattedString
             self.isTranscribing = false
+            self.resumeCaptureCompletion(success: true)
             
             Logger(subsystem: "a-do", category: "Audio").info("Transcription completed: \(self.transcribedText)")
             
         } catch {
             self.transcriptionError = "Failed to transcribe audio: \(error.localizedDescription)"
             self.isTranscribing = false
+            self.resumeCaptureCompletion(success: false)
             Logger(subsystem: "a-do", category: "Audio").error("Transcription failed: \(String(describing: error))")
         }
     }
@@ -576,6 +621,7 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
         Task { @MainActor in
             if !flag {
                 recordingError = "Recording failed"
+                resumeCaptureCompletion(success: false)
             }
         }
     }
@@ -584,6 +630,7 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
         Task { @MainActor in
             if let error = error {
                 recordingError = "Recording error: \(error.localizedDescription)"
+                resumeCaptureCompletion(success: false)
             }
         }
     }
@@ -594,8 +641,15 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
         Task { @MainActor in
             if !available {
                 transcriptionError = "Speech recognition became unavailable"
+                resumeCaptureCompletion(success: false)
             }
         }
+    }
+
+    private func resumeCaptureCompletion(success: Bool) {
+        guard let continuation = captureCompletion else { return }
+        captureCompletion = nil
+        continuation.resume(returning: success)
     }
 }
 

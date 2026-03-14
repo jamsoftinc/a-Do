@@ -39,22 +39,17 @@ final class SmartNotificationManager: NSObject {
     private var patterns: [NotificationPattern] = []
     private var analytics: [NotificationAnalytics] = []
     
-    // Timers - managed on MainActor, cleanup called before deallocation
-    private var processingTimer: Timer?
-    private var analyticsTimer: Timer?
+    private var lastAnalyticsUpdate: Date?
+    private let processingInterval: TimeInterval = 60
+    private let analyticsInterval: TimeInterval = 3600
 
     override init() {
         super.init()
         setupNotificationCenter()
-        setupPeriodicProcessing()
     }
 
     /// Call this method to clean up resources before the manager is deallocated
     func cleanup() {
-        processingTimer?.invalidate()
-        processingTimer = nil
-        analyticsTimer?.invalidate()
-        analyticsTimer = nil
         pendingNotifications.removeAll()
         deliveryQueue.removeAll()
         patterns.removeAll()
@@ -351,26 +346,40 @@ final class SmartNotificationManager: NSObject {
     
     // MARK: - Notification Processing
     
-    private func setupPeriodicProcessing() {
-        processingTimer?.invalidate()
-        analyticsTimer?.invalidate()
+    func performMaintenanceIfNeeded(context: ModelContext, reason: String, force: Bool = false) async {
+        guard isProEnabled else { return }
 
-        // Process notifications every minute
-        processingTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                await self?.processNotificationQueue()
-            }
+        let now = Date()
+        let shouldProcess = force
+            || lastProcessingDate == nil
+            || now.timeIntervalSince(lastProcessingDate ?? .distantPast) >= processingInterval
+        let shouldUpdateAnalytics = force
+            || lastAnalyticsUpdate == nil
+            || now.timeIntervalSince(lastAnalyticsUpdate ?? .distantPast) >= analyticsInterval
+
+        guard shouldProcess || shouldUpdateAnalytics else { return }
+        logger.info("Running smart notification maintenance for \(reason, privacy: .public)")
+
+        if shouldProcess {
+            reloadPendingNotifications(context: context)
+            await processNotificationQueue(context: context)
         }
-        
-        // Update analytics every hour
-        analyticsTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                await self?.updateAnalytics()
-            }
+
+        if shouldUpdateAnalytics {
+            await updateAnalytics(context: context)
         }
     }
+
+    private func reloadPendingNotifications(context: ModelContext) {
+        let scheduledStatusRaw = NotificationStatus.scheduled.rawValue
+        let descriptor = FetchDescriptor<SmartNotification>(
+            predicate: #Predicate { $0.statusRaw == scheduledStatusRaw },
+            sortBy: [SortDescriptor(\.scheduledDate, order: .forward)]
+        )
+        pendingNotifications = (try? context.fetch(descriptor)) ?? []
+    }
     
-    private func processNotificationQueue() async {
+    private func processNotificationQueue(context: ModelContext) async {
         guard !isProcessing else { return }
         
         isProcessing = true
@@ -391,6 +400,12 @@ final class SmartNotificationManager: NSObject {
         }
         
         lastProcessingDate = now
+
+        do {
+            try context.save()
+        } catch {
+            logger.error("Failed to persist smart notification processing state: \(error.localizedDescription)")
+        }
     }
     
     private func deliverNotification(_ notification: SmartNotification) async {
@@ -774,9 +789,10 @@ final class SmartNotificationManager: NSObject {
     
     // MARK: - Analytics
     
-    private func updateAnalytics() async {
+    private func updateAnalytics(context _: ModelContext) async {
         // This would update notification analytics
         logger.info("Updating notification analytics")
+        lastAnalyticsUpdate = Date()
     }
     
     func recordNotificationEngagement(

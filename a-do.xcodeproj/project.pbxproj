@@ -18,7 +18,18 @@
 		7C67B6782F5B2984002B5600 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7C67B6772F5B2984002B5600 /* FirebaseCore */; };
 		7C67B67A2F5B2984002B5600 /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 7C67B6792F5B2984002B5600 /* FirebaseRemoteConfig */; };
 		7CBE5D732F5B6E1000D51726 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 7CBE5D722F5B6E1000D51726 /* GoogleService-Info.plist */; };
+		7CF0A0013A14000100A0D000 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CF0A0003A14000100A0D000 /* XCTest.framework */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		7CF0A0103A14000100A0D000 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7CC0E5362E496AEC00116982 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7CC0E53D2E496AEC00116982;
+			remoteInfo = "a-do";
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		7CD98A912E5A178500B00CBD /* Embed Foundation Extensions */ = {
@@ -47,12 +58,19 @@
 		7CD98A7C2E5A178200B00CBD /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		7CD98AB92E5A19F000B00CBD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7CD98AD82E5A1D6500B00CBD /* a-do_WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "a-do_WidgetExtension.entitlements"; sourceTree = "<group>"; };
+		7CF0A0003A14000100A0D000 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
+		7CF0A0023A14000100A0D000 /* a-doTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "a-doTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		7CC0E5402E496AEC00116982 /* a-do */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "a-do";
+			sourceTree = "<group>";
+		};
+		7CF0A0033A14000100A0D000 /* a-doTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "a-doTests";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -78,6 +96,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7CF0A0063A14000100A0D000 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7CF0A0013A14000100A0D000 /* XCTest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -100,6 +126,7 @@
 				7C07D3672EB03BF200BA0958 /* Configuration.storekit */,
 				7CD98AD82E5A1D6500B00CBD /* a-do_WidgetExtension.entitlements */,
 				7CC0E5402E496AEC00116982 /* a-do */,
+				7CF0A0033A14000100A0D000 /* a-doTests */,
 				7CD98A792E5A178200B00CBD /* Frameworks */,
 				7CC0E53F2E496AEC00116982 /* Products */,
 				7CD98AB92E5A19F000B00CBD /* Info.plist */,
@@ -111,6 +138,7 @@
 			children = (
 				7CC0E53E2E496AEC00116982 /* a-do.app */,
 				7C07D3922EB05C2900BA0958 /* a-do WidgetExtension.appex */,
+				7CF0A0023A14000100A0D000 /* a-doTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -120,6 +148,7 @@
 			children = (
 				7CD98A7A2E5A178200B00CBD /* WidgetKit.framework */,
 				7CD98A7C2E5A178200B00CBD /* SwiftUI.framework */,
+				7CF0A0003A14000100A0D000 /* XCTest.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -173,6 +202,29 @@
 			productReference = 7CC0E53E2E496AEC00116982 /* a-do.app */;
 			productType = "com.apple.product-type.application";
 		};
+		7CF0A0093A14000100A0D000 /* a-doTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7CF0A00C3A14000100A0D000 /* Build configuration list for PBXNativeTarget "a-doTests" */;
+			buildPhases = (
+				7CF0A0043A14000100A0D000 /* Sources */,
+				7CF0A0063A14000100A0D000 /* Frameworks */,
+				7CF0A0053A14000100A0D000 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7CF0A0113A14000100A0D000 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				7CF0A0033A14000100A0D000 /* a-doTests */,
+			);
+			name = "a-doTests";
+			packageProductDependencies = (
+			);
+			productName = "a-doTests";
+			productReference = 7CF0A0023A14000100A0D000 /* a-doTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -193,6 +245,12 @@
 						CreatedOnToolsVersion = 26.0;
 						DevelopmentTeam = 4ZNP9N3A76;
 						ProvisioningStyle = Automatic;
+					};
+					7CF0A0093A14000100A0D000 = {
+						CreatedOnToolsVersion = 26.0;
+						DevelopmentTeam = 4ZNP9N3A76;
+						ProvisioningStyle = Automatic;
+						TestTargetID = 7CC0E53D2E496AEC00116982;
 					};
 				};
 			};
@@ -215,6 +273,7 @@
 			targets = (
 				7CC0E53D2E496AEC00116982 /* a-do */,
 				7C07D3912EB05C2900BA0958 /* a-do WidgetExtension */,
+				7CF0A0093A14000100A0D000 /* a-doTests */,
 			);
 		};
 /* End PBXProject section */
@@ -232,6 +291,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				7CBE5D732F5B6E1000D51726 /* GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7CF0A0053A14000100A0D000 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -255,7 +321,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7CF0A0043A14000100A0D000 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		7CF0A0113A14000100A0D000 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7CC0E53D2E496AEC00116982 /* a-do */;
+			targetProxy = 7CF0A0103A14000100A0D000 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		7C07D3A62EB05C2A00BA0958 /* Debug */ = {
@@ -469,6 +550,7 @@
 				GEMINI_API_KEY = "AIzaSyBJSCzTW3w0IiqAnrfrjJRp-IZaxbLSWf4";
 				GEMINI_MODEL_ID = "gemini-3.0-flash";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "JAMSoft.a-do.refresh JAMSoft.a-do.processing";
 				INFOPLIST_KEY_CFBundleDisplayName = "a-do";
 				INFOPLIST_KEY_GEMINI_API_KEY = "$(GEMINI_API_KEY)";
 				INFOPLIST_KEY_GEMINI_MODEL_ID = "$(GEMINI_MODEL_ID)";
@@ -534,6 +616,7 @@
 				GEMINI_API_KEY = "AIzaSyBJSCzTW3w0IiqAnrfrjJRp-IZaxbLSWf4";
 				GEMINI_MODEL_ID = "gemini-3.0-flash";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "JAMSoft.a-do.refresh JAMSoft.a-do.processing";
 				INFOPLIST_KEY_CFBundleDisplayName = "a-do";
 				INFOPLIST_KEY_GEMINI_API_KEY = "$(GEMINI_API_KEY)";
 				INFOPLIST_KEY_GEMINI_MODEL_ID = "$(GEMINI_MODEL_ID)";
@@ -576,6 +659,69 @@
 			};
 			name = Release;
 		};
+		7CF0A00A3A14000100A0D000 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 4;
+				DEVELOPMENT_TEAM = 4ZNP9N3A76;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 4.4;
+				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-doTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphonesimulator;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/a-do.app/a-do";
+				TEST_TARGET_NAME = "a-do";
+			};
+			name = Debug;
+		};
+		7CF0A00B3A14000100A0D000 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 4;
+				DEVELOPMENT_TEAM = 4ZNP9N3A76;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 4.4;
+				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-doTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphonesimulator;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/a-do.app/a-do";
+				TEST_TARGET_NAME = "a-do";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -602,6 +748,15 @@
 			buildConfigurations = (
 				7CC0E54A2E496AED00116982 /* Debug */,
 				7CC0E54B2E496AED00116982 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7CF0A00C3A14000100A0D000 /* Build configuration list for PBXNativeTarget "a-doTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7CF0A00A3A14000100A0D000 /* Debug */,
+				7CF0A00B3A14000100A0D000 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

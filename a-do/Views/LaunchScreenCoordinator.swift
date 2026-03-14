@@ -8,7 +8,7 @@ class LaunchScreenCoordinator: ObservableObject {
     @Published var launchProgress: Double = 0.0
     
     private var launchTask: Task<Void, Never>?
-    private let minimumDisplayTime: TimeInterval = 2.0
+    private let minimumDisplayTime: TimeInterval = 0.35
     private let startTime = Date()
     
     init() {
@@ -30,12 +30,14 @@ class LaunchScreenCoordinator: ObservableObject {
             }
             
             await self.runLaunchPhase(progress: 0.7) {
+                guard !RuntimeEnvironment.isRunningTests else { return }
                 _ = SubscriptionManager.shared
                 _ = EntitlementManager.shared
                 _ = NotificationManager.shared
             }
             
             await self.runLaunchPhase(progress: 0.9) {
+                guard !RuntimeEnvironment.isRunningTests else { return }
                 _ = MemoryMonitor.shared
             }
             

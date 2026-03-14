@@ -94,6 +94,9 @@ final class HabitViewModel {
         
         do {
             try context.save()
+            Task {
+                await AdvancedSearchManager.shared.upsertHabitIndex(for: habit, context: context)
+            }
             loadHabits()
             refreshWidgetSnapshotsIfPossible()
             logger.info("Created habit: \(title)")
@@ -114,6 +117,11 @@ final class HabitViewModel {
         
         do {
             try modelContext?.save()
+            if let modelContext {
+                Task {
+                    await AdvancedSearchManager.shared.upsertHabitIndex(for: habit, context: modelContext)
+                }
+            }
             updateStatistics()
             refreshWidgetSnapshotsIfPossible()
             logger.info("Updated habit: \(title)")
@@ -124,11 +132,15 @@ final class HabitViewModel {
     
     func deleteHabit(_ habit: Habit) {
         guard let context = modelContext else { return }
+        let deletedHabitID = habit.id.uuidString
         
         context.delete(habit)
         
         do {
             try context.save()
+            Task {
+                await AdvancedSearchManager.shared.removeHabitIndex(itemId: deletedHabitID, context: context)
+            }
             loadHabits()
             refreshWidgetSnapshotsIfPossible()
             logger.info("Deleted habit: \(habit.title)")
@@ -143,6 +155,11 @@ final class HabitViewModel {
         
         do {
             try modelContext?.save()
+            if let modelContext {
+                Task {
+                    await AdvancedSearchManager.shared.upsertHabitIndex(for: habit, context: modelContext)
+                }
+            }
             updateStatistics()
             refreshWidgetSnapshotsIfPossible()
             logger.info("Toggled habit active state: \(habit.title)")

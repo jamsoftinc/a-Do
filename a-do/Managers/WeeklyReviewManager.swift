@@ -232,6 +232,12 @@ final class WeeklyReviewManager {
             }
         }
 
+        for habit in mutableHabits {
+            Task {
+                await AdvancedSearchManager.shared.upsertHabitIndex(for: habit, context: context)
+            }
+        }
+
         let weeklyFocusHours = plan.focusBlocks
             .prefix(8)
             .reduce(0.0) { partialResult, block in

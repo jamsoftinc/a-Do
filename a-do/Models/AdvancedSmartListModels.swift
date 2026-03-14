@@ -676,20 +676,61 @@ final class SavedSearch {
     var name: String = ""
     var query: String = ""
     var filters: Data? // JSON encoded filter criteria
+    var searchTypeRaw: String = SearchType.text.rawValue
+    var scopeRaw: String = SearchScope.all.rawValue
+    var sortOrderRaw: String = SearchSortOrder.relevance.rawValue
     var createdAt: Date = Date()
     var lastUsed: Date?
     var usageCount: Int = 0
     var isGlobal: Bool = false // Available to all users in workspace
-    
-    
-    init(name: String, query: String) {
+
+    var searchType: SearchType {
+        get { SearchType(rawValue: searchTypeRaw) ?? .text }
+        set { searchTypeRaw = newValue.rawValue }
+    }
+
+    var scope: SearchScope {
+        get { SearchScope(rawValue: scopeRaw) ?? .all }
+        set { scopeRaw = newValue.rawValue }
+    }
+
+    var sortOrder: SearchSortOrder {
+        get { SearchSortOrder(rawValue: sortOrderRaw) ?? .relevance }
+        set { sortOrderRaw = newValue.rawValue }
+    }
+
+    init(
+        name: String,
+        query: String,
+        searchType: SearchType = .text,
+        scope: SearchScope = .all,
+        sortOrder: SearchSortOrder = .relevance
+    ) {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         self.query = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.searchTypeRaw = searchType.rawValue
+        self.scopeRaw = scope.rawValue
+        self.sortOrderRaw = sortOrder.rawValue
         self.createdAt = Date()
     }
     
     func updateUsage() {
         lastUsed = Date()
         usageCount += 1
+    }
+
+    func updateConfiguration(
+        name: String,
+        query: String,
+        searchType: SearchType,
+        scope: SearchScope,
+        sortOrder: SearchSortOrder
+    ) {
+        self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.query = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.searchType = searchType
+        self.scope = scope
+        self.sortOrder = sortOrder
+        lastUsed = Date()
     }
 }

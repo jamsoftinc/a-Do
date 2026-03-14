@@ -24,9 +24,6 @@ final class RemindersManager {
     var syncError: String?
     var autoSyncEnabled: Bool = true
     var syncInterval: TimeInterval = 300 // 5 minutes
-    
-    private var syncTimer: Timer?
-    private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
 
     private init() {
         setupAutoSync()
@@ -38,13 +35,7 @@ final class RemindersManager {
     }
     
     @MainActor private func performCleanup() {
-        syncTimer?.invalidate()
-        syncTimer = nil
-        
-        if backgroundTask != .invalid {
-            UIApplication.shared.endBackgroundTask(backgroundTask)
-            backgroundTask = .invalid
-        }
+        // Lifecycle observers are removed in stopAutoSync/deinit.
     }
 
     func requestAccess() async throws {
@@ -70,14 +61,12 @@ final class RemindersManager {
                             return
                         }
                         
-                        // Filter out reminders that already exist
+                        // Filter out reminders that already exist or can be linked by Apple ID/title.
                         var descriptor = FetchDescriptor<Reminder>()
                         descriptor.fetchLimit = 1000
                         let existingReminders = (try? context.fetch(descriptor)) ?? []
-                        let existingTitles = Set(existingReminders.map { $0.title })
                         let newReminders = reminders.filter { reminder in
-                            guard let title = reminder.title, !title.isEmpty else { return false }
-                            return !existingTitles.contains(title)
+                            !self.matchesExistingReminder(reminder, existingReminders: existingReminders)
                         }
                         
                         self.availableRemindersCount = newReminders.count
@@ -125,23 +114,32 @@ final class RemindersManager {
                         
                         Logger(subsystem: "a-do", category: "Import").info("Found \(reminders.count) reminders to import")
                         
-                        // Filter out reminders that already exist
+                        // Filter out reminders that already exist or can be linked by Apple ID/title.
                         var descriptor = FetchDescriptor<Reminder>()
                         descriptor.fetchLimit = 1000
                         let existingReminders = (try? context.fetch(descriptor)) ?? []
-                        let existingTitles = Set(existingReminders.map { $0.title })
-                        let newReminders = reminders.filter { reminder in
-                            guard let title = reminder.title, !title.isEmpty else { return false }
-                            return !existingTitles.contains(title)
+                        let unseenReminders = reminders.filter { reminder in
+                            !self.matchesExistingReminder(reminder, existingReminders: existingReminders)
                         }
+
+                        self.availableRemindersCount = unseenReminders.count
+                        Logger(subsystem: "a-do", category: "Import").info("Importing \(unseenReminders.count) new reminders (skipping \(reminders.count - unseenReminders.count) duplicates)")
+
+                        let total = Double(max(1, reminders.count))
                         
-                        self.availableRemindersCount = newReminders.count
-                        Logger(subsystem: "a-do", category: "Import").info("Importing \(newReminders.count) new reminders (skipping \(reminders.count - newReminders.count) duplicates)")
-                        
-                        let total = Double(newReminders.count)
-                        
-                        for (index, ekReminder) in newReminders.enumerated() {
+                        for (index, ekReminder) in reminders.enumerated() {
                             guard let title = ekReminder.title, !title.isEmpty else { continue }
+
+                            if existingReminders.contains(where: { $0.appleReminderID == ekReminder.calendarItemIdentifier }) {
+                                self.importProgress = Double(index + 1) / total
+                                continue
+                            }
+
+                            if let existingReminder = self.findLinkableReminder(for: ekReminder, in: existingReminders) {
+                                existingReminder.appleReminderID = ekReminder.calendarItemIdentifier
+                                self.importProgress = Double(index + 1) / total
+                                continue
+                            }
                             
                             let dueDate = ekReminder.dueDateComponents?.date
                             let priority = self.convertPriority(from: ekReminder.priority)
@@ -154,6 +152,7 @@ final class RemindersManager {
                                 isCompleted: isCompleted,
                                 priority: priority
                             )
+                            reminder.appleReminderID = ekReminder.calendarItemIdentifier
                             
                             context.insert(reminder)
                             self.importedCount += 1
@@ -162,6 +161,8 @@ final class RemindersManager {
                         
                         do {
                             try context.save()
+                            AdvancedSearchManager.shared.markIndexDirty()
+                            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
                             Logger(subsystem: "a-do", category: "Import").info("Successfully imported \(self.importedCount) reminders")
                         } catch {
                             self.lastImportError = "Failed to save imported reminders: \(error.localizedDescription)"
@@ -189,6 +190,44 @@ final class RemindersManager {
         }
     }
 
+    private func matchesExistingReminder(_ reminder: EKReminder, existingReminders: [Reminder]) -> Bool {
+        guard reminder.title?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else {
+            return true
+        }
+
+        if existingReminders.contains(where: { $0.appleReminderID == reminder.calendarItemIdentifier }) {
+            return true
+        }
+
+        return findLinkableReminder(for: reminder, in: existingReminders) != nil
+    }
+
+    private func findLinkableReminder(for reminder: EKReminder, in reminders: [Reminder]) -> Reminder? {
+        guard let title = reminder.title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty else {
+            return nil
+        }
+
+        let reminderDueDate = reminder.dueDateComponents?.date
+        let normalizedTitle = title.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+
+        return reminders.first { existing in
+            guard existing.appleReminderID == nil else { return false }
+
+            let existingTitle = existing.title.trimmingCharacters(in: .whitespacesAndNewlines)
+                .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            guard existingTitle == normalizedTitle else { return false }
+
+            switch (existing.dueDate, reminderDueDate) {
+            case (nil, nil):
+                return true
+            case let (lhs?, rhs?):
+                return abs(lhs.timeIntervalSince(rhs)) < 60
+            default:
+                return false
+            }
+        }
+    }
+
     func export(reminder: Reminder) throws {
         let ekReminder = EKReminder(eventStore: store)
         ekReminder.title = reminder.title
@@ -207,9 +246,6 @@ final class RemindersManager {
             stopAutoSync()
             return
         }
-
-        syncTimer?.invalidate()
-        syncTimer = nil
         NotificationCenter.default.removeObserver(
             self,
             name: UIApplication.didBecomeActiveNotification,
@@ -220,13 +256,6 @@ final class RemindersManager {
             name: UIApplication.willResignActiveNotification,
             object: nil
         )
-        
-        // Start timer for periodic sync
-        syncTimer = Timer.scheduledTimer(withTimeInterval: syncInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                await self?.performAutoSync()
-            }
-        }
         
         // Register for app lifecycle notifications
         NotificationCenter.default.addObserver(
@@ -253,26 +282,12 @@ final class RemindersManager {
     }
     
     @objc private func appDidBecomeActive() {
-        if backgroundTask != .invalid {
-            UIApplication.shared.endBackgroundTask(backgroundTask)
-            backgroundTask = .invalid
-        }
-
         Task { @MainActor in
             await performAutoSync()
         }
     }
     
-    @objc private func appWillResignActive() {
-        if backgroundTask != .invalid {
-            UIApplication.shared.endBackgroundTask(backgroundTask)
-        }
-
-        // Start background task for sync
-        backgroundTask = UIApplication.shared.beginBackgroundTask { [weak self] in
-            self?.backgroundTask = .invalid
-        }
-    }
+    @objc private func appWillResignActive() {}
     
     func performAutoSync() async {
         guard self.autoSyncEnabled && !isSyncing else { return }
@@ -290,29 +305,13 @@ final class RemindersManager {
         syncError = nil
         
         Logger(subsystem: "a-do", category: "Sync").info("Starting automatic sync")
-        
-        do {
-            try await requestAccess()
-            
-            // Perform bidirectional sync
-            await syncFromAppleReminders()
-            await syncToAppleReminders()
-            
-            lastSyncDate = Date()
-            Logger(subsystem: "a-do", category: "Sync").info("Automatic sync completed successfully")
-            
-        } catch {
-            syncError = "Sync failed: \(error.localizedDescription)"
-            Logger(subsystem: "a-do", category: "Sync").error("Sync failed: \(String(describing: error))")
-        }
+
+        let context = ModelContext(AppContainer.shared.getContainer())
+        await AppleRemindersSyncManager.shared.performLifecycleSyncIfNeeded(context: context, reason: "autoSync")
+        lastSyncDate = Date()
+        Logger(subsystem: "a-do", category: "Sync").info("Automatic sync completed successfully")
         
         isSyncing = false
-        
-        // End background task if active
-        if backgroundTask != .invalid {
-            UIApplication.shared.endBackgroundTask(backgroundTask)
-            backgroundTask = .invalid
-        }
     }
     
     func syncFromAppleReminders() async {
@@ -495,6 +494,12 @@ final class RemindersManager {
             // Cancel notifications for completed reminders
             for reminder in reminders {
                 NotificationManager.shared.cancelNotification(for: reminder)
+            }
+
+            Task {
+                for reminder in reminders {
+                    await AdvancedSearchManager.shared.upsertReminderIndex(for: reminder, context: context)
+                }
             }
 
             Logger(subsystem: "a-do", category: "Reminders").info("Batch completed \(reminders.count) reminders")

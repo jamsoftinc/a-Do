@@ -29,18 +29,13 @@ final class BackupManager {
     
     // Configuration
     private var configuration: BackupConfiguration?
+    private var lastScheduledBackupCheck: Date?
+    private let scheduledBackupCheckInterval: TimeInterval = 3600
 
-    // Timer for periodic backup - must be retained
-    private var backupTimer: Timer?
-
-    private init() {
-        setupPeriodicBackup()
-    }
+    private init() {}
 
     /// Call this method to clean up resources when the manager is no longer needed
     func cleanup() {
-        backupTimer?.invalidate()
-        backupTimer = nil
         configuration = nil
     }
     
@@ -475,21 +470,49 @@ final class BackupManager {
         }
     }
     
-    // MARK: - Periodic Backup
+    // MARK: - Lifecycle Backup
 
-    private func setupPeriodicBackup() {
-        backupTimer?.invalidate()
-        backupTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                await self?.checkAndPerformScheduledBackup()
-            }
-        }
+    func checkScheduledBackupsIfNeeded(context: ModelContext, reason: String, force: Bool = false) async {
+        let isStale = lastScheduledBackupCheck.map { Date().timeIntervalSince($0) >= scheduledBackupCheckInterval } ?? true
+        guard force || isStale else { return }
+        await checkAndPerformScheduledBackup(context: context, reason: reason)
     }
     
-    private func checkAndPerformScheduledBackup() async {
-        // This would check if any users have scheduled backups due
-        // Implementation would require access to model context
-        logger.info("Checking for scheduled backups")
+    private func checkAndPerformScheduledBackup(context: ModelContext, reason: String) async {
+        logger.info("Checking for scheduled backups during \(reason, privacy: .public)")
+        lastScheduledBackupCheck = Date()
+
+        let descriptor = FetchDescriptor<BackupConfiguration>(
+            predicate: #Predicate<BackupConfiguration> { configuration in
+                configuration.isEnabled
+            }
+        )
+
+        let configurations = (try? context.fetch(descriptor)) ?? []
+        let now = Date()
+
+        for configuration in configurations {
+            guard let nextBackupDate = configuration.nextBackupDate, nextBackupDate <= now else { continue }
+
+            let backupType: BackupType = configuration.lastBackupDate == nil ? .full : .incremental
+            _ = await createBackup(
+                userId: configuration.userId,
+                type: backupType,
+                format: .json,
+                context: context
+            )
+
+            configuration.lastBackupDate = now
+            configuration.updateSettings()
+        }
+
+        if context.hasChanges {
+            do {
+                try context.save()
+            } catch {
+                logger.error("Failed to persist scheduled backup updates: \(error.localizedDescription, privacy: .public)")
+            }
+        }
     }
     
     // MARK: - Helper Methods
@@ -802,4 +825,3 @@ struct ImportResult {
     let timeEntriesImported: Int
     let focusSessionsImported: Int
 }
-

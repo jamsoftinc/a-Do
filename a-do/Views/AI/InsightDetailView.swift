@@ -15,8 +15,9 @@ struct InsightDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @State private var showingBookmarkTooltip = false
-    
-    private let aiDataService = AIDataService.shared
+    @State private var trendDataPoints: [ProductivityDataPoint] = []
+    @State private var habitCompletionBars: [BarData] = []
+    @State private var timeDistributionSlices: [PieData] = []
     
     var body: some View {
         NavigationStack {
@@ -54,6 +55,9 @@ struct InsightDetailView: View {
             }
             .onAppear {
                 markAsRead()
+            }
+            .task(id: daysForTimeframe) {
+                await loadVisualizationData()
             }
         }
     }
@@ -567,40 +571,6 @@ struct InsightDetailView: View {
     
     // MARK: - Data Mapping
     
-    private var trendDataPoints: [ProductivityDataPoint] {
-        aiDataService.getProductivityTrendData(
-            context: modelContext,
-            days: max(3, daysForTimeframe)
-        )
-    }
-    
-    private var habitCompletionBars: [BarData] {
-        aiDataService.getHabitCompletionData(context: modelContext, days: daysForTimeframe)
-            .map { habitData in
-                BarData(
-                    category: habitData.name,
-                    value: min(100, max(0, habitData.completionRate * 100)),
-                    color: Color(hex: habitData.color) ?? typeColor
-                )
-            }
-            .prefix(6)
-            .map { $0 }
-    }
-    
-    private var timeDistributionSlices: [PieData] {
-        aiDataService.getTimeDistributionData(context: modelContext, days: daysForTimeframe)
-            .map { distribution in
-                PieData(
-                    category: distribution.category,
-                    value: distribution.percentage,
-                    color: Color(hex: distribution.color) ?? typeColor
-                )
-            }
-            .filter { $0.value > 0 }
-            .prefix(6)
-            .map { $0 }
-    }
-    
     private var trendChartYDomain: ClosedRange<Double> {
         let values = trendDataPoints.map(\.score)
         guard let minValue = values.min(), let maxValue = values.max() else {
@@ -660,6 +630,36 @@ struct InsightDetailView: View {
     private func markAsRead() {
         insight.markAsRead()
         // Save context if needed
+    }
+
+    private func loadVisualizationData() async {
+        let snapshot = await AIAnalyticsSnapshotLoader.loadVisualization(
+            container: modelContext.container,
+            days: daysForTimeframe
+        )
+
+        trendDataPoints = snapshot.productivityTrendData
+        habitCompletionBars = snapshot.habitCompletionData
+            .map { habitData in
+                BarData(
+                    category: habitData.name,
+                    value: min(100, max(0, habitData.completionRate * 100)),
+                    color: Color(hex: habitData.color) ?? typeColor
+                )
+            }
+            .prefix(6)
+            .map { $0 }
+        timeDistributionSlices = snapshot.timeDistributionData
+            .map { distribution in
+                PieData(
+                    category: distribution.category,
+                    value: distribution.percentage,
+                    color: Color(hex: distribution.color) ?? typeColor
+                )
+            }
+            .filter { $0.value > 0 }
+            .prefix(6)
+            .map { $0 }
     }
     
     private func toggleBookmark() {

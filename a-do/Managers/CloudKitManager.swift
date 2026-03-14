@@ -21,10 +21,18 @@ final class CloudKitManager: ObservableObject {
     @Published var syncError: String?
     @Published var isSyncEnabled: Bool = true
     
-    private let container = CKContainer.default()
+    private let container: CKContainer?
     private let logger = Logger(subsystem: "a-do", category: "CloudKit")
     
     private init() {
+        if RuntimeEnvironment.isRunningTests {
+            container = nil
+            isSignedIn = false
+            syncStatus = .unknown
+            return
+        }
+
+        container = CKContainer.default()
         checkAccountStatus()
     }
     
@@ -36,6 +44,11 @@ final class CloudKitManager: ObservableObject {
     // MARK: - Account Status
     
     func checkAccountStatus() {
+        guard let container else {
+            logger.info("Skipping CloudKit account check in test environment")
+            return
+        }
+
         Task {
             do {
                 let status = try await container.accountStatus()

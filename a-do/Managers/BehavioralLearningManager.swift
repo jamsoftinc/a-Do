@@ -30,10 +30,9 @@ final class BehavioralLearningManager {
     private var feedbackBuffer: [UserFeedback] = []
     private var lastProcessingDate: Date = Date.distantPast
     private let sessionId: String = UUID().uuidString
+    private let processingInterval: TimeInterval = 3600
     
-    private init() {
-        setupPeriodicProcessing()
-    }
+    private init() {}
     
     // MARK: - User Action Tracking
 
@@ -439,28 +438,17 @@ final class BehavioralLearningManager {
         logger.info("Generated \(insights.count) learning insights")
     }
     
-    // Timer for periodic processing - must be retained
-    private var processingTimer: Timer?
-
     // MARK: - Utility Methods
 
-    private func setupPeriodicProcessing() {
-        processingTimer?.invalidate()
-        processingTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                if !self.actionBuffer.isEmpty {
-                    let context = ModelContext(AppContainer.shared.getContainer())
-                    await self.processBatchedActions(context: context)
-                }
-            }
-        }
+    func flushIfNeeded(context: ModelContext, reason: String, force: Bool = false) async {
+        guard !actionBuffer.isEmpty else { return }
+        guard force || Date().timeIntervalSince(lastProcessingDate) >= processingInterval else { return }
+        logger.info("Flushing behavioral learning buffers for \(reason, privacy: .public)")
+        await processBatchedActions(context: context)
     }
 
     /// Call this method to clean up resources when the manager is no longer needed
     func cleanup() {
-        processingTimer?.invalidate()
-        processingTimer = nil
         actionBuffer.removeAll()
         feedbackBuffer.removeAll()
     }

@@ -412,6 +412,9 @@ struct AISuggestionsView: View {
                 .filter { !$0.isEmpty }
                 .joined(separator: "\n")
             habit.updatedAt = Date()
+            Task {
+                await AdvancedSearchManager.shared.upsertHabitIndex(for: habit, context: modelContext)
+            }
             return "Updated habit plan for '\(habit.title)'."
 
         case .delegationSuggestion, .collaborationOpportunity:

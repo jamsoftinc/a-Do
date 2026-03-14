@@ -10,6 +10,72 @@ import AppIntents
 import SwiftData
 import SwiftUI
 
+private enum VisualIntelligenceReminderStore {
+    nonisolated static func makeContext() throws -> ModelContext {
+        try AppContainer.makeAppGroupContext()
+    }
+
+    nonisolated static func loadReminderEntities(
+        context: ModelContext,
+        identifiers: Set<UUID>? = nil,
+        matching query: String? = nil,
+        limit: Int
+    ) async -> [ReminderEntity] {
+        let requestedLimit = max(limit * 4, max(identifiers?.count ?? 0, 50))
+        let snapshots = await MemorySafeDataLoader.loadSearchableReminders(context: context, limit: requestedLimit)
+        let normalizedQuery = query?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+
+        let filtered = snapshots.filter { snapshot in
+            guard let id = UUID(uuidString: snapshot.id) else { return false }
+            if let identifiers, !identifiers.contains(id) {
+                return false
+            }
+
+            guard let normalizedQuery, !normalizedQuery.isEmpty else {
+                return true
+            }
+
+            let haystack = [
+                snapshot.title,
+                snapshot.details,
+                snapshot.tags.joined(separator: " ")
+            ]
+                .joined(separator: " ")
+                .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+
+            return haystack.contains(normalizedQuery)
+        }
+
+        let sorted = filtered.sorted { lhs, rhs in
+            switch (lhs.dueDate, rhs.dueDate) {
+            case let (left?, right?):
+                return left < right
+            case (_?, nil):
+                return true
+            case (nil, _?):
+                return false
+            case (nil, nil):
+                return lhs.createdAt > rhs.createdAt
+            }
+        }
+
+        return sorted.prefix(limit).compactMap { snapshot in
+            guard let id = UUID(uuidString: snapshot.id) else { return nil }
+            return ReminderEntity(
+                id: id,
+                title: snapshot.title,
+                details: snapshot.details.isEmpty ? nil : snapshot.details,
+                dueDate: snapshot.dueDate,
+                isCompleted: snapshot.isCompleted,
+                priorityLevel: snapshot.priority.title,
+                listName: nil
+            )
+        }
+    }
+}
+
 // MARK: - Reminder Entity for Visual Intelligence
 
 /// Entity representing a Reminder for use with App Intents and Visual Intelligence
@@ -51,59 +117,23 @@ struct ReminderEntity: AppEntity {
 /// Query for searching reminders - enables Visual Intelligence integration
 struct ReminderEntityQuery: EntityQuery {
     func entities(for identifiers: [UUID]) async throws -> [ReminderEntity] {
-        await MainActor.run {
-            let container = AppContainer.shared.getContainer()
-            let context = ModelContext(container)
-            var results: [ReminderEntity] = []
-
-            for id in identifiers {
-                let descriptor = FetchDescriptor<Reminder>(
-                    predicate: #Predicate { $0.uuid == id }
-                )
-
-                if let reminder = try? context.fetch(descriptor).first {
-                    results.append(ReminderEntity(
-                        id: reminder.uuid,
-                        title: reminder.title,
-                        details: reminder.details,
-                        dueDate: reminder.dueDate,
-                        isCompleted: reminder.isCompleted,
-                        priorityLevel: reminder.priority.title,
-                        listName: nil
-                    ))
-                }
-            }
-            return results
-        }
+        let context = try VisualIntelligenceReminderStore.makeContext()
+        return await VisualIntelligenceReminderStore.loadReminderEntities(
+            context: context,
+            identifiers: Set(identifiers),
+            matching: nil,
+            limit: identifiers.count
+        )
     }
 
     /// String-based search for Visual Intelligence
     func suggestedEntities() async throws -> [ReminderEntity] {
-        await MainActor.run {
-            // Return top reminders for quick access
-            let container = AppContainer.shared.getContainer()
-            let context = ModelContext(container)
-
-            var descriptor = FetchDescriptor<Reminder>(
-                predicate: #Predicate { !$0.isCompleted },
-                sortBy: [SortDescriptor(\.dueDate, order: .forward)]
-            )
-            descriptor.fetchLimit = 10
-
-            let reminders = (try? context.fetch(descriptor)) ?? []
-
-            return reminders.map { reminder in
-                ReminderEntity(
-                    id: reminder.uuid,
-                    title: reminder.title,
-                    details: reminder.details,
-                    dueDate: reminder.dueDate,
-                    isCompleted: reminder.isCompleted,
-                    priorityLevel: reminder.priority.title,
-                    listName: nil
-                )
-            }
-        }
+        let context = try VisualIntelligenceReminderStore.makeContext()
+        return await VisualIntelligenceReminderStore.loadReminderEntities(
+            context: context,
+            matching: nil,
+            limit: 10
+        ).filter { !$0.isCompleted }
     }
 }
 
@@ -126,31 +156,12 @@ struct SearchRemindersVisually: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<[ReminderEntity]> {
-        let container = AppContainer.shared.getContainer()
-        let context = ModelContext(container)
-
-        // Search reminders matching the query
-        let searchLower = query.lowercased()
-
-        let descriptor = FetchDescriptor<Reminder>()
-        let allReminders = (try? context.fetch(descriptor)) ?? []
-
-        let matchingReminders = allReminders.filter { reminder in
-            reminder.title.lowercased().contains(searchLower) ||
-            (reminder.details?.lowercased().contains(searchLower) ?? false)
-        }
-
-        let entities = matchingReminders.prefix(10).map { reminder in
-            ReminderEntity(
-                id: reminder.uuid,
-                title: reminder.title,
-                details: reminder.details,
-                dueDate: reminder.dueDate,
-                isCompleted: reminder.isCompleted,
-                priorityLevel: reminder.priority.title,
-                listName: nil
-            )
-        }
+        let context = try VisualIntelligenceReminderStore.makeContext()
+        let entities = await VisualIntelligenceReminderStore.loadReminderEntities(
+            context: context,
+            matching: query,
+            limit: 10
+        )
 
         return .result(value: Array(entities))
     }
@@ -176,8 +187,7 @@ struct CreateReminderFromVisual: AppIntent {
 
     @MainActor
     func perform() async throws -> some ProvidesDialog {
-        let container = AppContainer.shared.getContainer()
-        let context = ModelContext(container)
+        let context = try VisualIntelligenceReminderStore.makeContext()
 
         if useAI, EntitlementManager.shared.isProUser {
             let requests = await AIManager.shared.buildCaptureRequests(from: content)
@@ -185,15 +195,7 @@ struct CreateReminderFromVisual: AppIntent {
                 return .result(dialog: "Couldn't parse visual text into reminders.")
             }
 
-            var createdCount = 0
-            for request in requests {
-                do {
-                    _ = try await ReminderCreationService.shared.createReminder(request: request, in: context)
-                    createdCount += 1
-                } catch {
-                    continue
-                }
-            }
+            let createdCount = ((try? await ReminderCreationService.shared.createReminders(requests: requests, in: context)) ?? []).count
 
             if createdCount > 0 {
                 return .result(dialog: "Created \(createdCount) reminder\(createdCount == 1 ? "" : "s") from visual content.")
@@ -247,8 +249,7 @@ struct ScanBusinessCardIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some ProvidesDialog {
-        let container = AppContainer.shared.getContainer()
-        let context = ModelContext(container)
+        let context = try VisualIntelligenceReminderStore.makeContext()
 
         let name = contactName ?? "New Contact"
         let title = "Follow up with \(name)"
@@ -264,14 +265,17 @@ struct ScanBusinessCardIntent: AppIntent {
         // Create follow-up reminder for tomorrow
         let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date())
 
-        let reminder = Reminder(title: title, dueDate: tomorrow)
-        reminder.details = details.isEmpty ? nil : details
-        reminder.priority = .medium
-
-        context.insert(reminder)
-
         do {
-            try context.save()
+            _ = try await ReminderCreationService.shared.createReminder(
+                request: .init(
+                    title: title,
+                    details: details.isEmpty ? nil : details,
+                    dueDate: tomorrow,
+                    priority: .medium,
+                    useNaturalLanguageParsing: false
+                ),
+                in: context
+            )
             return .result(dialog: "Created follow-up reminder for \(name)")
         } catch {
             return .result(dialog: "Failed to create reminder")
@@ -296,8 +300,7 @@ struct ScanDocumentIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some ProvidesDialog {
-        let container = AppContainer.shared.getContainer()
-        let context = ModelContext(container)
+        let context = try VisualIntelligenceReminderStore.makeContext()
 
         if EntitlementManager.shared.isProUser {
             let requests = await AIManager.shared.buildCaptureRequests(from: documentText)
@@ -305,15 +308,7 @@ struct ScanDocumentIntent: AppIntent {
                 return .result(dialog: "No actionable reminders found in document.")
             }
 
-            var createdCount = 0
-            for request in requests {
-                do {
-                    _ = try await ReminderCreationService.shared.createReminder(request: request, in: context)
-                    createdCount += 1
-                } catch {
-                    continue
-                }
-            }
+            let createdCount = ((try? await ReminderCreationService.shared.createReminders(requests: requests, in: context)) ?? []).count
 
             if createdCount > 0 {
                 return .result(dialog: "Created \(createdCount) reminders from document")
@@ -379,31 +374,11 @@ struct ScanDocumentIntent: AppIntent {
 /// Provides entity indexing for Visual Intelligence search
 extension ReminderEntityQuery: EntityStringQuery {
     func entities(matching string: String) async throws -> [ReminderEntity] {
-        await MainActor.run {
-            let container = AppContainer.shared.getContainer()
-            let context = ModelContext(container)
-
-            let searchLower = string.lowercased()
-
-            let descriptor = FetchDescriptor<Reminder>()
-            let allReminders = (try? context.fetch(descriptor)) ?? []
-
-            let matchingReminders = allReminders.filter { reminder in
-                reminder.title.lowercased().contains(searchLower) ||
-                (reminder.details?.lowercased().contains(searchLower) ?? false)
-            }
-
-            return matchingReminders.prefix(20).map { reminder in
-                ReminderEntity(
-                    id: reminder.uuid,
-                    title: reminder.title,
-                    details: reminder.details,
-                    dueDate: reminder.dueDate,
-                    isCompleted: reminder.isCompleted,
-                    priorityLevel: reminder.priority.title,
-                    listName: nil
-                )
-            }
-        }
+        let context = try VisualIntelligenceReminderStore.makeContext()
+        return await VisualIntelligenceReminderStore.loadReminderEntities(
+            context: context,
+            matching: string,
+            limit: 20
+        )
     }
 }

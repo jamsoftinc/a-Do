@@ -11,6 +11,8 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private let geocoder = CLGeocoder()
     private var geocodingTask: Task<Void, Never>?
+    private var authorizationContinuation: CheckedContinuation<CLAuthorizationStatus, Never>?
+    private var locationContinuation: CheckedContinuation<CLLocation?, Never>?
     var authorizationStatus: CLAuthorizationStatus = .notDetermined
     var currentLocation: CLLocation?
     var isUpdatingLocation: Bool = false
@@ -49,6 +51,19 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
             manager.requestWhenInUseAuthorization()
         }
     }
+
+    func awaitAuthorization(always: Bool = false) async -> CLAuthorizationStatus {
+        let currentStatus = authorizationStatus
+        if currentStatus != .notDetermined {
+            return currentStatus
+        }
+
+        return await withCheckedContinuation { continuation in
+            authorizationContinuation?.resume(returning: manager.authorizationStatus)
+            authorizationContinuation = continuation
+            requestAuthorization(always: always)
+        }
+    }
     
     func startLocationUpdates() {
         guard authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways else {
@@ -74,7 +89,12 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         Logger(subsystem: "a-do", category: "Location").info("Getting current location...")
         
         // Check authorization first
-        if authorizationStatus == .denied || authorizationStatus == .restricted {
+        var currentStatus = authorizationStatus
+        if currentStatus == .notDetermined {
+            currentStatus = await awaitAuthorization()
+        }
+
+        if currentStatus == .denied || currentStatus == .restricted {
             let errorMsg = "Location access denied or restricted (status: \(authorizationStatus.rawValue))"
             Logger(subsystem: "a-do", category: "Location").error("\(errorMsg)")
             lastLocationError = errorMsg
@@ -88,24 +108,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
             return location
         }
         
-        // Otherwise, start updates and wait for a location
-        startLocationUpdates()
-        
-        // Wait for up to 15 seconds for a location update
-        for attempt in 0..<150 {
-            if let location = currentLocation {
-                Logger(subsystem: "a-do", category: "Location").info("Location obtained after \(Double(attempt) * 0.1) seconds: \(location.coordinate.latitude), \(location.coordinate.longitude)")
-                stopLocationUpdates()
-                return location
-            }
-            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-        }
-        
-        stopLocationUpdates()
-        let errorMsg = "Failed to get location after 15 seconds"
-        Logger(subsystem: "a-do", category: "Location").error("\(errorMsg)")
-        lastLocationError = errorMsg
-        return nil
+        return await requestSingleLocation(timeoutNanoseconds: 15_000_000_000)
     }
     
     private func reverseGeocode(location: CLLocation) async {
@@ -163,6 +166,11 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
             let oldStatus = self.authorizationStatus
             self.authorizationStatus = manager.authorizationStatus
             Logger(subsystem: "a-do", category: "Location").info("Location authorization changed from \(oldStatus.rawValue) to \(manager.authorizationStatus.rawValue)")
+            if let continuation = self.authorizationContinuation,
+               manager.authorizationStatus != .notDetermined {
+                self.authorizationContinuation = nil
+                continuation.resume(returning: manager.authorizationStatus)
+            }
         }
     }
 
@@ -186,7 +194,12 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         Task { @MainActor in
             self.currentLocation = location
             self.lastLocationError = nil
+            self.isUpdatingLocation = false
             Logger(subsystem: "a-do", category: "Location").info("Location updated: \(location.coordinate.latitude), \(location.coordinate.longitude) (accuracy: \(location.horizontalAccuracy)m)")
+            if let continuation = self.locationContinuation {
+                self.locationContinuation = nil
+                continuation.resume(returning: location)
+            }
             
             // Reverse geocode to get address
             await self.reverseGeocode(location: location)
@@ -199,6 +212,10 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
             Logger(subsystem: "a-do", category: "Location").error("\(errorMsg)")
             self.lastLocationError = errorMsg
             self.isUpdatingLocation = false
+            if let continuation = self.locationContinuation {
+                self.locationContinuation = nil
+                continuation.resume(returning: nil)
+            }
         }
     }
     
@@ -207,12 +224,52 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         // Note: We can't call async methods in deinit, so we'll just clean up what we can
         geocodingTask?.cancel()
         geocodingTask = nil
+        authorizationContinuation?.resume(returning: manager.authorizationStatus)
+        authorizationContinuation = nil
+        locationContinuation?.resume(returning: nil)
+        locationContinuation = nil
 
         // Stop monitoring all regions
         // Create a copy of the set to avoid mutating while iterating
         let regionsToStop = Array(manager.monitoredRegions)
         for region in regionsToStop {
             manager.stopMonitoring(for: region)
+        }
+    }
+
+    private func requestSingleLocation(timeoutNanoseconds: UInt64) async -> CLLocation? {
+        await withTaskGroup(of: CLLocation?.self) { group in
+            group.addTask { @MainActor in
+                await withCheckedContinuation { continuation in
+                    self.locationContinuation?.resume(returning: self.currentLocation)
+                    self.locationContinuation = continuation
+                    self.isUpdatingLocation = true
+                    self.lastLocationError = nil
+                    self.manager.requestLocation()
+                }
+            }
+
+            group.addTask {
+                try? await Task.sleep(nanoseconds: timeoutNanoseconds)
+                return nil
+            }
+
+            let location = await group.next() ?? nil
+            group.cancelAll()
+
+            if location == nil {
+                await MainActor.run {
+                    self.isUpdatingLocation = false
+                    self.lastLocationError = "Failed to get location after \(timeoutNanoseconds / 1_000_000_000) seconds"
+                    Logger(subsystem: "a-do", category: "Location").error("\(self.lastLocationError ?? "Location request timed out")")
+                    if let continuation = self.locationContinuation {
+                        self.locationContinuation = nil
+                        continuation.resume(returning: nil)
+                    }
+                }
+            }
+
+            return location
         }
     }
 }

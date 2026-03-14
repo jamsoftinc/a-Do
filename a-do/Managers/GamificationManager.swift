@@ -32,10 +32,9 @@ final class GamificationManager {
     // Recent achievements and rewards
     var recentAchievements: [UserAchievement] = []
     var pendingRewards: [UserReward] = []
+    private let refreshInterval: TimeInterval = 3600
     
-    private init() {
-        setupPeriodicUpdates()
-    }
+    private init() {}
     
     // MARK: - Profile Management
     
@@ -478,34 +477,20 @@ final class GamificationManager {
         // Implementation would depend on the notification system
     }
     
-    // Timer for periodic updates - must be retained
-    private var updateTimer: Timer?
-
-    // MARK: - Periodic Updates
-
-    private func setupPeriodicUpdates() {
-        updateTimer?.invalidate()
-        updateTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                await self?.performPeriodicUpdates()
-            }
-        }
-    }
-
     /// Call this method to clean up resources when the manager is no longer needed
     func cleanup() {
-        updateTimer?.invalidate()
-        updateTimer = nil
         currentProfile = nil
         recentAchievements.removeAll()
         pendingRewards.removeAll()
     }
-    
-    private func performPeriodicUpdates() async {
-        logger.info("Performing periodic gamification updates")
-        
-        // This would update leaderboards, check for expired challenges, etc.
-        // Implementation would require access to model context
+
+    func refreshIfNeeded(context: ModelContext, reason: String, force: Bool = false) async {
+        let isStale = lastUpdateDate.map { Date().timeIntervalSince($0) >= refreshInterval } ?? true
+        guard force || isStale else { return }
+        guard let profile = currentProfile else { return }
+
+        logger.info("Refreshing gamification state for \(reason, privacy: .public)")
+        await checkAchievements(for: profile, context: context)
     }
     
     // MARK: - Helper Methods
@@ -729,4 +714,3 @@ struct GamificationStats {
     let activeChallenges: Int
     let pendingRewards: Int
 }
-

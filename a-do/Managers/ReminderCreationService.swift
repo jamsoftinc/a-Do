@@ -44,26 +44,45 @@ final class ReminderCreationService {
 
     @discardableResult
     func createReminder(request: Request, in context: ModelContext) async throws -> Reminder {
-        let normalizedRequest = await normalize(request: request)
-        guard !normalizedRequest.title.isEmpty else { throw ServiceError.emptyTitle }
-        let reminder = buildReminder(from: normalizedRequest, in: context)
+        guard let reminder = try await createReminders(requests: [request], in: context).first else {
+            throw ServiceError.emptyTitle
+        }
+        return reminder
+    }
 
-        context.insert(reminder)
-        try context.save()
+    @discardableResult
+    func createReminders(requests: [Request], in context: ModelContext) async throws -> [Reminder] {
+        let normalizedRequests = await normalize(requests: requests)
+        let validRequests = normalizedRequests.filter { !$0.title.isEmpty }
+        guard !validRequests.isEmpty else { throw ServiceError.emptyTitle }
 
-        if let dueDate = reminder.dueDate {
-            await NotificationManager.shared.scheduleNotifications(
-                for: reminder,
-                dueDate: dueDate,
-                leadTimes: normalizedRequest.leadTimes
-            )
+        var reminders: [Reminder] = []
+        reminders.reserveCapacity(validRequests.count)
+
+        for request in validRequests {
+            let reminder = buildReminder(from: request, in: context)
+            context.insert(reminder)
+            reminders.append(reminder)
         }
 
-        NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: reminder)
-        WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+        try context.save()
 
-        logger.info("Created reminder: \(reminder.title, privacy: .public)")
-        return reminder
+        for (reminder, request) in zip(reminders, validRequests) {
+            if let dueDate = reminder.dueDate {
+                await NotificationManager.shared.scheduleNotifications(
+                    for: reminder,
+                    dueDate: dueDate,
+                    leadTimes: request.leadTimes
+                )
+            }
+
+            NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: reminder)
+            logger.info("Created reminder: \(reminder.title, privacy: .public)")
+            await AdvancedSearchManager.shared.upsertReminderIndex(for: reminder, context: context)
+        }
+
+        WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
+        return reminders
     }
 
     @discardableResult
@@ -80,7 +99,8 @@ final class ReminderCreationService {
         )
 
         NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: reminder)
-        WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+        await AdvancedSearchManager.shared.upsertReminderIndex(for: reminder, context: context)
+        WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
 
         logger.info("Updated reminder: \(reminder.title, privacy: .public)")
         return reminder
@@ -175,6 +195,17 @@ final class ReminderCreationService {
         }
 
         return normalized
+    }
+
+    private func normalize(requests: [Request]) async -> [Request] {
+        var normalizedRequests: [Request] = []
+        normalizedRequests.reserveCapacity(requests.count)
+
+        for request in requests {
+            normalizedRequests.append(await normalize(request: request))
+        }
+
+        return normalizedRequests
     }
 
     private func buildReminder(from request: Request, in context: ModelContext) -> Reminder {

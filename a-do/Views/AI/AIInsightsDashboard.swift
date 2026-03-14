@@ -13,7 +13,6 @@ struct AIInsightsDashboard: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var aiManager = AIManager.shared
-    @State private var aiDataService = AIDataService.shared
     @State private var selectedTimeframe: AIInsightTimeframe = .week
     @State private var selectedInsight: AIInsight?
     
@@ -22,6 +21,9 @@ struct AIInsightsDashboard: View {
     @State private var habitMetrics: HabitMetrics?
     @State private var timeUsageMetrics: TimeUsageMetrics?
     @State private var focusMetrics: FocusEffectivenessMetrics?
+    @State private var productivityTrendValues: [Double] = []
+    @State private var habitChartValues: [HabitChartData] = []
+    @State private var timeChartValues: [TimeChartData] = []
     
     @Query(sort: [
         SortDescriptor(\AIInsight.createdAt, order: .reverse)
@@ -75,10 +77,9 @@ struct AIInsightsDashboard: View {
             }
             .onAppear {
                 refreshInsights()
-                loadRealData()
             }
-            .onChange(of: selectedTimeframe) { _, _ in
-                loadRealData()
+            .task(id: selectedTimeframe) {
+                await loadRealData()
             }
         }
     }
@@ -235,7 +236,7 @@ struct AIInsightsDashboard: View {
             }
             
             Chart {
-                ForEach(Array(realProductivityData.enumerated()), id: \.offset) { index, value in
+                ForEach(Array(productivityTrendValues.enumerated()), id: \.offset) { index, value in
                     LineMark(
                         x: .value("Day", index),
                         y: .value("Score", value)
@@ -267,7 +268,7 @@ struct AIInsightsDashboard: View {
                 .foregroundColor(.accentColor)
             }
             
-            Chart(realHabitData, id: \.name) { habit in
+            Chart(habitChartValues, id: \.name) { habit in
                 BarMark(
                     x: .value("Completion", habit.completion),
                     y: .value("Habit", habit.name)
@@ -297,7 +298,7 @@ struct AIInsightsDashboard: View {
                 .foregroundColor(.accentColor)
             }
             
-            Chart(realTimeData, id: \.category) { data in
+            Chart(timeChartValues, id: \.category) { data in
                 SectorMark(
                     angle: .value("Hours", data.hours),
                     innerRadius: .ratio(0.5),
@@ -376,33 +377,6 @@ struct AIInsightsDashboard: View {
     
     // MARK: - Real Data Properties
     
-    private var realProductivityData: [Double] {
-        aiDataService.getProductivityTrendData(context: modelContext, days: 7)
-            .map { $0.score }
-    }
-    
-    private var realHabitData: [HabitChartData] {
-        aiDataService.getHabitCompletionData(context: modelContext, days: 7)
-            .map { habitData in
-                HabitChartData(
-                    name: habitData.name,
-                    completion: habitData.completionRate,
-                    color: Color(hex: habitData.color) ?? .blue
-                )
-            }
-    }
-    
-    private var realTimeData: [TimeChartData] {
-        aiDataService.getTimeDistributionData(context: modelContext, days: 7)
-            .map { timeData in
-                TimeChartData(
-                    category: timeData.category,
-                    hours: timeData.hours,
-                    color: Color(hex: timeData.color) ?? .blue
-                )
-            }
-    }
-    
     // MARK: - Actions
     
     private var refreshButton: some View {
@@ -423,11 +397,35 @@ struct AIInsightsDashboard: View {
         }
     }
     
-    private func loadRealData() {
-        productivityMetrics = aiDataService.getProductivityMetrics(context: modelContext, timeframe: selectedTimeframe)
-        habitMetrics = aiDataService.getHabitMetrics(context: modelContext, timeframe: selectedTimeframe)
-        timeUsageMetrics = aiDataService.getTimeUsageMetrics(context: modelContext, timeframe: selectedTimeframe)
-        focusMetrics = aiDataService.getFocusEffectivenessMetrics(context: modelContext, timeframe: selectedTimeframe)
+    private func loadRealData() async {
+        let snapshot = await AIAnalyticsSnapshotLoader.loadDashboard(
+            container: modelContext.container,
+            timeframe: selectedTimeframe,
+            trendDays: 7
+        )
+
+        productivityMetrics = snapshot.productivityMetrics
+        habitMetrics = snapshot.habitMetrics
+        timeUsageMetrics = snapshot.timeUsageMetrics
+        focusMetrics = snapshot.focusMetrics
+        productivityTrendValues = snapshot.productivityTrendData
+            .map(\.score)
+        habitChartValues = snapshot.habitCompletionData
+            .map { habitData in
+                HabitChartData(
+                    name: habitData.name,
+                    completion: habitData.completionRate,
+                    color: Color(hex: habitData.color) ?? .blue
+                )
+            }
+        timeChartValues = snapshot.timeDistributionData
+            .map { timeData in
+                TimeChartData(
+                    category: timeData.category,
+                    hours: timeData.hours,
+                    color: Color(hex: timeData.color) ?? .blue
+                )
+            }
     }
 }
 

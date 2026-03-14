@@ -37,7 +37,8 @@ final class AdvancedSearchManager: ObservableObject {
     // Search index
     private var searchIndex: [SearchIndex] = []
     private var lastIndexUpdate: Date?
-    private var indexingTimer: Timer?
+    private var isIndexDirty = true
+    private let indexRefreshInterval: TimeInterval = 6 * 3600
     
     // Organization rules
     private var organizationRules: [OrganizationRule] = []
@@ -45,9 +46,7 @@ final class AdvancedSearchManager: ObservableObject {
     // Quick actions
     private var quickActions: [QuickAction] = []
     
-    private init() {
-        setupPeriodicIndexing()
-    }
+    private init() {}
     
     // MARK: - Configuration Management
     
@@ -161,10 +160,10 @@ final class AdvancedSearchManager: ObservableObject {
         let executionTime = Date().timeIntervalSince(startTime)
         searchQuery.updateUsage(resultCount: results.count, executionTime: executionTime)
         
-        // Save results
+        // Keep result rows in memory. Persisting every transient search result causes
+        // unnecessary database growth and slows down repeated searches.
         for result in results {
             result.queryId = searchQuery.id
-            context.insert(result)
         }
         
         do {
@@ -625,68 +624,203 @@ final class AdvancedSearchManager: ObservableObject {
     
     // MARK: - Search Index Management
     
-    private func setupPeriodicIndexing() {
-        indexingTimer?.invalidate()
-        indexingTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                await self?.updateSearchIndex()
+    func markIndexDirty() {
+        isIndexDirty = true
+    }
+
+    func upsertReminderIndex(for reminder: Reminder, context: ModelContext) async {
+        let itemId = reminder.uuid.uuidString
+        let content = [
+            reminder.title,
+            reminder.details ?? "",
+            (reminder.tags ?? []).map(\.name).joined(separator: " ")
+        ]
+            .joined(separator: " ")
+
+        await upsertSearchIndex(
+            itemType: .reminder,
+            itemId: itemId,
+            content: content,
+            container: context.container
+        )
+    }
+
+    func removeReminderIndex(for reminder: Reminder, context: ModelContext) async {
+        await removeSearchIndex(
+            itemType: .reminder,
+            itemId: reminder.uuid.uuidString,
+            container: context.container
+        )
+    }
+
+    func upsertHabitIndex(for habit: Habit, context: ModelContext) async {
+        await upsertSearchIndex(
+            itemType: .habit,
+            itemId: habit.id.uuidString,
+            content: [habit.title, habit.habitDescription].joined(separator: " "),
+            container: context.container
+        )
+    }
+
+    func removeHabitIndex(for habit: Habit, context: ModelContext) async {
+        await removeSearchIndex(
+            itemType: .habit,
+            itemId: habit.id.uuidString,
+            container: context.container
+        )
+    }
+
+    func removeHabitIndex(itemId: String, context: ModelContext) async {
+        await removeSearchIndex(
+            itemType: .habit,
+            itemId: itemId,
+            container: context.container
+        )
+    }
+
+    private func upsertSearchIndex(
+        itemType: SearchResultType,
+        itemId: String,
+        content: String,
+        container: ModelContainer
+    ) async {
+        let itemTypeRaw = itemType.rawValue
+        let didSave = await Task.detached(priority: .utility) {
+            let backgroundContext = ModelContext(container)
+            let descriptor = FetchDescriptor<SearchIndex>(
+                predicate: #Predicate<SearchIndex> { index in
+                    index.itemTypeRaw == itemTypeRaw && index.itemId == itemId
+                }
+            )
+
+            if let existingIndex = try? backgroundContext.fetch(descriptor).first {
+                existingIndex.updateContent(content)
+                existingIndex.isActive = true
+            } else {
+                backgroundContext.insert(
+                    SearchIndex(
+                        itemType: itemType,
+                        itemId: itemId,
+                        content: content
+                    )
+                )
             }
+
+            do {
+                try backgroundContext.save()
+                return true
+            } catch {
+                return false
+            }
+        }.value
+
+        if didSave {
+            isIndexDirty = false
+            lastIndexUpdate = Date()
+        } else {
+            markIndexDirty()
         }
     }
-    
-    private func updateSearchIndex() async {
-        logger.info("Updating search index")
-        lastIndexUpdate = Date()
-        
-        // This would update the search index with new/modified content
-        // Implementation would depend on the specific indexing strategy
+
+    private func removeSearchIndex(
+        itemType: SearchResultType,
+        itemId: String,
+        container: ModelContainer
+    ) async {
+        let itemTypeRaw = itemType.rawValue
+        let didSave = await Task.detached(priority: .utility) {
+            let backgroundContext = ModelContext(container)
+            let descriptor = FetchDescriptor<SearchIndex>(
+                predicate: #Predicate<SearchIndex> { index in
+                    index.itemTypeRaw == itemTypeRaw && index.itemId == itemId
+                }
+            )
+
+            let indexes = (try? backgroundContext.fetch(descriptor)) ?? []
+            for index in indexes {
+                backgroundContext.delete(index)
+            }
+
+            do {
+                try backgroundContext.save()
+                return true
+            } catch {
+                return false
+            }
+        }.value
+
+        if didSave {
+            lastIndexUpdate = Date()
+        } else {
+            markIndexDirty()
+        }
+    }
+
+    func refreshIndexIfNeeded(context: ModelContext, reason: String, force: Bool = false) async {
+        let isStale = lastIndexUpdate.map { Date().timeIntervalSince($0) >= indexRefreshInterval } ?? true
+        guard force || isIndexDirty || isStale else { return }
+        logger.info("Refreshing search index for \(reason, privacy: .public)")
+        await rebuildSearchIndex(context: context)
     }
     
     func rebuildSearchIndex(context: ModelContext) async {
         logger.info("Rebuilding search index")
-        
-        // Clear existing index
-        let indexDescriptor = FetchDescriptor<SearchIndex>()
-        let existingIndexes = (try? context.fetch(indexDescriptor)) ?? []
-        
-        for index in existingIndexes {
-            context.delete(index)
+        let container = context.container
+
+        let rebuildCount = await Task.detached(priority: .utility) { () -> Int in
+            let backgroundContext = ModelContext(container)
+
+            let indexDescriptor = FetchDescriptor<SearchIndex>()
+            let existingIndexes = (try? backgroundContext.fetch(indexDescriptor)) ?? []
+            for index in existingIndexes {
+                backgroundContext.delete(index)
+            }
+
+            let reminderDescriptor = FetchDescriptor<Reminder>()
+            let reminders = (try? backgroundContext.fetch(reminderDescriptor)) ?? []
+            var rebuiltCount = 0
+
+            for reminder in reminders {
+                let index = SearchIndex(
+                    itemType: SearchResultType.reminder,
+                    itemId: reminder.uuid.uuidString,
+                    content: reminder.title + " " + (reminder.details ?? "")
+                )
+                backgroundContext.insert(index)
+                rebuiltCount += 1
+            }
+
+            let habitDescriptor = FetchDescriptor<Habit>()
+            let habits = (try? backgroundContext.fetch(habitDescriptor)) ?? []
+
+            for habit in habits {
+                let index = SearchIndex(
+                    itemType: SearchResultType.habit,
+                    itemId: habit.id.uuidString,
+                    content: habit.title + " " + habit.habitDescription
+                )
+                backgroundContext.insert(index)
+                rebuiltCount += 1
+            }
+
+            do {
+                try backgroundContext.save()
+            } catch {
+                return -1
+            }
+
+            return rebuiltCount
+        }.value
+
+        guard rebuildCount >= 0 else {
+            logger.error("Failed to rebuild search index")
+            return
         }
-        
-        // Rebuild index for reminders
-        let reminderDescriptor = FetchDescriptor<Reminder>()
-        let reminders = (try? context.fetch(reminderDescriptor)) ?? []
-        
-        for reminder in reminders {
-            let content = reminder.title + " " + (reminder.details ?? "")
-            let index = SearchIndex(
-                itemType: SearchResultType.reminder,
-                itemId: reminder.uuid.uuidString,
-                content: content
-            )
-            context.insert(index)
-        }
-        
-        // Rebuild index for habits
-        let habitDescriptor = FetchDescriptor<Habit>()
-        let habits = (try? context.fetch(habitDescriptor)) ?? []
-        
-        for habit in habits {
-            let content = habit.title + " " + habit.habitDescription
-            let index = SearchIndex(
-                itemType: SearchResultType.habit,
-                itemId: habit.id.uuidString,
-                content: content
-            )
-            context.insert(index)
-        }
-        
-        do {
-            try context.save()
-            logger.info("Search index rebuilt successfully")
-        } catch {
-            logger.error("Failed to rebuild search index: \(error.localizedDescription)")
-        }
+
+        searchIndex = (try? context.fetch(FetchDescriptor<SearchIndex>())) ?? []
+        lastIndexUpdate = Date()
+        isIndexDirty = false
+        logger.info("Search index rebuilt successfully")
     }
     
     // MARK: - Organization Rules
@@ -1440,7 +1574,7 @@ final class AdvancedSearchManager: ObservableObject {
         case "high", "3": targetPriority = .high
         case "medium", "2": targetPriority = .medium
         case "low", "1": targetPriority = .low
-        case "none", "0": targetPriority = .none
+        case "none", "0": targetPriority = Priority.none
         default: targetPriority = nil
         }
         

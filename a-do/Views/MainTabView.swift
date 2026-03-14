@@ -13,6 +13,7 @@ struct MainTabView: View {
     @State private var showingAIInsights = false
     @State private var showingAISettings = false
     @State private var deepLinkSearchQuery = ""
+    @State private var deepLinkSavedSearchID: UUID?
     @State private var deepLinkAlertMessage: String?
 
     enum Tab {
@@ -79,7 +80,10 @@ struct MainTabView: View {
         }
         .fullScreenCover(isPresented: $showingSmartSearchFromDeepLink) {
             NavigationStack {
-                SmartSearchView(initialQuery: deepLinkSearchQuery)
+                SmartSearchView(
+                    initialQuery: deepLinkSearchQuery,
+                    savedSearchID: deepLinkSavedSearchID
+                )
             }
         }
         .fullScreenCover(isPresented: $showingAISuggestions) {
@@ -111,6 +115,7 @@ struct MainTabView: View {
         showingAIInsights = false
         showingAISettings = false
         deepLinkSearchQuery = ""
+        deepLinkSavedSearchID = nil
         deepLinkAlertMessage = nil
     }
 
@@ -122,14 +127,22 @@ struct MainTabView: View {
         case .smartHighPriority:
             selectedTab = .home
             deepLinkSearchQuery = "priority high"
+            deepLinkSavedSearchID = nil
+            showingSmartSearchFromDeepLink = true
+        case .savedSearch(let id):
+            selectedTab = .home
+            deepLinkSearchQuery = ""
+            deepLinkSavedSearchID = id
             showingSmartSearchFromDeepLink = true
         case .tag(let tagName):
             selectedTab = .home
             deepLinkSearchQuery = "#\(tagName)"
+            deepLinkSavedSearchID = nil
             showingSmartSearchFromDeepLink = true
         case .priority(let priority):
             selectedTab = .home
             deepLinkSearchQuery = priority.title
+            deepLinkSavedSearchID = nil
             showingSmartSearchFromDeepLink = true
         case .sendText(let reminderId):
             selectedTab = .home

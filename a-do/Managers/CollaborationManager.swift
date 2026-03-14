@@ -18,7 +18,8 @@ final class CollaborationManager: ObservableObject {
     static let shared = CollaborationManager()
     
     private let logger = Logger(subsystem: "a-do", category: "Collaboration")
-    private let container = CKContainer.default()
+    @ObservationIgnored
+    private let container: CKContainer?
 
     // Current user info - Secure user identification
     var currentUserID: String?
@@ -33,6 +34,16 @@ final class CollaborationManager: ObservableObject {
     var shareError: String?
     
     private init() {
+        guard !RuntimeEnvironment.isRunningTests else {
+            container = nil
+            currentUserID = "unit-test-user"
+            currentUserName = "Unit Test User"
+            currentUserEmail = ""
+            return
+        }
+
+        container = CKContainer.default()
+
         Task {
             await fetchUserInfo()
         }
@@ -41,6 +52,7 @@ final class CollaborationManager: ObservableObject {
     // MARK: - User Info
     
     func fetchUserInfo() async {
+        guard !RuntimeEnvironment.isRunningTests, let container else { return }
         do {
             let userRecordID = try await container.userRecordID()
             currentUserID = userRecordID.recordName
@@ -368,6 +380,11 @@ final class CollaborationManager: ObservableObject {
     
     private func createCloudKitShare(for reminder: Reminder, sharedReminder: SharedReminder) async -> CKShare? {
         do {
+            guard let container else {
+                logger.warning("CloudKit sharing unavailable: container is not configured")
+                return nil
+            }
+
             // Create a CKRecord for the reminder if it doesn't exist
             let recordID = CKRecord.ID(recordName: reminder.uuid.uuidString)
             let reminderRecord = CKRecord(recordType: "Reminder", recordID: recordID)
@@ -402,6 +419,11 @@ final class CollaborationManager: ObservableObject {
     
     private func revokeCloudKitShare(shareID: String) async {
         do {
+            guard let container else {
+                logger.warning("CloudKit share revocation unavailable: container is not configured")
+                return
+            }
+
             let recordID = CKRecord.ID(recordName: shareID)
             let database = container.privateCloudDatabase
             let _ = try await database.deleteRecord(withID: recordID)

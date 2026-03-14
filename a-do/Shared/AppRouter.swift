@@ -2,10 +2,14 @@ import Foundation
 import SwiftData
 import SwiftUI
 import Observation
+#if canImport(CoreSpotlight)
+import CoreSpotlight
+#endif
 
 enum DeepLinkDestination: Identifiable, Equatable {
     case smartToday
     case smartHighPriority
+    case savedSearch(UUID)
     case tag(String)
     case priority(Priority)
     case sendText(reminderId: UUID)
@@ -18,6 +22,7 @@ enum DeepLinkDestination: Identifiable, Equatable {
         switch self {
         case .smartToday: return "smart_today"
         case .smartHighPriority: return "smart_high"
+        case .savedSearch(let id): return "saved_search_\(id.uuidString)"
         case .tag(let name): return "tag_\(name)"
         case .priority(let p): return "priority_\(p.rawValue)"
         case .sendText(let id): return "send_text_\(id.uuidString)"
@@ -54,6 +59,11 @@ final class AppRouter {
             destination = .smartToday
         } else if path.hasPrefix("/smart/high") {
             destination = .smartHighPriority
+        } else if path.hasPrefix("/search/saved/") {
+            let idString = String(path.dropFirst("/search/saved/".count))
+            if let id = UUID(uuidString: idString) {
+                destination = .savedSearch(id)
+            }
         } else if path.hasPrefix("/sendtext/") {
             let idStr = String(path.dropFirst("/sendtext/".count))
             if let id = UUID(uuidString: idStr) { destination = .sendText(reminderId: id) }
@@ -79,6 +89,22 @@ final class AppRouter {
         } else if path.hasPrefix("/ai/settings") {
             destination = .aiSettings
         }
+    }
+
+    func handleSpotlightActivity(_ activity: NSUserActivity) {
+        #if canImport(CoreSpotlight)
+        guard activity.activityType == CSSearchableItemActionType,
+              let identifier = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String else {
+            return
+        }
+
+        if identifier.hasPrefix(SearchSpotlightIdentifiers.savedSearchPrefix) {
+            let idString = String(identifier.dropFirst(SearchSpotlightIdentifiers.savedSearchPrefix.count))
+            if let id = UUID(uuidString: idString) {
+                destination = .savedSearch(id)
+            }
+        }
+        #endif
     }
 
     func checkGroupDeeplinkFlag() {
@@ -113,4 +139,3 @@ final class AppRouter {
         }
     }
 }
-

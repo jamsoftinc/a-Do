@@ -16,6 +16,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         FirebaseBootstrapper.configureIfNeeded()
+        BackgroundMaintenanceManager.shared.registerTasks()
+        BackgroundMaintenanceManager.shared.scheduleAll(reason: "launch")
         return true
     }
 }
@@ -58,12 +60,12 @@ struct ADoApp: App {
         
         // Configure global navigation bar appearance
         configureGlobalAppearance()
-        
+
+        guard !RuntimeEnvironment.isRunningTests else { return }
+
         // Initialize subscription manager
         _ = SubscriptionManager.shared
         _ = EntitlementManager.shared
-        _ = GeminiManager.shared
-        GeminiManager.shared.bootstrapIfNeeded()
         
         // Initialize memory monitor
         _ = MemoryMonitor.shared
@@ -120,10 +122,13 @@ struct ADoApp: App {
 }
 
 struct RootView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var router = AppRouter()
     @State private var container: ModelContainer?
     @State private var syncManager = SyncProgressManager.shared
     @State private var isInitialSyncComplete = false
+    @State private var maintenanceTask: Task<Void, Never>?
+    @State private var recoveryMessage: String?
     @AppStorage("appTheme") private var appTheme: String = "system"
     @AppStorage("appAccentColor") private var appAccentColor: String = "#67A2DC"
     
@@ -148,15 +153,16 @@ struct RootView: View {
                         .tint(Color(hex: appAccentColor) ?? AppTheme.Colors.primary)
                         .preferredColorScheme(preferredColorScheme)
                         .onOpenURL { url in router.handle(url: url) }
+                        .onContinueUserActivity("com.apple.corespotlightitem") { activity in
+                            router.handleSpotlightActivity(activity)
+                        }
                         .task { 
                             router.checkGroupDeeplinkFlag() 
                             checkMorningBriefingStatus()
                             refreshWidgetSnapshotsIfPossible()
+                            scheduleLifecycleMaintenance(reason: "launch")
                         }
                         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ReminderCreated"))) { _ in
-                            refreshWidgetSnapshotsIfPossible()
-                        }
-                        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
                             refreshWidgetSnapshotsIfPossible()
                         }
                         .fullScreenCover(isPresented: $showMorningBriefing) {
@@ -171,7 +177,10 @@ struct RootView: View {
                         // Initialize container on background thread
                         container = AppContainer.shared.getContainer()
                         if let container {
-                            StartupSmokeChecks.run(container: container)
+                            recoveryMessage = AppContainer.shared.recoveryMessage
+                            Task {
+                                await StartupSmokeChecks.run(container: container)
+                            }
                             SettingsManager.shared.migrateAccentColorIfNeeded(context: ModelContext(container))
                         }
                     }
@@ -202,10 +211,44 @@ struct RootView: View {
                 }
             }
         }
+        .safeAreaInset(edge: .top) {
+            if let recoveryMessage {
+                HStack(spacing: 12) {
+                    Image(systemName: "externaldrive.badge.exclamationmark")
+                        .foregroundStyle(.orange)
+                    Text(recoveryMessage)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Button("Dismiss") {
+                        self.recoveryMessage = nil
+                    }
+                    .font(.caption.weight(.semibold))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(.ultraThinMaterial)
+            }
+        }
         .onChange(of: syncManager.isInitialSyncInProgress) { _, inProgress in
             if !inProgress {
                 isInitialSyncComplete = true
                 refreshWidgetSnapshotsIfPossible()
+                scheduleLifecycleMaintenance(reason: "initialSyncComplete")
+            }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            switch newPhase {
+            case .active:
+                refreshWidgetSnapshotsIfPossible()
+                scheduleLifecycleMaintenance(reason: "sceneActive")
+                if recoveryMessage == nil {
+                    recoveryMessage = AppContainer.shared.recoveryMessage
+                }
+            case .background:
+                BackgroundMaintenanceManager.shared.scheduleAll(reason: "sceneBackground")
+            default:
+                break
             }
         }
     }
@@ -247,10 +290,7 @@ struct RootView: View {
         await MainActor.run {
             syncManager.startDataLoading()
         }
-        
-        // Simulate data loading time
-        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-        
+
         await MainActor.run {
             syncManager.finishDataLoading()
         }
@@ -274,11 +314,9 @@ struct RootView: View {
         await MainActor.run {
             syncManager.startCloudKitSync()
         }
-        
-        // CloudKit operations
+
         CloudKitManager.shared.loadSyncSetting(context: context)
-        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-        
+
         await MainActor.run {
             syncManager.finishCloudKitSync()
         }
@@ -287,10 +325,12 @@ struct RootView: View {
         await MainActor.run {
             syncManager.startCalendarSync()
         }
-        
-        // Calendar operations
-        await CalendarManager.shared.requestAccess()
-        
+
+        CalendarManager.shared.refreshAuthorizationStatus()
+        if CalendarManager.shared.accessGranted {
+            await CalendarManager.shared.loadEvents()
+        }
+
         await MainActor.run {
             syncManager.finishCalendarSync()
         }
@@ -311,13 +351,42 @@ struct RootView: View {
         }
 
         await MainActor.run {
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(
+                context: context,
+                kinds: [.reminders, .habits, .focus, .timeTracking]
+            )
         }
     }
 
     private func refreshWidgetSnapshotsIfPossible() {
         guard let container else { return }
         let context = ModelContext(container)
-        WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+        WidgetSnapshotManager.shared.refreshSnapshots(
+            context: context,
+            kinds: [.reminders, .habits, .focus, .timeTracking]
+        )
+    }
+
+    private func scheduleLifecycleMaintenance(reason: String) {
+        guard let container else { return }
+        maintenanceTask?.cancel()
+        maintenanceTask = Task(priority: .utility) {
+            await runLifecycleMaintenance(container: container, reason: reason)
+        }
+    }
+
+    private func runLifecycleMaintenance(container: ModelContainer, reason: String) async {
+        let context = ModelContext(container)
+        let userId = SecurityUtils.getCurrentUserID()
+
+        await AppleRemindersSyncManager.shared.performLifecycleSyncIfNeeded(context: context, reason: reason)
+        await AdvancedSearchManager.shared.refreshIndexIfNeeded(context: context, reason: reason)
+        await RecurringRemindersManager.shared.processRecurringRemindersIfNeeded(context: context, reason: reason)
+        await SmartNotificationManager.shared.performMaintenanceIfNeeded(context: context, reason: reason)
+        await BackupManager.shared.checkScheduledBackupsIfNeeded(context: context, reason: reason)
+        await BehavioralLearningManager.shared.flushIfNeeded(context: context, reason: reason)
+        await AIBehavioralIntegrationCoordinator.shared.runLearningCycleIfNeeded(context: context, reason: reason)
+        await AIManager.shared.refreshIfNeeded(userId: userId, context: context, reason: reason)
+        await GamificationManager.shared.refreshIfNeeded(context: context, reason: reason)
     }
 }

@@ -251,6 +251,9 @@ struct EditHabitView: View {
         
         do {
             try modelContext.save()
+            Task {
+                await AdvancedSearchManager.shared.upsertHabitIndex(for: habit, context: modelContext)
+            }
             dismiss()
         } catch {
             // Handle error

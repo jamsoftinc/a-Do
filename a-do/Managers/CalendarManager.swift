@@ -17,6 +17,15 @@ final class CalendarManager {
 
     private init() {}
 
+    func refreshAuthorizationStatus() {
+        switch EKEventStore.authorizationStatus(for: .event) {
+        case .fullAccess, .writeOnly:
+            accessGranted = true
+        default:
+            accessGranted = false
+        }
+    }
+
     func requestAccess() async {
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             store.requestFullAccessToEvents { granted, error in

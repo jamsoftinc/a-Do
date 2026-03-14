@@ -10,6 +10,25 @@ import SwiftData
 import os
 import UIKit
 
+struct SearchableReminderSnapshot: Identifiable, Sendable {
+    let id: String
+    let title: String
+    let details: String
+    let tags: [String]
+    let isCompleted: Bool
+    let isOverdue: Bool
+    let priority: Priority
+    let dueDate: Date?
+    let createdAt: Date
+    let estimatedDurationMinutes: Int
+}
+
+struct SearchableHabitSnapshot: Identifiable, Sendable {
+    let id: String
+    let title: String
+    let details: String
+}
+
 // MARK: - Memory Monitor
 
 @MainActor
@@ -184,5 +203,72 @@ struct MemorySafeDataLoader {
                 return []
             }
         }.value
+    }
+
+    static func loadSearchableReminders(
+        context: ModelContext,
+        limit: Int = 1000
+    ) async -> [SearchableReminderSnapshot] {
+        return await Task.detached {
+            let backgroundContext = ModelContext(context.container)
+            var descriptor = FetchDescriptor<Reminder>(
+                sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+            )
+            descriptor.fetchLimit = limit
+
+            do {
+                let reminders = try backgroundContext.fetch(descriptor)
+                return reminders.map { reminder in
+                    SearchableReminderSnapshot(
+                        id: reminder.uuid.uuidString,
+                        title: reminder.title,
+                        details: reminder.details ?? "",
+                        tags: reminder.tags?.map(\.name) ?? [],
+                        isCompleted: reminder.isCompleted,
+                        isOverdue: reminder.isOverdue,
+                        priority: reminder.priority,
+                        dueDate: reminder.dueDate,
+                        createdAt: reminder.createdAt,
+                        estimatedDurationMinutes: estimatedDurationMinutes(for: reminder)
+                    )
+                }
+            } catch {
+                return []
+            }
+        }.value
+    }
+
+    static func loadSearchableHabits(
+        context: ModelContext,
+        limit: Int = 500
+    ) async -> [SearchableHabitSnapshot] {
+        return await Task.detached {
+            let backgroundContext = ModelContext(context.container)
+            var descriptor = FetchDescriptor<Habit>(
+                sortBy: [SortDescriptor(\.updatedAt, order: .reverse)]
+            )
+            descriptor.fetchLimit = limit
+
+            do {
+                let habits = try backgroundContext.fetch(descriptor)
+                return habits.map { habit in
+                    SearchableHabitSnapshot(
+                        id: habit.id.uuidString,
+                        title: habit.title,
+                        details: habit.habitDescription
+                    )
+                }
+            } catch {
+                return []
+            }
+        }.value
+    }
+
+    private static func estimatedDurationMinutes(for reminder: Reminder) -> Int {
+        let detailLength = (reminder.details ?? "").count
+        let titleLength = reminder.title.count
+        let subtaskCount = reminder.subtasks?.count ?? 0
+        let complexityEstimate = max(10, min(120, (titleLength / 2) + (detailLength / 8)))
+        return max(complexityEstimate, subtaskCount > 0 ? subtaskCount * 15 : 0)
     }
 }

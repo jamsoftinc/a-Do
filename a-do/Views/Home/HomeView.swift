@@ -205,6 +205,44 @@ struct HomeView: View {
                     }
                 }
             }
+            .sheet(isPresented: $viewModel.showingQuickCaptureReview) {
+                QuickCaptureReviewSheet(
+                    drafts: Binding(
+                        get: { viewModel.pendingQuickCaptureDrafts },
+                        set: { viewModel.pendingQuickCaptureDrafts = $0 }
+                    ),
+                    isSaving: viewModel.isPreparingQuickCapture,
+                    onCancel: {
+                        viewModel.cancelQuickCaptureReview()
+                    },
+                    onConfirm: {
+                        Task {
+                            await viewModel.commitQuickCapture(context: context)
+                        }
+                    }
+                )
+            }
+            .safeAreaInset(edge: .bottom) {
+                if viewModel.showQuickCaptureUndo {
+                    HStack(spacing: 12) {
+                        Text("Created \(viewModel.lastQuickCaptureCreatedCount) reminder\(viewModel.lastQuickCaptureCreatedCount == 1 ? "" : "s")")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(.primary)
+
+                        Spacer()
+
+                        Button("Undo") {
+                            viewModel.undoLastQuickCapture(context: context)
+                        }
+                        .font(.subheadline.weight(.semibold))
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+                }
+            }
         }
     }
 
@@ -376,11 +414,17 @@ struct HomeView: View {
                         viewModel.addQuickReminder(context: context)
                         isQuickAddFocused = false
                     } label: {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(Color.accentColor)
+                        if viewModel.isPreparingQuickCapture {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Image(systemName: "arrow.up.circle.fill")
+                                .font(.title2)
+                                .foregroundStyle(Color.accentColor)
+                        }
                     }
                     .buttonStyle(.plain)
+                    .disabled(viewModel.isPreparingQuickCapture)
                 }
             }
             .padding(.horizontal, 16)
@@ -529,9 +573,7 @@ struct HomeView: View {
     // MARK: - Voice Memo Methods
     private func startQuickVoiceMemo() async {
         await AudioManager.shared.startRecording()
-        while AudioManager.shared.isRecording || AudioManager.shared.isTranscribing {
-            try? await Task.sleep(nanoseconds: 100_000_000)
-        }
+        let _ = await AudioManager.shared.awaitCaptureCompletion()
         await createVoiceReminderFromTranscription()
     }
 
@@ -545,8 +587,7 @@ struct HomeView: View {
             fallbackDueDate: viewModel.quickDueDate
         )
 
-        var createdAny = false
-        for (index, baseRequest) in parsedRequests.enumerated() {
+        let preparedRequests = parsedRequests.enumerated().map { index, baseRequest in
             var request = baseRequest
             if request.dueDate == nil {
                 request.dueDate = viewModel.quickDueDate
@@ -560,16 +601,18 @@ struct HomeView: View {
                 )
             }
 
-            do {
-                _ = try await ReminderCreationService.shared.createReminder(request: request, in: context)
-                createdAny = true
-            } catch {
-                Logger(subsystem: "a-do", category: "HomeView").error("Voice reminder creation failed: \(error.localizedDescription)")
-            }
+            return request
         }
 
-        if createdAny {
-            AudioManager.shared.transcribedText = ""
+        guard !preparedRequests.isEmpty else { return }
+
+        do {
+            let reminders = try await ReminderCreationService.shared.createReminders(requests: preparedRequests, in: context)
+            if !reminders.isEmpty {
+                AudioManager.shared.transcribedText = ""
+            }
+        } catch {
+            Logger(subsystem: "a-do", category: "HomeView").error("Voice reminder creation failed: \(error.localizedDescription)")
         }
     }
 

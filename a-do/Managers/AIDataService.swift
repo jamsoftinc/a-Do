@@ -425,7 +425,7 @@ final class AIDataService {
 
 // MARK: - Data Models
 
-struct ProductivityMetrics {
+struct ProductivityMetrics: Sendable {
     let totalFocusTime: TimeInterval
     let totalTimeTracked: TimeInterval
     let averageProductivityScore: Double
@@ -437,7 +437,7 @@ struct ProductivityMetrics {
     let timeframe: AIInsightTimeframe
 }
 
-struct HabitMetrics {
+struct HabitMetrics: Sendable {
     let totalHabits: Int
     let habitsWithActiveStreak: Int
     let averageStreak: Double
@@ -446,7 +446,7 @@ struct HabitMetrics {
     let overallCompletionRate: Double
 }
 
-struct TimeUsageMetrics {
+struct TimeUsageMetrics: Sendable {
     let totalTimeTracked: TimeInterval
     let categoryBreakdown: [String: TimeInterval]
     let topCategory: String
@@ -455,7 +455,7 @@ struct TimeUsageMetrics {
     let mostActiveDay: String
 }
 
-struct FocusEffectivenessMetrics {
+struct FocusEffectivenessMetrics: Sendable {
     let totalSessions: Int
     let completedSessions: Int
     let completionRate: Double
@@ -466,21 +466,21 @@ struct FocusEffectivenessMetrics {
     let bestTimeOfDay: Int
 }
 
-struct ProductivityDataPoint {
+struct ProductivityDataPoint: Sendable {
     let date: Date
     let score: Double
     let sessions: Int
     let focusTime: TimeInterval
 }
 
-struct HabitCompletionData {
+struct HabitCompletionData: Sendable {
     let name: String
     let completionRate: Double
     let streak: Int
     let color: String
 }
 
-struct TimeDistributionData {
+struct TimeDistributionData: Sendable {
     let category: String
     let hours: Double
     let percentage: Double

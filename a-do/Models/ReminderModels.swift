@@ -9,7 +9,7 @@ enum Priority: Int, Codable, CaseIterable, Identifiable {
     case high = 3
 
     var id: Int { rawValue }
-    var title: String {
+    nonisolated var title: String {
         switch self {
         case .none: return "None"
         case .low: return "Low"

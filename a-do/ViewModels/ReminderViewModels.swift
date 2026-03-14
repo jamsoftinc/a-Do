@@ -6,41 +6,41 @@ import CoreLocation
 import SwiftUI
 import AVFoundation
 
+struct QuickCaptureDraft: Identifiable, Equatable {
+    var id = UUID()
+    var title: String
+    var details: String
+    var dueDate: Date?
+    var priority: Priority
+}
+
 @MainActor
 @Observable
 final class ReminderHomeViewModel {
     var quickTitle: String = ""
     var quickDueDate: Date?
     var showingQuickDatePicker: Bool = false
+    var isPreparingQuickCapture: Bool = false
+    var showingQuickCaptureReview: Bool = false
+    var pendingQuickCaptureDrafts: [QuickCaptureDraft] = []
+    var showQuickCaptureUndo: Bool = false
+    var lastQuickCaptureCreatedCount: Int = 0
+    @ObservationIgnored
+    private var lastCreatedReminderIDs: [PersistentIdentifier] = []
+    @ObservationIgnored
+    private var undoDismissTask: Task<Void, Never>?
+
+    deinit {
+        undoDismissTask?.cancel()
+    }
 
     func addQuickReminder(context: ModelContext) {
         let safeTitle = quickTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !safeTitle.isEmpty else { return }
+        guard !isPreparingQuickCapture else { return }
 
         Task {
-            let requests = await AIManager.shared.buildCaptureRequests(
-                from: safeTitle,
-                fallbackDueDate: quickDueDate
-            )
-
-            var createdCount = 0
-            for var request in requests {
-                if request.dueDate == nil {
-                    request.dueDate = quickDueDate
-                }
-
-                do {
-                    _ = try await ReminderCreationService.shared.createReminder(request: request, in: context)
-                    createdCount += 1
-                } catch {
-                    Logger(subsystem: "a-do", category: "Reminders").error("Quick add failed: \(error.localizedDescription)")
-                }
-            }
-
-            if createdCount > 0 {
-                quickTitle = ""
-                quickDueDate = nil
-            }
+            await prepareQuickCapture(from: safeTitle, context: context)
         }
     }
     
@@ -54,6 +54,65 @@ final class ReminderHomeViewModel {
     
     func setQuickDueDateToTomorrow() {
         quickDueDate = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: Date()))
+    }
+
+    func commitQuickCapture(context: ModelContext) async {
+        guard !pendingQuickCaptureDrafts.isEmpty else { return }
+
+        let requests = pendingQuickCaptureDrafts.map { draft in
+            ReminderCreationService.Request(
+                title: draft.title,
+                details: draft.details.isEmpty ? nil : draft.details,
+                dueDate: draft.dueDate,
+                priority: draft.priority,
+                useNaturalLanguageParsing: false
+            )
+        }
+
+        do {
+            let reminders = try await ReminderCreationService.shared.createReminders(requests: requests, in: context)
+            finishQuickCapture(with: reminders)
+        } catch {
+            Logger(subsystem: "a-do", category: "Reminders").error("Quick capture commit failed: \(error.localizedDescription)")
+        }
+    }
+
+    func cancelQuickCaptureReview() {
+        showingQuickCaptureReview = false
+        pendingQuickCaptureDrafts = []
+    }
+
+    func undoLastQuickCapture(context: ModelContext) {
+        guard !lastCreatedReminderIDs.isEmpty else {
+            showQuickCaptureUndo = false
+            return
+        }
+
+        let deletedReminders = lastCreatedReminderIDs.compactMap { identifier in
+            context.model(for: identifier) as? Reminder
+        }
+
+        for reminder in deletedReminders {
+            NotificationManager.shared.cancelNotifications(for: reminder)
+            context.delete(reminder)
+        }
+
+        do {
+            try context.save()
+            Task {
+                for reminder in deletedReminders {
+                    await AdvancedSearchManager.shared.removeReminderIndex(for: reminder, context: context)
+                }
+            }
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
+        } catch {
+            Logger(subsystem: "a-do", category: "Reminders").error("Undo quick capture failed: \(String(describing: error))")
+        }
+
+        undoDismissTask?.cancel()
+        showQuickCaptureUndo = false
+        lastQuickCaptureCreatedCount = 0
+        lastCreatedReminderIDs = []
     }
     
     // MARK: - Reminder Completion
@@ -71,7 +130,10 @@ final class ReminderHomeViewModel {
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            Task {
+                await AdvancedSearchManager.shared.upsertReminderIndex(for: reminder, context: context)
+            }
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
             Logger(subsystem: "a-do", category: "Reminders").info("Reminder marked complete: '\(reminder.title)'")
         } catch {
             Logger(subsystem: "a-do", category: "Reminders").error("Failed to mark reminder complete: \(String(describing: error))")
@@ -84,10 +146,112 @@ final class ReminderHomeViewModel {
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            Task {
+                await AdvancedSearchManager.shared.upsertReminderIndex(for: reminder, context: context)
+            }
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
             Logger(subsystem: "a-do", category: "Reminders").info("Reminder marked incomplete: '\(reminder.title)'")
         } catch {
             Logger(subsystem: "a-do", category: "Reminders").error("Failed to mark reminder incomplete: \(String(describing: error))")
+        }
+    }
+
+    private func prepareQuickCapture(from input: String, context: ModelContext) async {
+        isPreparingQuickCapture = true
+        defer { isPreparingQuickCapture = false }
+
+        let requests = await AIManager.shared.buildCaptureRequests(
+            from: input,
+            fallbackDueDate: quickDueDate
+        ).map { request in
+            var normalizedRequest = request
+            if normalizedRequest.dueDate == nil {
+                normalizedRequest.dueDate = quickDueDate
+            }
+            return normalizedRequest
+        }
+
+        guard !requests.isEmpty else { return }
+
+        if shouldReviewQuickCapture(originalInput: input, requests: requests) {
+            pendingQuickCaptureDrafts = requests.map {
+                QuickCaptureDraft(
+                    title: $0.title,
+                    details: $0.details ?? "",
+                    dueDate: $0.dueDate,
+                    priority: $0.priority
+                )
+            }
+            showingQuickCaptureReview = true
+            return
+        }
+
+        do {
+            let reminders = try await ReminderCreationService.shared.createReminders(requests: requests, in: context)
+            finishQuickCapture(with: reminders)
+        } catch {
+            Logger(subsystem: "a-do", category: "Reminders").error("Quick add failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func shouldReviewQuickCapture(
+        originalInput: String,
+        requests: [ReminderCreationService.Request]
+    ) -> Bool {
+        guard let request = requests.first else { return false }
+        if requests.count > 1 { return true }
+
+        let normalizedOriginal = originalInput
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+        let normalizedTitle = request.title
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+
+        if normalizedTitle != normalizedOriginal {
+            return true
+        }
+
+        if !(request.details?.isEmpty ?? true) || request.priority != .none {
+            return true
+        }
+
+        switch (request.dueDate, quickDueDate) {
+        case (nil, nil):
+            return false
+        case let (lhs?, rhs?):
+            return abs(lhs.timeIntervalSince(rhs)) > 1
+        default:
+            return true
+        }
+    }
+
+    func shouldReviewQuickCaptureForTesting(
+        originalInput: String,
+        requests: [ReminderCreationService.Request]
+    ) -> Bool {
+        shouldReviewQuickCapture(originalInput: originalInput, requests: requests)
+    }
+
+    private func finishQuickCapture(with reminders: [Reminder]) {
+        guard !reminders.isEmpty else { return }
+
+        quickTitle = ""
+        quickDueDate = nil
+        pendingQuickCaptureDrafts = []
+        showingQuickCaptureReview = false
+
+        lastCreatedReminderIDs = reminders.map(\.persistentModelID)
+        lastQuickCaptureCreatedCount = reminders.count
+        showQuickCaptureUndo = true
+        scheduleUndoDismissal()
+    }
+
+    private func scheduleUndoDismissal() {
+        undoDismissTask?.cancel()
+        undoDismissTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            self?.showQuickCaptureUndo = false
         }
     }
 }
@@ -265,19 +429,7 @@ final class ReminderFormViewModel {
 
         // Start recording - this method handles errors internally and doesn't throw
         await AudioManager.shared.startRecording()
-
-        // Monitor recording state with timeout (max 5 minutes)
-        let maxRecordingTime: UInt64 = 5 * 60 * 1_000_000_000 // 5 minutes in nanoseconds
-        let startTime = DispatchTime.now().uptimeNanoseconds
-        while AudioManager.shared.isRecording {
-            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-
-            // Safety timeout to prevent infinite loop
-            if DispatchTime.now().uptimeNanoseconds - startTime > maxRecordingTime {
-                await AudioManager.shared.stopRecording()
-                break
-            }
-        }
+        let _ = await AudioManager.shared.awaitCaptureCompletion()
 
         isRecordingVoice = false
         
@@ -338,14 +490,10 @@ final class ReminderFormViewModel {
         
         Logger(subsystem: "a-do", category: "Location").info("Starting location detection...")
         
-        // Request authorization if needed
         if LocationManager.shared.authorizationStatus == .notDetermined {
             Logger(subsystem: "a-do", category: "Location").info("Requesting location authorization...")
-            LocationManager.shared.requestAuthorization()
+            _ = await LocationManager.shared.awaitAuthorization()
         }
-        
-        // Wait a moment for authorization to be processed
-        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
         
         // Check authorization status
         if LocationManager.shared.authorizationStatus == .denied || LocationManager.shared.authorizationStatus == .restricted {

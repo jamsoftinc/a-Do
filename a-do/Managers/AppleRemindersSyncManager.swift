@@ -7,6 +7,7 @@ import os
 final class AppleRemindersSyncManager {
     static let shared = AppleRemindersSyncManager()
     private let store = EKEventStore()
+    private let lifecycleSyncInterval: TimeInterval = 15 * 60
     
     // Sync state
     private var lastSyncDate: Date?
@@ -82,6 +83,20 @@ final class AppleRemindersSyncManager {
         
         isSyncing = false
     }
+
+    func performLifecycleSyncIfNeeded(context: ModelContext, reason: String) async {
+        guard !isSyncing else { return }
+
+        let settings = SettingsManager.shared.getSettings(context: context)
+        guard settings.appleRemindersEnabled else { return }
+
+        if let lastSyncDate, Date().timeIntervalSince(lastSyncDate) < lifecycleSyncInterval {
+            return
+        }
+
+        Logger(subsystem: "a-do", category: "Sync").info("Running lifecycle Apple Reminders sync: \(reason, privacy: .public)")
+        await performFullSync(context: context, isInitialSync: false)
+    }
     
     // MARK: - Sync from Apple Reminders
     
@@ -156,6 +171,12 @@ final class AppleRemindersSyncManager {
         // Save changes
         do {
             try context.save()
+            Task {
+                let reminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+                for reminder in reminders where reminder.appleReminderID != nil {
+                    await AdvancedSearchManager.shared.upsertReminderIndex(for: reminder, context: context)
+                }
+            }
         } catch {
             Logger(subsystem: "a-do", category: "Sync").error("Failed to save imported reminders: \(String(describing: error))")
         }

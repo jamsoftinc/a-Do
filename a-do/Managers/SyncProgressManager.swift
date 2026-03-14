@@ -67,15 +67,8 @@ final class SyncProgressManager {
     func finishSync() {
         syncProgress = 1.0
         currentSyncOperation = "Sync completed"
-        
-        // Delay before hiding to show completion
-        Task {
-            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-            await MainActor.run {
-                self.isInitialSyncInProgress = false
-                self.logger.info("Initial sync finished")
-            }
-        }
+        isInitialSyncInProgress = false
+        logger.info("Initial sync finished")
     }
     
     func reportError(_ error: String) {

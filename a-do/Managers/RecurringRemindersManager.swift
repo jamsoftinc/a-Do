@@ -20,36 +20,17 @@ final class RecurringRemindersManager {
     // Processing state
     var isProcessing: Bool = false
     var lastProcessingDate: Date?
+    private let processingInterval: TimeInterval = 3600
     
-    // Timer management
-    private var processingTimer: Timer?
+    private init() {}
     
-    private init() {
-        setupPeriodicProcessing()
-    }
-    
-    deinit {
-        // Note: Cannot access @MainActor properties in deinit
-        // Timer cleanup will happen automatically when the object is deallocated
-        // For explicit cleanup, call stopPeriodicProcessing() before deallocation
-    }
-    
-    func stopPeriodicProcessing() {
-        processingTimer?.invalidate()
-        processingTimer = nil
-    }
-    
-    // MARK: - Periodic Processing
-    
-    private func setupPeriodicProcessing() {
-        processingTimer?.invalidate()
+    // MARK: - Lifecycle Processing
 
-        // Set up timer to process recurring reminders
-        processingTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                await self?.processRecurringReminders()
-            }
-        }
+    func processRecurringRemindersIfNeeded(context: ModelContext, reason: String, force: Bool = false) async {
+        let isStale = lastProcessingDate.map { Date().timeIntervalSince($0) >= processingInterval } ?? true
+        guard force || isStale else { return }
+        logger.info("Processing recurring reminders for \(reason, privacy: .public)")
+        await processRecurringReminders(context: context)
     }
     
     // MARK: - Template Management

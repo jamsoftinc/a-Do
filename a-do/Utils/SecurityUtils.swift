@@ -111,6 +111,10 @@ struct SecurityUtils {
     /// Gets the current user ID securely
     /// - Returns: Current user ID or fallback identifier
     static func getCurrentUserID() -> String {
+        if RuntimeEnvironment.isRunningTests {
+            return "unit-test-user"
+        }
+
         // Use CloudKit user record ID for secure user identification
         // This prevents hardcoded user IDs and ensures proper authentication
         if let userRecordID = CollaborationManager.shared.currentUserRecordID {

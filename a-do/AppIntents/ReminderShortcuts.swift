@@ -11,35 +11,27 @@ struct AddQuickReminder: AppIntent {
     @Parameter(title: "Due In Minutes", default: 0) var dueInMinutes: Int
 
     func perform() async throws -> some ProvidesDialog {
-        // Use the shared container to ensure consistency
-        let container = await MainActor.run {
-            return AppContainer.shared.getContainer()
-        }
-        let context = ModelContext(container)
+        let context = try AppContainer.makeAppGroupContext()
         let due: Date? = dueInMinutes > 0 ? Date().addingTimeInterval(Double(dueInMinutes) * 60) : nil
         let requests = await AIManager.shared.buildCaptureRequests(
             from: reminderTitle,
             fallbackDueDate: due
-        )
-
-        var createdCount = 0
-        for var request in requests {
+        ).map { request in
+            var request = request
             if request.dueDate == nil {
                 request.dueDate = due
             }
-            do {
-                _ = try await ReminderCreationService.shared.createReminder(request: request, in: context)
-                createdCount += 1
-            } catch {
-                continue
-            }
+            return request
         }
+
+        let createdReminders = (try? await ReminderCreationService.shared.createReminders(requests: requests, in: context)) ?? []
+        let createdCount = createdReminders.count
 
         if createdCount == 0 {
             return .result(dialog: "Failed to save reminder. Please try again.")
         }
         if createdCount == 1 {
-            return .result(dialog: "Added reminder: \(requests.first?.title ?? reminderTitle)")
+            return .result(dialog: "Added reminder: \(createdReminders.first?.title ?? reminderTitle)")
         }
         return .result(dialog: "Added \(createdCount) reminders.")
     }
@@ -84,10 +76,7 @@ struct IncrementHabit: AppIntent {
     @Parameter(title: "Habit Title") var habitTitle: String
 
     func perform() async throws -> some ProvidesDialog {
-        let container = await MainActor.run {
-            return AppContainer.shared.getContainer()
-        }
-        let context = ModelContext(container)
+        let context = try AppContainer.makeAppGroupContext()
         
         // Find the habit by title
         let descriptor = FetchDescriptor<Habit>(

@@ -79,10 +79,9 @@ final class AIManager {
     private var analyticsCache: [String: Any] = [:]
     private var cacheTimestamp: Date?
     private let cacheTimeout: TimeInterval = 3600 // 1 hour
+    private let refreshInterval: TimeInterval = 6 * 3600
     
-    private init() {
-        setupPeriodicAnalysis()
-    }
+    private init() {}
     
     // MARK: - Configuration Management
 
@@ -197,6 +196,29 @@ final class AIManager {
         await updatePendingSuggestions(context: context)
         
         lastAnalysisDate = Date()
+    }
+
+    func refreshIfNeeded(userId: String, context: ModelContext, reason: String, force: Bool = false) async {
+        guard isProEnabled else { return }
+
+        let needsRefresh = force
+            || lastAnalysisDate == nil
+            || Date().timeIntervalSince(lastAnalysisDate ?? .distantPast) >= refreshInterval
+            || pendingSuggestions.isEmpty
+            || recentInsights.isEmpty
+        guard needsRefresh else { return }
+
+        logger.info("Refreshing AI caches for \(reason, privacy: .public)")
+        let config = getConfiguration(userId: userId, context: context)
+
+        if config.isAIEnabled, pendingSuggestions.isEmpty {
+            await generateSuggestions(userId: userId, context: context)
+        } else {
+            await clearExpiredSuggestions(context: context)
+            await updatePendingSuggestions(context: context)
+            await updateRecentInsights(context: context)
+            lastAnalysisDate = Date()
+        }
     }
     
     private func generateDueDateSuggestions(userId: String, context: ModelContext) async {
@@ -585,26 +607,10 @@ final class AIManager {
         context.insert(insight)
     }
     
-    // Timer for periodic analysis - must be retained
-    private var analysisTimer: Timer?
-
     // MARK: - Helper Methods
-
-    private func setupPeriodicAnalysis() {
-        // Set up periodic analysis based on user preferences
-        analysisTimer?.invalidate()
-        analysisTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
-            guard self != nil else { return }
-            Task { @MainActor in
-                // This would be called with proper context in a real implementation
-            }
-        }
-    }
 
     /// Call this method to clean up resources when the manager is no longer needed
     func cleanup() {
-        analysisTimer?.invalidate()
-        analysisTimer = nil
         pendingSuggestions.removeAll()
         recentInsights.removeAll()
         analyticsCache.removeAll()

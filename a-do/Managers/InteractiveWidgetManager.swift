@@ -29,28 +29,41 @@ final class InteractiveWidgetManager {
     // MARK: - Widget Updates
 
     func refreshAllWidgets() {
-        WidgetCenter.shared.reloadAllTimelines()
-        logger.info("All widgets refreshed")
+        refreshWidgets(kinds: Set(WidgetSnapshotKind.allCases), description: "all")
     }
 
     func refreshReminderWidgets() {
-        WidgetCenter.shared.reloadTimelines(ofKind: "ReminderWidget")
-        logger.info("Reminder widgets refreshed")
+        refreshWidgets(kinds: [.reminders], description: "reminder")
     }
 
     func refreshFocusWidgets() {
-        WidgetCenter.shared.reloadTimelines(ofKind: "FocusWidget")
-        logger.info("Focus widgets refreshed")
+        refreshWidgets(kinds: [.focus], description: "focus")
     }
 
     func refreshHabitWidgets() {
-        WidgetCenter.shared.reloadTimelines(ofKind: "HabitWidget")
-        logger.info("Habit widgets refreshed")
+        refreshWidgets(kinds: [.habits], description: "habit")
     }
 
     func refreshTimeTrackingWidgets() {
-        WidgetCenter.shared.reloadTimelines(ofKind: "TimeTrackingWidget")
-        logger.info("Time tracking widgets refreshed")
+        refreshWidgets(kinds: [.timeTracking], description: "time tracking")
+    }
+
+    private func refreshWidgets(kinds: Set<WidgetSnapshotKind>, description: String) {
+        do {
+            let context = try AppContainer.makeAppGroupContext()
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: kinds)
+            logger.info("\(description, privacy: .public) widgets queued for refresh")
+        } catch {
+            logger.error("Failed to queue widget refresh: \(error.localizedDescription, privacy: .public)")
+            if kinds == Set(WidgetSnapshotKind.allCases) {
+                WidgetCenter.shared.reloadAllTimelines()
+            } else {
+                if kinds.contains(.reminders) { WidgetCenter.shared.reloadTimelines(ofKind: "ReminderWidget") }
+                if kinds.contains(.habits) { WidgetCenter.shared.reloadTimelines(ofKind: "HabitWidget") }
+                if kinds.contains(.focus) { WidgetCenter.shared.reloadTimelines(ofKind: "FocusWidget") }
+                if kinds.contains(.timeTracking) { WidgetCenter.shared.reloadTimelines(ofKind: "TimeTrackingWidget") }
+            }
+        }
     }
 }
 
@@ -78,15 +91,7 @@ struct CompleteReminderIntent: AppIntent {
             return .result()
         }
 
-        // Get shared model container
-        let container = try ModelContainer(
-            for: Reminder.self,
-            configurations: ModelConfiguration(
-                groupContainer: .identifier("group.com.ado.app")
-            )
-        )
-
-        let context = ModelContext(container)
+        let context = try AppContainer.makeAppGroupContext()
 
         // Find and complete the reminder
         let descriptor = FetchDescriptor<Reminder>(
@@ -154,15 +159,7 @@ struct CompleteHabitIntent: AppIntent {
             return .result()
         }
 
-        // Get shared model container
-        let container = try ModelContainer(
-            for: Habit.self, HabitEntry.self,
-            configurations: ModelConfiguration(
-                groupContainer: .identifier("group.com.ado.app")
-            )
-        )
-
-        let context = ModelContext(container)
+        let context = try AppContainer.makeAppGroupContext()
 
         // Find the habit
         let descriptor = FetchDescriptor<Habit>(

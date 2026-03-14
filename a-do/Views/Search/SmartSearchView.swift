@@ -12,23 +12,31 @@ struct SmartSearchView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     private let initialQuery: String?
+    private let savedSearchID: UUID?
     
     @State private var aiManager = AIManager.shared
+    @State private var audioManager = AudioManager.shared
     @State private var searchText = ""
     @State private var selectedSearchType: SearchType = .text
     @State private var selectedScope: SearchScope = .all
     @State private var selectedSortOrder: SearchSortOrder = .relevance
     @State private var showingFilters = false
     @State private var isSearching = false
-    @State private var searchResults: [SearchResult] = []
+    @State private var searchResults: [SearchDisplayResult] = []
     @State private var commandSummary: String?
     @State private var commandRequiresPro = false
     @State private var showingPaywall = false
+    @State private var searchableReminders: [SearchableReminderSnapshot] = []
+    @State private var searchableHabits: [SearchableHabitSnapshot] = []
+    @State private var isLoadingSearchData = false
+    @State private var searchTask: Task<Void, Never>?
     
     @Query private var recentSearches: [SearchQuery]
+    @Query(sort: [SortDescriptor(\SavedSearch.lastUsed, order: .reverse), SortDescriptor(\SavedSearch.createdAt, order: .reverse)]) private var savedSearches: [SavedSearch]
 
-    init(initialQuery: String? = nil) {
+    init(initialQuery: String? = nil, savedSearchID: UUID? = nil) {
         self.initialQuery = initialQuery
+        self.savedSearchID = savedSearchID
     }
     
     var body: some View {
@@ -76,9 +84,56 @@ struct SmartSearchView: View {
             PaywallView()
         }
         .onAppear {
-            guard let initialQuery, searchText.isEmpty else { return }
-            searchText = initialQuery
-            performSearch()
+            Task {
+                await reloadSearchData()
+                if let savedSearchID, let savedSearch = savedSearches.first(where: { $0.id == savedSearchID }) {
+                    loadSavedSearch(savedSearch, shouldSearchImmediately: true)
+                    return
+                }
+                guard let initialQuery, searchText.isEmpty else { return }
+                searchText = initialQuery
+                scheduleSearch(immediate: true)
+            }
+        }
+        .onChange(of: searchText) { _, newValue in
+            if newValue.isEmpty {
+                searchTask?.cancel()
+                commandSummary = nil
+                commandRequiresPro = false
+                searchResults = []
+                return
+            }
+            scheduleSearch()
+        }
+        .onChange(of: selectedSearchType) { _, _ in
+            guard !searchText.isEmpty else { return }
+            scheduleSearch(immediate: true)
+        }
+        .onChange(of: selectedScope) { _, _ in
+            guard !searchText.isEmpty else { return }
+            scheduleSearch(immediate: true)
+        }
+        .onChange(of: selectedSortOrder) { _, _ in
+            guard !searchText.isEmpty else { return }
+            scheduleSearch(immediate: true)
+        }
+        .onChange(of: audioManager.transcribedText) { _, newValue in
+            guard selectedSearchType == .voice else { return }
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return }
+            searchText = trimmed
+            scheduleSearch(immediate: true)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ReminderCreated"))) { _ in
+            Task {
+                await reloadSearchData()
+            }
+        }
+        .onDisappear {
+            searchTask?.cancel()
+            if audioManager.isRecording {
+                audioManager.stopLiveTranscription()
+            }
         }
     }
 
@@ -93,7 +148,7 @@ struct SmartSearchView: View {
                 TextField("Search reminders, habits, and more...", text: $searchText)
                     .textFieldStyle(PlainTextFieldStyle())
                     .onSubmit {
-                        performSearch()
+                        scheduleSearch(immediate: true)
                     }
                 
                 if !searchText.isEmpty {
@@ -117,15 +172,14 @@ struct SmartSearchView: View {
             
             // Quick Actions
             HStack(spacing: 12) {
-                Button("Voice Search") {
-                    selectedSearchType = .voice
-                    // Voice search would be implemented here
+                Button(audioManager.isRecording ? "Stop Listening" : "Voice Search") {
+                    toggleVoiceSearch()
                 }
                 .font(.caption)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(AppTheme.Colors.accent.opacity(0.1))
-                .foregroundColor(AppTheme.Colors.accent)
+                .background((audioManager.isRecording ? Color.red : AppTheme.Colors.accent).opacity(0.1))
+                .foregroundColor(audioManager.isRecording ? .red : AppTheme.Colors.accent)
                 .cornerRadius(8)
                 
                 Button("Advanced") {
@@ -138,12 +192,39 @@ struct SmartSearchView: View {
                 .background(AppTheme.Colors.secondary.opacity(0.1))
                 .foregroundColor(AppTheme.Colors.secondary)
                 .cornerRadius(8)
+
+                if !normalizedSearchText.isEmpty {
+                    Button(isCurrentSearchBookmarked ? "Saved View" : "Save View") {
+                        toggleSavedSearch()
+                    }
+                    .font(.caption)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background((isCurrentSearchBookmarked ? AppTheme.Colors.accent : AppTheme.Colors.textSecondary).opacity(0.12))
+                    .foregroundColor(isCurrentSearchBookmarked ? AppTheme.Colors.accent : AppTheme.Colors.textSecondary)
+                    .cornerRadius(8)
+                }
                 
                 Spacer()
                 
                 Text("\(selectedScope.displayName) • \(selectedSortOrder.displayName)")
                     .font(.caption)
                     .foregroundColor(AppTheme.Colors.textSecondary)
+            }
+
+            if audioManager.isRecording || !audioManager.liveTranscription.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: audioManager.isRecording ? "waveform.circle.fill" : "mic.badge.checkmark")
+                        .foregroundColor(audioManager.isRecording ? .red : .mint)
+
+                    Text(audioManager.liveTranscription.isEmpty ? "Listening..." : audioManager.liveTranscription)
+                        .font(.caption)
+                        .foregroundColor(AppTheme.Colors.textSecondary)
+                        .lineLimit(2)
+
+                    Spacer()
+                }
+                .padding(.horizontal, 2)
             }
 
             if let commandSummary, !commandSummary.isEmpty {
@@ -184,7 +265,7 @@ struct SmartSearchView: View {
                     ) {
                         selectedSearchType = type
                         if !searchText.isEmpty {
-                            performSearch()
+                            scheduleSearch(immediate: true)
                         }
                     }
                 }
@@ -200,6 +281,24 @@ struct SmartSearchView: View {
     private var recentSearchesSection: some View {
         ScrollView {
             LazyVStack(spacing: 16) {
+                if !savedSearches.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("Saved Views")
+                                .font(AppTheme.Typography.headline)
+                                .foregroundColor(AppTheme.Colors.textPrimary)
+                            Spacer()
+                        }
+
+                        ForEach(savedSearches.prefix(5)) { savedSearch in
+                            SavedSearchRow(savedSearch: savedSearch) {
+                                loadSavedSearch(savedSearch, shouldSearchImmediately: true)
+                            }
+                        }
+                    }
+                    .padding()
+                }
+
                 // Bookmarked Searches
                 let bookmarkedSearches = recentSearches.filter { $0.isBookmarked }
                 if !bookmarkedSearches.isEmpty {
@@ -215,7 +314,7 @@ struct SmartSearchView: View {
                             BookmarkedSearchRow(searchQuery: bookmarkedSearch) {
                                 searchText = bookmarkedSearch.query
                                 selectedSearchType = bookmarkedSearch.searchType
-                                performSearch()
+                                scheduleSearch(immediate: true)
                             }
                         }
                     }
@@ -236,7 +335,7 @@ struct SmartSearchView: View {
                             RecentSearchRow(searchQuery: recentSearch) {
                                 searchText = recentSearch.query
                                 selectedSearchType = recentSearch.searchType
-                                performSearch()
+                                scheduleSearch(immediate: true)
                             }
                         }
                     }
@@ -317,116 +416,136 @@ struct SmartSearchView: View {
     
     // MARK: - Actions
     
-    private func performSearch() {
-        // Validate and sanitize search input
-        guard let sanitizedQuery = SecurityUtils.sanitizeTextInput(searchText) else {
-            // Show user-friendly error without exposing technical details
-            return
+    private func scheduleSearch(immediate: Bool = false) {
+        searchTask?.cancel()
+
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return }
+
+        searchTask = Task {
+            if !immediate {
+                try? await Task.sleep(nanoseconds: 300_000_000)
+            }
+            guard !Task.isCancelled else { return }
+            await runSearch(query: query)
         }
-        
+    }
+
+    private func runSearch(query: String) async {
+        guard let sanitizedQuery = SecurityUtils.sanitizeTextInput(query) else { return }
+        if searchableReminders.isEmpty && searchableHabits.isEmpty {
+            await reloadSearchData()
+        }
+
         isSearching = true
-        
-        Task {
-            let startTime = Date()
-            let query = sanitizedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-            let lowercasedQuery = query.lowercased()
-            var results: [SearchResult] = []
-            var handledByCommandSearch = false
-            var localCommandSummary: String?
-            var localCommandRequiresPro = false
 
-            if let command = await aiManager.parseNaturalLanguageSearchCommand(query) {
-                handledByCommandSearch = true
-                localCommandSummary = command.summary
-                localCommandRequiresPro = false
-                results = searchReminderResults(command: command, query: lowercasedQuery)
-            } else if looksLikeNaturalCommand(query), !EntitlementManager.shared.isProUser {
-                localCommandSummary = "Natural command filters are Pro. Showing basic keyword results."
-                localCommandRequiresPro = true
-            } else {
-                localCommandSummary = nil
-                localCommandRequiresPro = false
+        let startTime = Date()
+        let normalizedQuery = sanitizedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        let lowercasedQuery = normalizedQuery.lowercased()
+        var results: [SearchDisplayResult] = []
+        var handledByCommandSearch = false
+        var localCommandSummary: String?
+        var localCommandRequiresPro = false
+
+        if let command = await aiManager.parseNaturalLanguageSearchCommand(normalizedQuery) {
+            handledByCommandSearch = true
+            localCommandSummary = command.summary
+            results = searchReminderResults(command: command, query: lowercasedQuery)
+        } else if looksLikeNaturalCommand(normalizedQuery), !EntitlementManager.shared.isProUser {
+            localCommandSummary = "Natural command filters are Pro. Showing basic keyword results."
+            localCommandRequiresPro = true
+        }
+
+        if !handledByCommandSearch {
+            if selectedScope == .all || selectedScope == .reminders || selectedScope == .active || selectedScope == .completed || selectedScope == .overdue {
+                results.append(contentsOf: searchReminderResults(query: lowercasedQuery))
             }
 
-            if !handledByCommandSearch {
-                if selectedScope == .all || selectedScope == .reminders || selectedScope == .active || selectedScope == .completed || selectedScope == .overdue {
-                    results.append(contentsOf: searchReminderResults(query: lowercasedQuery))
-                }
-
-                if selectedScope == .all || selectedScope == .habits {
-                    results.append(contentsOf: searchHabitResults(query: lowercasedQuery))
-                }
+            if selectedScope == .all || selectedScope == .habits {
+                results.append(contentsOf: searchHabitResults(query: lowercasedQuery))
             }
+        }
 
-            results.sort { lhs, rhs in
-                if selectedSortOrder == .alphabetical {
-                    return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
-                }
-                return lhs.relevanceScore > rhs.relevanceScore
-            }
+        let sortedResults = sortResults(results)
+        saveSearchHistory(
+            query: normalizedQuery,
+            resultCount: sortedResults.count,
+            executionTime: Date().timeIntervalSince(startTime)
+        )
 
-            saveSearchHistory(
-                query: query,
-                resultCount: results.count,
-                executionTime: Date().timeIntervalSince(startTime)
-            )
-            
-            await MainActor.run {
-                commandSummary = localCommandSummary
-                commandRequiresPro = localCommandRequiresPro
-                searchResults = results
-                isSearching = false
+        commandSummary = localCommandSummary
+        commandRequiresPro = localCommandRequiresPro
+        searchResults = sortedResults
+        isSearching = false
+    }
+
+    private func reloadSearchData() async {
+        guard !isLoadingSearchData else { return }
+        isLoadingSearchData = true
+
+        searchableReminders = await MemorySafeDataLoader.loadSearchableReminders(context: context)
+        searchableHabits = await MemorySafeDataLoader.loadSearchableHabits(context: context)
+        isLoadingSearchData = false
+    }
+
+    private func toggleVoiceSearch() {
+        selectedSearchType = .voice
+        if audioManager.isRecording {
+            audioManager.stopLiveTranscription()
+        } else {
+            audioManager.transcribedText = ""
+            audioManager.liveTranscription = ""
+            Task {
+                await audioManager.startLiveTranscription()
             }
         }
     }
 
-    private func searchReminderResults(query: String) -> [SearchResult] {
-        let descriptor = FetchDescriptor<Reminder>()
-        let allReminders = (try? context.fetch(descriptor)) ?? []
-
-        return allReminders.compactMap { reminder in
+    private func searchReminderResults(query: String) -> [SearchDisplayResult] {
+        return searchableReminders.compactMap { reminder in
             if selectedScope == .active && reminder.isCompleted { return nil }
             if selectedScope == .completed && !reminder.isCompleted { return nil }
             if selectedScope == .overdue && !reminder.isOverdue { return nil }
 
-            let text = "\(reminder.title) \(reminder.details ?? "") \(reminder.tags?.map(\.name).joined(separator: " ") ?? "")".lowercased()
+            let text = "\(reminder.title) \(reminder.details) \(reminder.tags.joined(separator: " "))".lowercased()
             guard text.contains(query) || reminder.title.lowercased().contains(query.replacingOccurrences(of: "#", with: "")) else {
                 return nil
             }
 
             let score = relevanceScore(for: reminder, query: query)
-            return SearchResult(
-                queryId: UUID(),
+            return SearchDisplayResult(
                 itemType: .reminder,
-                itemId: reminder.uuid.uuidString,
+                itemId: reminder.id,
                 title: reminder.title,
-                snippet: reminder.details ?? "",
-                relevanceScore: score
+                snippet: reminder.details,
+                relevanceScore: score,
+                createdAt: reminder.createdAt,
+                dueDate: reminder.dueDate,
+                priorityRank: reminder.priority.rawValue
             )
         }
     }
 
-    private func searchHabitResults(query: String) -> [SearchResult] {
-        let descriptor = FetchDescriptor<Habit>()
-        let habits = (try? context.fetch(descriptor)) ?? []
-
-        return habits.compactMap { habit in
-            let text = "\(habit.title) \(habit.habitDescription)".lowercased()
+    private func searchHabitResults(query: String) -> [SearchDisplayResult] {
+        return searchableHabits.compactMap { habit in
+            let text = "\(habit.title) \(habit.details)".lowercased()
             guard text.contains(query) else { return nil }
 
             let score: Double = habit.title.lowercased().contains(query) ? 0.9 : 0.7
-            return SearchResult(
-                queryId: UUID(),
+            return SearchDisplayResult(
                 itemType: .habit,
-                itemId: habit.id.uuidString,
+                itemId: habit.id,
                 title: habit.title,
-                snippet: habit.habitDescription,
-                relevanceScore: score
+                snippet: habit.details,
+                relevanceScore: score,
+                createdAt: nil,
+                dueDate: nil,
+                priorityRank: Priority.none.rawValue
             )
         }
     }
 
-    private func relevanceScore(for reminder: Reminder, query: String) -> Double {
+    private func relevanceScore(for reminder: SearchableReminderSnapshot, query: String) -> Double {
         let normalizedQuery = query.replacingOccurrences(of: "#", with: "")
         var score = reminder.title.lowercased().contains(normalizedQuery) ? 0.9 : 0.6
         if reminder.isOverdue { score += 0.05 }
@@ -457,12 +576,17 @@ struct SmartSearchView: View {
             context.insert(queryModel)
         }
 
+        if let savedSearch = currentSavedSearch {
+            savedSearch.updateUsage()
+            Task {
+                await SearchSpotlightManager.shared.indexSavedSearch(savedSpotlightItem(for: savedSearch))
+            }
+        }
+
         try? context.save()
     }
 
-    private func searchReminderResults(command: ProSearchCommand, query: String) -> [SearchResult] {
-        let descriptor = FetchDescriptor<Reminder>()
-        let allReminders = (try? context.fetch(descriptor)) ?? []
+    private func searchReminderResults(command: ProSearchCommand, query: String) -> [SearchDisplayResult] {
         let calendar = Calendar.current
 
         let now = Date()
@@ -476,7 +600,7 @@ struct SmartSearchView: View {
             )
         }
 
-        return allReminders.compactMap { reminder in
+        return searchableReminders.compactMap { reminder in
             if !(command.includeCompleted ?? false) && reminder.isCompleted {
                 return nil
             }
@@ -522,7 +646,7 @@ struct SmartSearchView: View {
             }
 
             if !query.isEmpty {
-                let searchable = "\(reminder.title) \(reminder.details ?? "")".lowercased()
+                let searchable = "\(reminder.title) \(reminder.details)".lowercased()
                 let hasCommandWords = query.split(separator: " ").contains { token in
                     let word = String(token)
                     return ["before", "today", "tomorrow", "overdue", "priority", "can", "do", "in", "minutes", "hour", "tasks", "reminders", "unscheduled"].contains(word)
@@ -542,26 +666,114 @@ struct SmartSearchView: View {
 
             let snippetParts = [
                 command.summary,
-                reminder.details ?? ""
+                reminder.details
             ].filter { !$0.isEmpty }
 
-            return SearchResult(
-                queryId: UUID(),
+            return SearchDisplayResult(
                 itemType: .reminder,
-                itemId: reminder.uuid.uuidString,
+                itemId: reminder.id,
                 title: reminder.title,
                 snippet: snippetParts.joined(separator: " • "),
-                relevanceScore: min(score, 1.0)
+                relevanceScore: min(score, 1.0),
+                createdAt: reminder.createdAt,
+                dueDate: reminder.dueDate,
+                priorityRank: reminder.priority.rawValue
             )
         }
     }
 
-    private func estimatedDurationMinutes(for reminder: Reminder) -> Int {
-        let detailLength = (reminder.details ?? "").count
-        let titleLength = reminder.title.count
-        let subtaskCount = reminder.subtasks?.count ?? 0
-        let complexityEstimate = max(10, min(120, (titleLength / 2) + (detailLength / 8)))
-        return max(complexityEstimate, subtaskCount > 0 ? subtaskCount * 15 : 0)
+    private func sortResults(_ results: [SearchDisplayResult]) -> [SearchDisplayResult] {
+        results.sorted { lhs, rhs in
+            switch selectedSortOrder {
+            case .alphabetical:
+                return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
+            case .dateCreated, .dateModified:
+                return (lhs.createdAt ?? .distantPast) > (rhs.createdAt ?? .distantPast)
+            case .dueDate:
+                return (lhs.dueDate ?? .distantFuture) < (rhs.dueDate ?? .distantFuture)
+            case .priority:
+                return lhs.priorityRank > rhs.priorityRank
+            default:
+                return lhs.relevanceScore > rhs.relevanceScore
+            }
+        }
+    }
+
+    private func estimatedDurationMinutes(for reminder: SearchableReminderSnapshot) -> Int {
+        reminder.estimatedDurationMinutes
+    }
+
+    private var normalizedSearchText: String {
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var isCurrentSearchBookmarked: Bool {
+        currentSavedSearch != nil
+    }
+
+    private func toggleSavedSearch() {
+        let query = normalizedSearchText
+        guard !query.isEmpty else { return }
+
+        if let existing = currentSavedSearch {
+            let removedID = existing.id
+            context.delete(existing)
+            try? context.save()
+            Task {
+                await SearchSpotlightManager.shared.removeSavedSearch(id: removedID)
+            }
+        } else {
+            let savedSearch = SavedSearch(
+                name: query,
+                query: query,
+                searchType: selectedSearchType,
+                scope: selectedScope,
+                sortOrder: selectedSortOrder
+            )
+            savedSearch.lastUsed = Date()
+            context.insert(savedSearch)
+            try? context.save()
+            Task {
+                await SearchSpotlightManager.shared.indexSavedSearch(savedSpotlightItem(for: savedSearch))
+            }
+        }
+    }
+
+    private var currentSavedSearch: SavedSearch? {
+        savedSearches.first(where: {
+            $0.query == normalizedSearchText &&
+            $0.searchType == selectedSearchType &&
+            $0.scope == selectedScope &&
+            $0.sortOrder == selectedSortOrder
+        })
+    }
+
+    private func loadSavedSearch(_ savedSearch: SavedSearch, shouldSearchImmediately: Bool) {
+        searchText = savedSearch.query
+        selectedSearchType = savedSearch.searchType
+        selectedScope = savedSearch.scope
+        selectedSortOrder = savedSearch.sortOrder
+        savedSearch.updateUsage()
+        try? context.save()
+
+        Task {
+            await SearchSpotlightManager.shared.indexSavedSearch(savedSpotlightItem(for: savedSearch))
+        }
+
+        if shouldSearchImmediately {
+            scheduleSearch(immediate: true)
+        }
+    }
+
+    private func savedSpotlightItem(for savedSearch: SavedSearch) -> SavedSearchSpotlightItem {
+        SavedSearchSpotlightItem(
+            id: savedSearch.id,
+            name: savedSearch.name,
+            query: savedSearch.query,
+            searchTypeName: savedSearch.searchType.displayName,
+            scopeName: savedSearch.scope.displayName,
+            sortOrderName: savedSearch.sortOrder.displayName
+        )
     }
 
     private func looksLikeNaturalCommand(_ query: String) -> Bool {
@@ -575,6 +787,21 @@ struct SmartSearchView: View {
             return true
         }
         return lower.range(of: #"\b\d+\s*(m|min|minutes|h|hr|hours)\b"#, options: .regularExpression) != nil
+    }
+}
+
+struct SearchDisplayResult: Identifiable {
+    let itemType: SearchResultType
+    let itemId: String
+    let title: String
+    let snippet: String
+    let relevanceScore: Double
+    let createdAt: Date?
+    let dueDate: Date?
+    let priorityRank: Int
+
+    var id: String {
+        "\(itemType.rawValue)-\(itemId)"
     }
 }
 
@@ -635,6 +862,41 @@ struct BookmarkedSearchRow: View {
     }
 }
 
+struct SavedSearchRow: View {
+    let savedSearch: SavedSearch
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Image(systemName: "square.stack.3d.up.fill")
+                    .foregroundColor(AppTheme.Colors.accent)
+                    .frame(width: 20)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(savedSearch.name)
+                        .font(AppTheme.Typography.body)
+                        .foregroundColor(AppTheme.Colors.textPrimary)
+                        .lineLimit(1)
+
+                    Text("\(savedSearch.query) • \(savedSearch.scope.displayName)")
+                        .font(AppTheme.Typography.caption1)
+                        .foregroundColor(AppTheme.Colors.textSecondary)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                Image(systemName: "sparkles.rectangle.stack")
+                    .font(.caption)
+                    .foregroundColor(AppTheme.Colors.accent)
+            }
+            .padding(.vertical, 8)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 struct RecentSearchRow: View {
     let searchQuery: SearchQuery
     let action: () -> Void
@@ -670,7 +932,7 @@ struct RecentSearchRow: View {
 }
 
 struct SearchResultRow: View {
-    let result: SearchResult
+    let result: SearchDisplayResult
     
     var body: some View {
         HStack {

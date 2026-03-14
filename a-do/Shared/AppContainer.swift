@@ -2,6 +2,29 @@ import Foundation
 import SwiftData
 import os
 
+private enum AppGroupSchemaDefaults {
+    nonisolated static func identifier() -> String {
+        "group.com.ado.app"
+    }
+
+    nonisolated static func models() -> [any PersistentModel.Type] {
+        [
+            Reminder.self,
+            Tag.self,
+            ReminderList.self,
+            ReminderNotification.self,
+            LocationTrigger.self,
+            AppleNoteAttachment.self,
+            VoiceReminder.self,
+            Habit.self,
+            HabitEntry.self,
+            FocusSession.self,
+            TimeEntry.self,
+            SearchIndex.self
+        ]
+    }
+}
+
 // MARK: - Minimal Safe AppContainer
 // This provides only the essential functions needed by other parts of the app
 // without complex initialization that could cause EXC_BAD_ACCESS crashes
@@ -14,18 +37,45 @@ final class AppContainer {
     // MARK: - Safe Container Access for App Intents
     // This is only used by App Intents that need container access
     private var _container: ModelContainer?
+    private(set) var isDegradedMode = false
+    private(set) var recoveryMessage: String?
     
     func getContainer() -> ModelContainer {
         if let container = _container {
             return container
         }
+
+        if RuntimeEnvironment.isRunningTests {
+            return createTestContainer()
+        }
         
         // Create container with progressive fallback strategy
         return createContainerWithFallback()
     }
+
+    private func createTestContainer() -> ModelContainer {
+        let schemaResult = SwiftDataUtils.buildValidSchema()
+        let configuration = ModelConfiguration(
+            schema: schemaResult.schema,
+            isStoredInMemoryOnly: true,
+            cloudKitDatabase: .none
+        )
+
+        do {
+            let container = try ModelContainer(for: schemaResult.schema, configurations: configuration)
+            _container = container
+            clearRecoveryState()
+            os_log("Created in-memory SwiftData test container", log: .default, type: .info)
+            return container
+        } catch {
+            os_log("Failed to create in-memory SwiftData test container: %{public}@", log: .default, type: .fault, error.localizedDescription)
+            return createEmergencyContainer()
+        }
+    }
     
     private func createContainerWithFallback() -> ModelContainer {
         os_log("Creating SwiftData container with diagnostic approach", log: .default, type: .info)
+        clearRecoveryState()
         
         // Use the diagnostic utility to build a working schema
         let (container, diagnostics) = SwiftDataUtils.createDiagnosticContainer()
@@ -53,6 +103,7 @@ final class AppContainer {
         
         // If diagnostic approach failed completely, try emergency fallback
         os_log("Diagnostic container creation failed, attempting emergency fallback", log: .default, type: .error)
+        setDegradedMode("Recovered with an emergency in-memory data store. Recent data may be unavailable until the app is restarted.")
         SwiftDataUtils.resetPersistentStores()
         return createEmergencyContainer()
     }
@@ -110,13 +161,40 @@ final class AppContainer {
                 let container = try ModelContainer(for: schema, configurations: config)
                 os_log("Created emergency container with %d model types", log: .default, type: .default, modelSet.count)
                 _container = container
+                setDegradedMode("The app is running in limited recovery mode with temporary in-memory storage.")
                 return container
             } catch {
                 os_log("Emergency container attempt failed (models=%d): %{public}@", log: .default, type: .error, modelSet.count, error.localizedDescription)
             }
         }
+        
+        do {
+            let schema = Schema([AppSettings.self])
+            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            let container = try ModelContainer(for: schema, configurations: config)
+            _container = container
+            setDegradedMode("The app recovered with minimal temporary storage. Restart the app to restore full data access.")
+            os_log("Created last-resort AppSettings-only emergency container", log: .default, type: .fault)
+            return container
+        } catch {
+            preconditionFailure("SwiftData is completely non-functional after all emergency fallbacks: \(error.localizedDescription)")
+        }
+    }
 
-        fatalError("SwiftData is completely non-functional after all emergency fallbacks.")
+    nonisolated static func makeAppGroupContainer(for models: [any PersistentModel.Type]? = nil) throws -> ModelContainer {
+        let schema = Schema(models ?? AppGroupSchemaDefaults.models())
+        let configuration = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: false,
+            allowsSave: true,
+            groupContainer: .identifier(AppGroupSchemaDefaults.identifier()),
+            cloudKitDatabase: .none
+        )
+        return try ModelContainer(for: schema, configurations: configuration)
+    }
+
+    nonisolated static func makeAppGroupContext(for models: [any PersistentModel.Type]? = nil) throws -> ModelContext {
+        ModelContext(try makeAppGroupContainer(for: models))
     }
     
     // MARK: - Progressive Model Loading
@@ -149,6 +227,7 @@ final class AppContainer {
     // MARK: - Safe Container Reset
     func resetContainer() {
         _container = nil
+        clearRecoveryState()
         os_log("Container reset - will recreate on next access", log: .default, type: .info)
     }
     
@@ -243,5 +322,15 @@ final class AppContainer {
             // Database optimization failed
             #endif
         }
+    }
+
+    private func setDegradedMode(_ message: String) {
+        isDegradedMode = true
+        recoveryMessage = message
+    }
+
+    private func clearRecoveryState() {
+        isDegradedMode = false
+        recoveryMessage = nil
     }
 }

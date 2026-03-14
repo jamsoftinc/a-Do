@@ -30,30 +30,19 @@ final class AIBehavioralIntegrationCoordinator {
     var isIntegrationActive: Bool = true
     var lastLearningUpdate: Date = Date.distantPast
     var learningCycleInterval: TimeInterval = 3600 // 1 hour
-
-    // Timer for periodic learning - must be retained to prevent memory leak
-    private var learningTimer: Timer?
-
-    private init() {
-        setupPeriodicLearning()
-    }
-
-    // MARK: - Periodic Learning Cycles
-
-    private func setupPeriodicLearning() {
-        learningTimer?.invalidate()
-        learningTimer = Timer.scheduledTimer(withTimeInterval: learningCycleInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                await self?.runLearningCycle()
-            }
-        }
-    }
+    
+    private init() {}
 
     /// Call this method to clean up resources when the coordinator is no longer needed
     func cleanup() {
-        learningTimer?.invalidate()
-        learningTimer = nil
         isIntegrationActive = false
+    }
+
+    func runLearningCycleIfNeeded(context: ModelContext, reason: String, force: Bool = false) async {
+        let isStale = Date().timeIntervalSince(lastLearningUpdate) >= learningCycleInterval
+        guard force || isStale else { return }
+        logger.info("Running AI behavioral learning cycle for \(reason, privacy: .public)")
+        await runLearningCycle(context: context)
     }
     
     /// Runs a complete learning cycle that improves AI suggestions based on user behavior
