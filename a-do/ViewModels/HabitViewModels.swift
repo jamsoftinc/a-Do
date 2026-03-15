@@ -96,6 +96,7 @@ final class HabitViewModel {
             try context.save()
             Task {
                 await AdvancedSearchManager.shared.upsertHabitIndex(for: habit, context: context)
+                await SearchSpotlightManager.shared.syncHabit(habit)
             }
             loadHabits()
             refreshWidgetSnapshotsIfPossible()
@@ -120,6 +121,7 @@ final class HabitViewModel {
             if let modelContext {
                 Task {
                     await AdvancedSearchManager.shared.upsertHabitIndex(for: habit, context: modelContext)
+                    await SearchSpotlightManager.shared.syncHabit(habit)
                 }
             }
             updateStatistics()
@@ -133,6 +135,7 @@ final class HabitViewModel {
     func deleteHabit(_ habit: Habit) {
         guard let context = modelContext else { return }
         let deletedHabitID = habit.id.uuidString
+        let deletedSpotlightID = habit.id
         
         context.delete(habit)
         
@@ -140,6 +143,7 @@ final class HabitViewModel {
             try context.save()
             Task {
                 await AdvancedSearchManager.shared.removeHabitIndex(itemId: deletedHabitID, context: context)
+                await SearchSpotlightManager.shared.removeHabit(id: deletedSpotlightID)
             }
             loadHabits()
             refreshWidgetSnapshotsIfPossible()
@@ -158,6 +162,7 @@ final class HabitViewModel {
             if let modelContext {
                 Task {
                     await AdvancedSearchManager.shared.upsertHabitIndex(for: habit, context: modelContext)
+                    await SearchSpotlightManager.shared.syncHabit(habit)
                 }
             }
             updateStatistics()

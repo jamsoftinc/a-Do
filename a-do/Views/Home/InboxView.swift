@@ -227,10 +227,14 @@ struct InboxView: View {
     }
 
     private func deleteReminder(_ reminder: Reminder) {
+        let reminderID = reminder.uuid
         context.delete(reminder)
 
         do {
             try context.save()
+            Task {
+                await SearchSpotlightManager.shared.removeReminder(id: reminderID)
+            }
             WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
             ReminderMutationMonitor.shared.notifyChange()
         } catch {

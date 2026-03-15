@@ -374,6 +374,9 @@ struct ListsView: View {
 
         do {
             try context.save()
+            Task {
+                await SearchSpotlightManager.shared.syncList(smartList)
+            }
             // Reload lists to show the new smart list
             Task { await loadListData() }
         } catch {
@@ -402,7 +405,7 @@ struct ListsView: View {
                              list.isProtected.toggle()
                          }
                          Button("Delete", role: .destructive) {
-                             context.delete(list)
+                             deleteList(list)
                          }
                      }
                 }
@@ -504,6 +507,9 @@ struct ListsView: View {
         
         do {
             try context.save()
+            Task {
+                await SearchSpotlightManager.shared.syncList(newList)
+            }
             newListName = ""
             selectedSection = nil
         } catch {
@@ -522,6 +528,20 @@ struct ListsView: View {
             newSectionName = ""
         } catch {
             // Handle error silently in production
+        }
+    }
+
+    private func deleteList(_ list: ReminderList) {
+        let listName = list.name
+        context.delete(list)
+
+        do {
+            try context.save()
+            Task {
+                await SearchSpotlightManager.shared.removeList(name: listName)
+            }
+        } catch {
+            Logger(subsystem: "a-do", category: "SmartLists").error("Failed to delete list: \(String(describing: error))")
         }
     }
     
@@ -703,5 +723,4 @@ struct ReminderRowView: View {
     ListsView()
         .modelContainer(for: Reminder.self, inMemory: true)
 }
-
 

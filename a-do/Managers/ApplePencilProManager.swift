@@ -195,7 +195,7 @@ final class ApplePencilProManager {
             return nil
         }
 
-        let scale: CGFloat = UIScreen.main.scale
+        let scale = currentDisplayScale()
         return drawing.image(from: drawing.bounds, scale: scale)
     }
 
@@ -212,6 +212,15 @@ final class ApplePencilProManager {
         }
 
         return pdfData
+    }
+
+    private func currentDisplayScale() -> CGFloat {
+        let activeScreen = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first(where: { $0.activationState == .foregroundActive })?
+            .screen
+
+        return activeScreen?.scale ?? UITraitCollection.current.displayScale
     }
 }
 

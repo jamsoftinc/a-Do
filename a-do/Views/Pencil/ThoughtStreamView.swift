@@ -14,6 +14,7 @@ import UIKit
 struct ThoughtStreamView: View {
     @Binding var isActive: Bool
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.displayScale) private var displayScale
     @State private var canvasView = PKCanvasView()
     @State private var recognizedText = ""
     @State private var isProcessing = false
@@ -134,16 +135,16 @@ struct ThoughtStreamView: View {
                 return
             }
 
-            var createdCount = 0
-            for request in requests {
-                do {
-                    _ = try await ReminderCreationService.shared.createReminder(request: request, in: modelContext)
-                    createdCount += 1
-                } catch {
-                    await MainActor.run {
-                        processingError = "Failed to create reminder."
-                    }
+            let createdCount: Int
+            do {
+                createdCount = try await ReminderCreationService.shared
+                    .createReminders(requests: requests, in: modelContext)
+                    .count
+            } catch {
+                await MainActor.run {
+                    processingError = "Failed to create reminder."
                 }
+                createdCount = 0
             }
 
             if createdCount > 0 {
@@ -175,7 +176,7 @@ struct ThoughtStreamView: View {
             return nil
         }
         
-        return drawing.image(from: bounds, scale: UIScreen.main.scale)
+        return drawing.image(from: bounds, scale: displayScale)
     }
     
     private func recognizeText(from image: UIImage) async -> String {

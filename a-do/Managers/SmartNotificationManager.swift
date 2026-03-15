@@ -690,13 +690,22 @@ final class SmartNotificationManager: NSObject {
             }
         }()
         
-        let brightness = Int(UIScreen.main.brightness * 100)
+        let brightness = Int(currentScreenBrightness() * 100)
         
         if let batteryPercentage {
             notification.deviceContext = "Battery \(batteryPercentage)% (\(batteryState)), \(lowPowerMode), brightness \(brightness)%, \(alertState)"
         } else {
             notification.deviceContext = "\(batteryState), \(lowPowerMode), brightness \(brightness)%, \(alertState)"
         }
+    }
+
+    private func currentScreenBrightness() -> CGFloat {
+        let activeScreen = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first(where: { $0.activationState == .foregroundActive })?
+            .screen
+
+        return activeScreen?.brightness ?? 0.5
     }
     
     private func calculateAdaptiveScore(notification: SmartNotification, context: ModelContext) async -> Double {

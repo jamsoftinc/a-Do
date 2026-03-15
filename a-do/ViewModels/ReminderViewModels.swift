@@ -102,6 +102,7 @@ final class ReminderHomeViewModel {
             Task {
                 for reminder in deletedReminders {
                     await AdvancedSearchManager.shared.removeReminderIndex(for: reminder, context: context)
+                    await SearchSpotlightManager.shared.removeReminder(id: reminder.uuid)
                 }
             }
             WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])

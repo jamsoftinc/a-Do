@@ -55,14 +55,10 @@ final class InteractiveWidgetManager {
             logger.info("\(description, privacy: .public) widgets queued for refresh")
         } catch {
             logger.error("Failed to queue widget refresh: \(error.localizedDescription, privacy: .public)")
-            if kinds == Set(WidgetSnapshotKind.allCases) {
-                WidgetCenter.shared.reloadAllTimelines()
-            } else {
-                if kinds.contains(.reminders) { WidgetCenter.shared.reloadTimelines(ofKind: "ReminderWidget") }
-                if kinds.contains(.habits) { WidgetCenter.shared.reloadTimelines(ofKind: "HabitWidget") }
-                if kinds.contains(.focus) { WidgetCenter.shared.reloadTimelines(ofKind: "FocusWidget") }
-                if kinds.contains(.timeTracking) { WidgetCenter.shared.reloadTimelines(ofKind: "TimeTrackingWidget") }
-            }
+            if kinds.contains(.reminders) { WidgetCenter.shared.reloadTimelines(ofKind: "ReminderWidget") }
+            if kinds.contains(.habits) { WidgetCenter.shared.reloadTimelines(ofKind: "HabitWidget") }
+            if kinds.contains(.focus) { WidgetCenter.shared.reloadTimelines(ofKind: "FocusWidget") }
+            if kinds.contains(.timeTracking) { WidgetCenter.shared.reloadTimelines(ofKind: "TimeTrackingWidget") }
         }
     }
 }

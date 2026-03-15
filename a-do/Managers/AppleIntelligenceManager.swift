@@ -166,33 +166,27 @@ final class AppleIntelligenceManager {
             return await createBasicReminder(from: text, context: context)
         }
 
-        // Create reminder from parsed output
-        let reminder = Reminder(title: parsed.title)
+        var priority: Priority = .none
 
-        // Set due date if parsed
-        if let dueDateString = parsed.suggestedDueDate {
-            reminder.dueDate = parseDateString(dueDateString)
-        }
-
-        // Set priority if parsed
         if let priorityString = parsed.priority?.lowercased() {
             switch priorityString {
-            case "high": reminder.priority = .high
-            case "medium": reminder.priority = .medium
-            case "low": reminder.priority = .low
+            case "high": priority = .high
+            case "medium": priority = .medium
+            case "low": priority = .low
             default: break
             }
         }
 
-        // Set notes if available
-        if let notes = parsed.notes {
-            reminder.details = notes
-        }
-
-        context.insert(reminder)
+        let request = ReminderCreationService.Request(
+            title: parsed.title,
+            details: parsed.notes,
+            dueDate: parsed.suggestedDueDate.flatMap(parseDateString),
+            priority: priority,
+            useNaturalLanguageParsing: false
+        )
 
         do {
-            try context.save()
+            let reminder = try await ReminderCreationService.shared.createReminder(request: request, in: context)
             logger.info("Created smart reminder: \(parsed.title)")
             return reminder
         } catch {
@@ -203,17 +197,16 @@ final class AppleIntelligenceManager {
 
     private func createBasicReminder(from text: String, context: ModelContext) async -> Reminder? {
         let parsed = await NaturalLanguageProcessor.shared.parseReminderText(text)
-        let reminder = Reminder(title: parsed.finalText, dueDate: parsed.dueDate)
-
-        if parsed.priority != .none {
-            reminder.priority = parsed.priority
-        }
-
-        context.insert(reminder)
+        let request = ReminderCreationService.Request(
+            title: parsed.finalText,
+            details: nil,
+            dueDate: parsed.dueDate,
+            priority: parsed.priority,
+            useNaturalLanguageParsing: false
+        )
 
         do {
-            try context.save()
-            return reminder
+            return try await ReminderCreationService.shared.createReminder(request: request, in: context)
         } catch {
             logger.error("Failed to create basic reminder: \(error.localizedDescription)")
             return nil

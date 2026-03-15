@@ -159,7 +159,7 @@ struct RootView: View {
                         .task { 
                             router.checkGroupDeeplinkFlag() 
                             checkMorningBriefingStatus()
-                            refreshWidgetSnapshotsIfPossible()
+                            refreshWidgetSnapshotsIfNeeded()
                             scheduleLifecycleMaintenance(reason: "launch")
                         }
                         .fullScreenCover(isPresented: $showMorningBriefing) {
@@ -230,14 +230,14 @@ struct RootView: View {
         .onChange(of: syncManager.isInitialSyncInProgress) { _, inProgress in
             if !inProgress {
                 isInitialSyncComplete = true
-                refreshWidgetSnapshotsIfPossible()
+                refreshWidgetSnapshotsIfNeeded()
                 scheduleLifecycleMaintenance(reason: "initialSyncComplete")
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
             switch newPhase {
             case .active:
-                refreshWidgetSnapshotsIfPossible()
+                refreshWidgetSnapshotsIfNeeded()
                 scheduleLifecycleMaintenance(reason: "sceneActive")
                 if recoveryMessage == nil {
                     recoveryMessage = AppContainer.shared.recoveryMessage
@@ -355,13 +355,10 @@ struct RootView: View {
         }
     }
 
-    private func refreshWidgetSnapshotsIfPossible() {
+    private func refreshWidgetSnapshotsIfNeeded() {
         guard let container else { return }
         let context = ModelContext(container)
-        WidgetSnapshotManager.shared.refreshSnapshots(
-            context: context,
-            kinds: [.reminders, .habits, .focus, .timeTracking]
-        )
+        WidgetSnapshotManager.shared.refreshSnapshotsIfNeeded(context: context)
     }
 
     private func scheduleLifecycleMaintenance(reason: String) {
@@ -385,5 +382,6 @@ struct RootView: View {
         await AIBehavioralIntegrationCoordinator.shared.runLearningCycleIfNeeded(context: context, reason: reason)
         await AIManager.shared.refreshIfNeeded(userId: userId, context: context, reason: reason)
         await GamificationManager.shared.refreshIfNeeded(context: context, reason: reason)
+        await SearchSpotlightManager.shared.rebuildCoreEntitiesIfNeeded(context: context, reason: reason)
     }
 }

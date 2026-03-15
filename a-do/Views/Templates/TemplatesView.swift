@@ -380,16 +380,17 @@ struct QuickTemplateCard: View {
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
         impactFeedback.impactOccurred()
         
-        // Create the reminder
-        _ = recurringManager.createReminderFromTemplate(template, context: context)
+        Task {
+            _ = await recurringManager.createReminderFromTemplate(template, context: context)
 
-        // Show success feedback
-        showSuccess = true
-        
-        // Reset after a short delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            showSuccess = false
-            isCreating = false
+            await MainActor.run {
+                showSuccess = true
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                showSuccess = false
+                isCreating = false
+            }
         }
     }
 }
@@ -461,7 +462,9 @@ struct TemplateRow: View {
                 Spacer()
                 
                 Button {
-                    let _ = recurringManager.createReminderFromTemplate(template, context: context)
+                    Task {
+                        _ = await recurringManager.createReminderFromTemplate(template, context: context)
+                    }
                 } label: {
                     Image(systemName: "plus.circle.fill")
                         .foregroundColor(AppTheme.Colors.primary)

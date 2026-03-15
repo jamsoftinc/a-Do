@@ -10,6 +10,7 @@ enum DeepLinkDestination: Identifiable, Equatable {
     case smartToday
     case smartHighPriority
     case savedSearch(UUID)
+    case search(query: String, scope: SearchScope)
     case tag(String)
     case priority(Priority)
     case sendText(reminderId: UUID)
@@ -23,6 +24,7 @@ enum DeepLinkDestination: Identifiable, Equatable {
         case .smartToday: return "smart_today"
         case .smartHighPriority: return "smart_high"
         case .savedSearch(let id): return "saved_search_\(id.uuidString)"
+        case .search(let query, let scope): return "search_\(scope.rawValue)_\(query)"
         case .tag(let name): return "tag_\(name)"
         case .priority(let p): return "priority_\(p.rawValue)"
         case .sendText(let id): return "send_text_\(id.uuidString)"
@@ -103,6 +105,14 @@ final class AppRouter {
             if let id = UUID(uuidString: idString) {
                 destination = .savedSearch(id)
             }
+        } else if let reminderID = SearchSpotlightIdentifiers.reminderID(from: identifier),
+                  let query = fetchReminderQuery(id: reminderID) {
+            destination = .search(query: query, scope: .reminders)
+        } else if let habitID = SearchSpotlightIdentifiers.habitID(from: identifier),
+                  let query = fetchHabitQuery(id: habitID) {
+            destination = .search(query: query, scope: .habits)
+        } else if let listName = SearchSpotlightIdentifiers.listName(from: identifier) {
+            destination = .search(query: listName, scope: .lists)
         }
         #endif
     }
@@ -137,5 +147,21 @@ final class AppRouter {
             destination = .habits
             // Opening habits view
         }
+    }
+
+    private func fetchReminderQuery(id: UUID) -> String? {
+        guard let context = try? AppContainer.makeAppGroupContext() else { return nil }
+        let descriptor = FetchDescriptor<Reminder>(
+            predicate: #Predicate { $0.uuid == id }
+        )
+        return try? context.fetch(descriptor).first?.title
+    }
+
+    private func fetchHabitQuery(id: UUID) -> String? {
+        guard let context = try? AppContainer.makeAppGroupContext() else { return nil }
+        let descriptor = FetchDescriptor<Habit>(
+            predicate: #Predicate { $0.id == id }
+        )
+        return try? context.fetch(descriptor).first?.title
     }
 }

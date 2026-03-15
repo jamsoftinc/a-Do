@@ -181,15 +181,17 @@ final class WeeklyReviewManager {
                 minute: block.minute
             )
 
-            let reminder = Reminder(
-                title: block.title,
-                details: "Focus block (\(focusType.displayName))",
-                dueDate: blockDate,
-                priority: .medium
-            )
-            context.insert(reminder)
-
             do {
+                let reminder = try await ReminderCreationService.shared.createReminder(
+                    request: .init(
+                        title: block.title,
+                        details: "Focus block (\(focusType.displayName))",
+                        dueDate: blockDate,
+                        priority: .medium,
+                        useNaturalLanguageParsing: false
+                    ),
+                    in: context
+                )
                 _ = try await CalendarManager.shared.createTimeBlock(
                     for: reminder,
                     startDate: blockDate,

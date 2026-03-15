@@ -11,8 +11,11 @@ final class WidgetSnapshotManager {
     private let habitsKey = "widget_habits_v1"
     private let focusKey = "widget_focus_v1"
     private let timeTrackingKey = "widget_time_tracking_v1"
-    private let updatedAtKey = "widget_snapshot_updated_at"
-    private var pendingKinds: Set<WidgetSnapshotKind> = Set(WidgetSnapshotKind.allCases)
+    private let remindersUpdatedAtKey = "widget_reminders_updated_at"
+    private let habitsUpdatedAtKey = "widget_habits_updated_at"
+    private let focusUpdatedAtKey = "widget_focus_updated_at"
+    private let timeTrackingUpdatedAtKey = "widget_time_tracking_updated_at"
+    private var pendingKinds: Set<WidgetSnapshotKind> = []
     private var pendingContainer: ModelContainer?
     private var refreshTask: Task<Void, Never>?
 
@@ -40,7 +43,10 @@ final class WidgetSnapshotManager {
             let habitsKey = self.habitsKey
             let focusKey = self.focusKey
             let timeTrackingKey = self.timeTrackingKey
-            let updatedAtKey = self.updatedAtKey
+            let remindersUpdatedAtKey = self.remindersUpdatedAtKey
+            let habitsUpdatedAtKey = self.habitsUpdatedAtKey
+            let focusUpdatedAtKey = self.focusUpdatedAtKey
+            let timeTrackingUpdatedAtKey = self.timeTrackingUpdatedAtKey
 
             Task.detached(priority: .utility) {
                 Self.performRefresh(
@@ -51,10 +57,22 @@ final class WidgetSnapshotManager {
                     habitsKey: habitsKey,
                     focusKey: focusKey,
                     timeTrackingKey: timeTrackingKey,
-                    updatedAtKey: updatedAtKey
+                    remindersUpdatedAtKey: remindersUpdatedAtKey,
+                    habitsUpdatedAtKey: habitsUpdatedAtKey,
+                    focusUpdatedAtKey: focusUpdatedAtKey,
+                    timeTrackingUpdatedAtKey: timeTrackingUpdatedAtKey
                 )
             }
         }
+    }
+
+    func refreshSnapshotsIfNeeded(
+        context: ModelContext,
+        maxAge: TimeInterval = 2 * 60 * 60
+    ) {
+        let staleKinds = snapshotKindsNeedingRefresh(maxAge: maxAge)
+        guard !staleKinds.isEmpty else { return }
+        refreshSnapshots(context: context, kinds: staleKinds)
     }
 
     nonisolated private static func performRefresh(
@@ -65,11 +83,15 @@ final class WidgetSnapshotManager {
         habitsKey: String,
         focusKey: String,
         timeTrackingKey: String,
-        updatedAtKey: String
+        remindersUpdatedAtKey: String,
+        habitsUpdatedAtKey: String,
+        focusUpdatedAtKey: String,
+        timeTrackingUpdatedAtKey: String
     ) {
         let logger = Logger(subsystem: "a-do", category: "WidgetSnapshots")
         guard let defaults = UserDefaults(suiteName: suiteName) else { return }
         let context = ModelContext(container)
+        let now = Date()
 
         do {
             let encoder = JSONEncoder()
@@ -78,24 +100,26 @@ final class WidgetSnapshotManager {
             if kinds.contains(.reminders) {
                 let reminders = fetchReminderSnapshots(context: context)
                 defaults.set(try encoder.encode(reminders), forKey: remindersKey)
+                defaults.set(now, forKey: remindersUpdatedAtKey)
             }
 
             if kinds.contains(.habits) {
                 let habits = fetchHabitSnapshots(context: context)
                 defaults.set(try encoder.encode(habits), forKey: habitsKey)
+                defaults.set(now, forKey: habitsUpdatedAtKey)
             }
 
             if kinds.contains(.focus) {
                 let focus = fetchFocusSnapshot(context: context)
                 defaults.set(try encoder.encode(focus), forKey: focusKey)
+                defaults.set(now, forKey: focusUpdatedAtKey)
             }
 
             if kinds.contains(.timeTracking) {
                 let timeTracking = fetchTimeTrackingSnapshot(context: context)
                 defaults.set(try encoder.encode(timeTracking), forKey: timeTrackingKey)
+                defaults.set(now, forKey: timeTrackingUpdatedAtKey)
             }
-
-            defaults.set(Date(), forKey: updatedAtKey)
 
             if kinds.contains(.reminders) {
                 WidgetCenter.shared.reloadTimelines(ofKind: "ReminderWidget")
@@ -238,6 +262,30 @@ final class WidgetSnapshotManager {
 
     private var defaultKinds: Set<WidgetSnapshotKind> {
         [.reminders, .habits, .focus, .timeTracking]
+    }
+
+    private func snapshotKindsNeedingRefresh(maxAge: TimeInterval) -> Set<WidgetSnapshotKind> {
+        guard let defaults = UserDefaults(suiteName: suiteName) else { return defaultKinds }
+        let now = Date()
+        var kinds: Set<WidgetSnapshotKind> = []
+
+        let trackedKinds: [(WidgetSnapshotKind, String, String)] = [
+            (.reminders, remindersKey, remindersUpdatedAtKey),
+            (.habits, habitsKey, habitsUpdatedAtKey),
+            (.focus, focusKey, focusUpdatedAtKey),
+            (.timeTracking, timeTrackingKey, timeTrackingUpdatedAtKey)
+        ]
+
+        for (kind, valueKey, updatedAtKey) in trackedKinds {
+            let hasSnapshot = defaults.data(forKey: valueKey) != nil
+            let lastUpdated = defaults.object(forKey: updatedAtKey) as? Date
+            let isStale = lastUpdated.map { now.timeIntervalSince($0) >= maxAge } ?? true
+            if !hasSnapshot || isStale {
+                kinds.insert(kind)
+            }
+        }
+
+        return kinds
     }
 }
 

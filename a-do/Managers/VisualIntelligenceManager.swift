@@ -570,17 +570,16 @@ extension VisualIntelligenceManager {
         context: inout ModelContext
     ) async -> Reminder? {
         let parsed = await NaturalLanguageProcessor.shared.parseReminderText(result.text)
-
-        let reminder = Reminder(title: parsed.finalText, dueDate: parsed.dueDate)
-
-        if parsed.priority != .none {
-            reminder.priority = parsed.priority
-        }
-
-        context.insert(reminder)
+        let request = ReminderCreationService.Request(
+            title: parsed.finalText,
+            details: nil,
+            dueDate: parsed.dueDate,
+            priority: parsed.priority,
+            useNaturalLanguageParsing: false
+        )
 
         do {
-            try context.save()
+            let reminder = try await ReminderCreationService.shared.createReminder(request: request, in: context)
             logger.info("Created reminder from scan: \(parsed.finalText)")
             return reminder
         } catch {
@@ -596,15 +595,16 @@ extension VisualIntelligenceManager {
     ) async -> Reminder? {
         let title = "Follow up with \(card.name.isEmpty ? "contact" : card.name)"
         let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date())
-
-        let reminder = Reminder(title: title, dueDate: tomorrow)
-        reminder.details = card.formattedDetails
-        reminder.priority = .medium
-
-        context.insert(reminder)
+        let request = ReminderCreationService.Request(
+            title: title,
+            details: card.formattedDetails,
+            dueDate: tomorrow,
+            priority: .medium,
+            useNaturalLanguageParsing: false
+        )
 
         do {
-            try context.save()
+            let reminder = try await ReminderCreationService.shared.createReminder(request: request, in: context)
             logger.info("Created follow-up reminder for: \(card.name)")
             return reminder
         } catch {

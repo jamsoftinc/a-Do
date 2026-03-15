@@ -16,8 +16,6 @@ final class AIDataService {
     static let shared = AIDataService()
     
     private let logger = Logger(subsystem: "a-do", category: "AIDataService")
-    private let timeTrackingManager = TimeTrackingManager.shared
-    private let focusModeManager = FocusModeManager.shared
 
     // Pro feature check
     var isProEnabled: Bool {
@@ -28,7 +26,7 @@ final class AIDataService {
     
     // MARK: - Productivity Data Integration
 
-    func getProductivityMetrics(context: ModelContext, timeframe: AIInsightTimeframe = .week) -> ProductivityMetrics {
+    func getProductivityMetrics(context: ModelContext, timeframe: AIInsightTimeframe = .week) async -> ProductivityMetrics {
         guard isProEnabled else {
             logger.warning("AI productivity metrics is a Pro feature")
             return ProductivityMetrics(
@@ -44,49 +42,14 @@ final class AIDataService {
             )
         }
 
-        let dateRange = getDateRange(for: timeframe)
-        let startDate = dateRange.start
-        let endDate = dateRange.end
-        
-        // Fetch time entries
-        let timeDescriptor = FetchDescriptor<TimeEntry>(
-            predicate: #Predicate { entry in
-                entry.startTime >= startDate && entry.startTime <= endDate
-            }
-        )
-        let timeEntries = (try? context.fetch(timeDescriptor)) ?? []
-        
-        // Fetch focus sessions
-        let focusDescriptor = FetchDescriptor<FocusSession>(
-            predicate: #Predicate { session in
-                session.startTime >= startDate && session.startTime <= endDate
-            }
-        )
-        let focusSessions = (try? context.fetch(focusDescriptor)) ?? []
-        
-        // Fetch reminders for completion analysis
-        let reminderDescriptor = FetchDescriptor<Reminder>(
-            predicate: #Predicate { reminder in
-                (reminder.completedAt != nil && 
-                 reminder.completedAt! >= startDate && 
-                 reminder.completedAt! <= endDate) ||
-                (reminder.dueDate != nil &&
-                 reminder.dueDate! >= startDate &&
-                 reminder.dueDate! <= endDate)
-            }
-        )
-        let reminders = (try? context.fetch(reminderDescriptor)) ?? []
-        
-        // Calculate metrics
-        return calculateProductivityMetrics(
-            timeEntries: timeEntries,
-            focusSessions: focusSessions,
-            reminders: reminders,
+        let snapshot = await AIAnalyticsSnapshotLoader.loadDashboard(
+            container: context.container,
             timeframe: timeframe
         )
+        return snapshot.productivityMetrics
     }
     
-    func getHabitMetrics(context: ModelContext, timeframe: AIInsightTimeframe = .week) -> HabitMetrics {
+    func getHabitMetrics(context: ModelContext, timeframe: AIInsightTimeframe = .week) async -> HabitMetrics {
         guard isProEnabled else {
             logger.warning("AI habit metrics is a Pro feature")
             return HabitMetrics(
@@ -99,129 +62,53 @@ final class AIDataService {
             )
         }
 
-        let dateRange = getDateRange(for: timeframe)
-        
-        // Fetch active habits
-        let habitsDescriptor = FetchDescriptor<Habit>(
-            predicate: #Predicate { $0.isActive }
+        let snapshot = await AIAnalyticsSnapshotLoader.loadDashboard(
+            container: context.container,
+            timeframe: timeframe
         )
-        let habits = (try? context.fetch(habitsDescriptor)) ?? []
-        
-        return calculateHabitMetrics(habits: habits, dateRange: dateRange)
+        return snapshot.habitMetrics
     }
     
-    func getTimeUsageMetrics(context: ModelContext, timeframe: AIInsightTimeframe = .week) -> TimeUsageMetrics {
-        let dateRange = getDateRange(for: timeframe)
-        let startDate = dateRange.start
-        let endDate = dateRange.end
-        
-        let timeDescriptor = FetchDescriptor<TimeEntry>(
-            predicate: #Predicate { entry in
-                entry.startTime >= startDate && entry.startTime <= endDate
-            }
+    func getTimeUsageMetrics(context: ModelContext, timeframe: AIInsightTimeframe = .week) async -> TimeUsageMetrics {
+        let snapshot = await AIAnalyticsSnapshotLoader.loadDashboard(
+            container: context.container,
+            timeframe: timeframe
         )
-        let timeEntries = (try? context.fetch(timeDescriptor)) ?? []
-        
-        return calculateTimeUsageMetrics(timeEntries: timeEntries, timeframe: timeframe)
+        return snapshot.timeUsageMetrics
     }
     
-    func getFocusEffectivenessMetrics(context: ModelContext, timeframe: AIInsightTimeframe = .week) -> FocusEffectivenessMetrics {
-        let dateRange = getDateRange(for: timeframe)
-        let startDate = dateRange.start
-        let endDate = dateRange.end
-        
-        let focusDescriptor = FetchDescriptor<FocusSession>(
-            predicate: #Predicate { session in
-                session.startTime >= startDate && session.startTime <= endDate
-            }
+    func getFocusEffectivenessMetrics(context: ModelContext, timeframe: AIInsightTimeframe = .week) async -> FocusEffectivenessMetrics {
+        let snapshot = await AIAnalyticsSnapshotLoader.loadDashboard(
+            container: context.container,
+            timeframe: timeframe
         )
-        let focusSessions = (try? context.fetch(focusDescriptor)) ?? []
-        
-        return calculateFocusEffectivenessMetrics(sessions: focusSessions, timeframe: timeframe)
+        return snapshot.focusMetrics
     }
     
     // MARK: - Chart Data Generation
     
-    func getProductivityTrendData(context: ModelContext, days: Int = 7) -> [ProductivityDataPoint] {
-        let calendar = Calendar.current
-        let endDate = Date()
-        guard let startDate = calendar.date(byAdding: .day, value: -days, to: endDate) else {
-            return []
-        }
-
-        var dataPoints: [ProductivityDataPoint] = []
-
-        for i in 0..<days {
-            guard let date = calendar.date(byAdding: .day, value: i, to: startDate) else { continue }
-            let dayStart = calendar.startOfDay(for: date)
-            guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else { continue }
-            
-            // Get focus sessions for this day
-            let focusDescriptor = FetchDescriptor<FocusSession>(
-                predicate: #Predicate { session in
-                    session.startTime >= dayStart && session.startTime < dayEnd
-                }
-            )
-            let sessions = (try? context.fetch(focusDescriptor)) ?? []
-            
-            // Calculate daily productivity score
-            let score = sessions.isEmpty ? 0 : sessions.reduce(0) { $0 + $1.productivityScore } / Double(sessions.count)
-            
-            dataPoints.append(ProductivityDataPoint(
-                date: date,
-                score: score,
-                sessions: sessions.count,
-                focusTime: sessions.reduce(0) { $0 + $1.actualDuration }
-            ))
-        }
-        
-        return dataPoints
+    func getProductivityTrendData(context: ModelContext, days: Int = 7) async -> [ProductivityDataPoint] {
+        let snapshot = await AIAnalyticsSnapshotLoader.loadVisualization(
+            container: context.container,
+            days: days
+        )
+        return snapshot.productivityTrendData
     }
     
-    func getHabitCompletionData(context: ModelContext, days: Int = 7) -> [HabitCompletionData] {
-        let habitsDescriptor = FetchDescriptor<Habit>(
-            predicate: #Predicate { $0.isActive }
+    func getHabitCompletionData(context: ModelContext, days: Int = 7) async -> [HabitCompletionData] {
+        let snapshot = await AIAnalyticsSnapshotLoader.loadVisualization(
+            container: context.container,
+            days: days
         )
-        let habits = (try? context.fetch(habitsDescriptor)) ?? []
-        
-        return habits.prefix(10).map { habit in
-            let completionRate = calculateHabitCompletionRate(habit: habit, days: days)
-            return HabitCompletionData(
-                name: habit.title,
-                completionRate: completionRate,
-                streak: habit.currentStreak,
-                color: getHabitColor(for: habit.title)
-            )
-        }
+        return snapshot.habitCompletionData
     }
     
-    func getTimeDistributionData(context: ModelContext, days: Int = 7) -> [TimeDistributionData] {
-        let calendar = Calendar.current
-        let endDate = Date()
-        let startDate = calendar.date(byAdding: .day, value: -days, to: endDate)!
-        
-        let timeDescriptor = FetchDescriptor<TimeEntry>(
-            predicate: #Predicate { entry in
-                entry.startTime >= startDate && entry.startTime <= endDate
-            }
+    func getTimeDistributionData(context: ModelContext, days: Int = 7) async -> [TimeDistributionData] {
+        let snapshot = await AIAnalyticsSnapshotLoader.loadVisualization(
+            container: context.container,
+            days: days
         )
-        let timeEntries = (try? context.fetch(timeDescriptor)) ?? []
-        
-        var categoryTotals: [String: TimeInterval] = [:]
-        for entry in timeEntries {
-            categoryTotals[entry.category, default: 0] += entry.actualDuration
-        }
-        
-        let totalTime = categoryTotals.values.reduce(0, +)
-        
-        return categoryTotals.map { category, time in
-            TimeDistributionData(
-                category: category,
-                hours: time / 3600, // Convert to hours
-                percentage: totalTime > 0 ? (time / totalTime) * 100 : 0,
-                color: getCategoryColor(for: category)
-            )
-        }.sorted { $0.hours > $1.hours }
+        return snapshot.timeDistributionData
     }
     
     // MARK: - Private Helper Methods

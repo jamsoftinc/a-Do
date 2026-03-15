@@ -13,6 +13,7 @@ struct MainTabView: View {
     @State private var showingAIInsights = false
     @State private var showingAISettings = false
     @State private var deepLinkSearchQuery = ""
+    @State private var deepLinkSearchScope: SearchScope = .all
     @State private var deepLinkSavedSearchID: UUID?
     @State private var deepLinkAlertMessage: String?
 
@@ -82,7 +83,8 @@ struct MainTabView: View {
             NavigationStack {
                 SmartSearchView(
                     initialQuery: deepLinkSearchQuery,
-                    savedSearchID: deepLinkSavedSearchID
+                    savedSearchID: deepLinkSavedSearchID,
+                    initialScope: deepLinkSearchScope
                 )
             }
         }
@@ -115,6 +117,7 @@ struct MainTabView: View {
         showingAIInsights = false
         showingAISettings = false
         deepLinkSearchQuery = ""
+        deepLinkSearchScope = .all
         deepLinkSavedSearchID = nil
         deepLinkAlertMessage = nil
     }
@@ -132,16 +135,25 @@ struct MainTabView: View {
         case .savedSearch(let id):
             selectedTab = .home
             deepLinkSearchQuery = ""
+            deepLinkSearchScope = .all
             deepLinkSavedSearchID = id
+            showingSmartSearchFromDeepLink = true
+        case .search(let query, let scope):
+            selectedTab = .home
+            deepLinkSearchQuery = query
+            deepLinkSearchScope = scope
+            deepLinkSavedSearchID = nil
             showingSmartSearchFromDeepLink = true
         case .tag(let tagName):
             selectedTab = .home
             deepLinkSearchQuery = "#\(tagName)"
+            deepLinkSearchScope = .all
             deepLinkSavedSearchID = nil
             showingSmartSearchFromDeepLink = true
         case .priority(let priority):
             selectedTab = .home
             deepLinkSearchQuery = priority.title
+            deepLinkSearchScope = .all
             deepLinkSavedSearchID = nil
             showingSmartSearchFromDeepLink = true
         case .sendText(let reminderId):

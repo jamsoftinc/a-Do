@@ -13,6 +13,7 @@ struct SmartSearchView: View {
     @Environment(\.dismiss) private var dismiss
     private let initialQuery: String?
     private let savedSearchID: UUID?
+    private let initialScope: SearchScope?
     
     @State private var aiManager = AIManager.shared
     @State private var audioManager = AudioManager.shared
@@ -36,9 +37,10 @@ struct SmartSearchView: View {
     @Query private var recentSearches: [SearchQuery]
     @Query(sort: [SortDescriptor(\SavedSearch.lastUsed, order: .reverse), SortDescriptor(\SavedSearch.createdAt, order: .reverse)]) private var savedSearches: [SavedSearch]
 
-    init(initialQuery: String? = nil, savedSearchID: UUID? = nil) {
+    init(initialQuery: String? = nil, savedSearchID: UUID? = nil, initialScope: SearchScope? = nil) {
         self.initialQuery = initialQuery
         self.savedSearchID = savedSearchID
+        self.initialScope = initialScope
     }
     
     var body: some View {
@@ -92,6 +94,9 @@ struct SmartSearchView: View {
                 if let savedSearchID, let savedSearch = savedSearches.first(where: { $0.id == savedSearchID }) {
                     loadSavedSearch(savedSearch, shouldSearchImmediately: true)
                     return
+                }
+                if let initialScope {
+                    selectedScope = initialScope
                 }
                 guard let initialQuery, searchText.isEmpty else { return }
                 searchText = initialQuery

@@ -15,6 +15,7 @@ struct SearchableReminderSnapshot: Identifiable, Sendable {
     let title: String
     let details: String
     let tags: [String]
+    let listName: String?
     let isCompleted: Bool
     let isOverdue: Bool
     let priority: Priority
@@ -27,6 +28,19 @@ struct SearchableHabitSnapshot: Identifiable, Sendable {
     let id: String
     let title: String
     let details: String
+    let tags: [String]
+}
+
+struct SearchableTagSnapshot: Identifiable, Sendable {
+    var id: String { name }
+    let name: String
+    let reminderCount: Int
+}
+
+struct SearchableListSnapshot: Identifiable, Sendable {
+    var id: String { name }
+    let name: String
+    let reminderCount: Int
 }
 
 // MARK: - Memory Monitor
@@ -227,6 +241,7 @@ struct MemorySafeDataLoader {
                         title: reminder.title,
                         details: reminder.details ?? "",
                         tags: reminder.tags?.map(\.name) ?? [],
+                        listName: reminder.list?.name,
                         isCompleted: reminder.isCompleted,
                         isOverdue: reminder.isOverdue,
                         priority: reminder.priority,
@@ -304,7 +319,58 @@ struct MemorySafeDataLoader {
                     SearchableHabitSnapshot(
                         id: habit.id.uuidString,
                         title: habit.title,
-                        details: habit.habitDescription
+                        details: habit.habitDescription,
+                        tags: habit.tags?.map(\.name) ?? []
+                    )
+                }
+            } catch {
+                return []
+            }
+        }.value
+    }
+
+    static func loadSearchableTags(
+        context: ModelContext,
+        limit: Int = 250
+    ) async -> [SearchableTagSnapshot] {
+        await Task.detached {
+            let backgroundContext = ModelContext(context.container)
+            let descriptor = FetchDescriptor<Tag>()
+
+            do {
+                let tags = try backgroundContext.fetch(descriptor)
+                return tags
+                    .map {
+                        SearchableTagSnapshot(
+                            name: $0.name,
+                            reminderCount: $0.reminders?.count ?? 0
+                        )
+                    }
+                    .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+                    .prefix(limit)
+                    .map { $0 }
+            } catch {
+                return []
+            }
+        }.value
+    }
+
+    static func loadSearchableLists(
+        context: ModelContext,
+        limit: Int = 250
+    ) async -> [SearchableListSnapshot] {
+        await Task.detached {
+            let backgroundContext = ModelContext(context.container)
+            let descriptor = FetchDescriptor<ReminderList>(
+                sortBy: [SortDescriptor(\.name)]
+            )
+
+            do {
+                let lists = try backgroundContext.fetch(descriptor)
+                return lists.prefix(limit).map {
+                    SearchableListSnapshot(
+                        name: $0.name,
+                        reminderCount: $0.reminderCount
                     )
                 }
             } catch {

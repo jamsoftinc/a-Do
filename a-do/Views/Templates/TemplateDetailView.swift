@@ -149,7 +149,9 @@ struct TemplateDetailView: View {
             
             VStack(spacing: 12) {
                 Button {
-                    let _ = recurringManager.createReminderFromTemplate(template, context: context)
+                    Task {
+                        _ = await recurringManager.createReminderFromTemplate(template, context: context)
+                    }
                 } label: {
                     HStack {
                         Image(systemName: "plus.circle.fill")

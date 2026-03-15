@@ -149,6 +149,7 @@ struct CompletedRemindersView: View {
     }
     
     private func deleteReminder(_ reminder: Reminder) {
+        let reminderID = reminder.uuid
         // Cancel any notifications for this reminder
         NotificationManager.shared.cancelNotification(for: reminder)
         
@@ -170,6 +171,9 @@ struct CompletedRemindersView: View {
         
         do {
             try context.save()
+            Task {
+                await SearchSpotlightManager.shared.removeReminder(id: reminderID)
+            }
             Logger(subsystem: "a-do", category: "Completed").info("Reminder deleted: '\(reminder.title)'")
         } catch {
             Logger(subsystem: "a-do", category: "Completed").error("Failed to delete reminder: \(String(describing: error))")

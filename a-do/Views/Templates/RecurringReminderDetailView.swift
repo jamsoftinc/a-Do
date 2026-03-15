@@ -206,7 +206,9 @@ struct RecurringReminderDetailView: View {
             
             VStack(spacing: 12) {
                 Button {
-                    recurringManager.generateRemindersForRecurring(recurringReminder, context: context)
+                    Task {
+                        await recurringManager.generateRemindersForRecurring(recurringReminder, context: context)
+                    }
                 } label: {
                     HStack {
                         Image(systemName: "plus.circle.fill")

@@ -120,9 +120,13 @@ struct TodayView: View {
     }
 
     private func deleteReminder(_ reminder: Reminder) {
+        let reminderID = reminder.uuid
         NotificationManager.shared.cancelNotifications(for: reminder)
         context.delete(reminder)
         try? context.save()
+        Task {
+            await SearchSpotlightManager.shared.removeReminder(id: reminderID)
+        }
         WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
         ReminderMutationMonitor.shared.notifyChange()
         loadTodayReminders()

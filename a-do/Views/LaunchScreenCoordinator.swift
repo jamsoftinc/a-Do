@@ -8,8 +8,6 @@ class LaunchScreenCoordinator: ObservableObject {
     @Published var launchProgress: Double = 0.0
     
     private var launchTask: Task<Void, Never>?
-    private let minimumDisplayTime: TimeInterval = 0.35
-    private let startTime = Date()
     
     init() {
         startLaunchSequence()
@@ -41,20 +39,8 @@ class LaunchScreenCoordinator: ObservableObject {
                 _ = MemoryMonitor.shared
             }
             
-            await self.checkLaunchCompletion()
             self.launchProgress = 1.0
             self.completeLaunch()
-        }
-    }
-    
-    /// Checks if minimum display time has passed and completes launch
-    private func checkLaunchCompletion() async {
-        let elapsedTime = Date().timeIntervalSince(startTime)
-        
-        if elapsedTime < minimumDisplayTime {
-            let remaining = minimumDisplayTime - elapsedTime
-            let nanos = UInt64(max(0, remaining) * 1_000_000_000)
-            try? await Task.sleep(nanoseconds: nanos)
         }
     }
     

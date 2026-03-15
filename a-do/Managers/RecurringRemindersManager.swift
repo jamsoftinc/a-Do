@@ -160,26 +160,28 @@ final class RecurringRemindersManager {
         return (try? context.fetch(descriptor)) ?? []
     }
     
-    func createReminderFromTemplate(_ template: ReminderTemplate, context: ModelContext) -> Reminder {
-        let reminder = Reminder()
-        reminder.title = template.title
-        reminder.details = template.details
-        reminder.priorityRaw = template.priority
-        
+    func createReminderFromTemplate(_ template: ReminderTemplate, context: ModelContext) async -> Reminder? {
         // Update template usage
         template.usageCount += 1
         template.lastUsed = Date()
-        
-        context.insert(reminder)
-        
+
         do {
-            try context.save()
+            let reminder = try await ReminderCreationService.shared.createReminder(
+                request: .init(
+                    title: template.title,
+                    details: template.details,
+                    dueDate: nil,
+                    priority: template.priorityEnum,
+                    useNaturalLanguageParsing: false
+                ),
+                in: context
+            )
             logger.info("Successfully created reminder from template: '\(template.name)' -> '\(reminder.title)'")
+            return reminder
         } catch {
             logger.error("Failed to save reminder from template: \(error.localizedDescription)")
+            return nil
         }
-        
-        return reminder
     }
     
     // MARK: - Recurring Reminders
@@ -362,7 +364,7 @@ final class RecurringRemindersManager {
     
     // MARK: - Reminder Generation
     
-    func generateRemindersForRecurring(_ recurring: RecurringReminder, context: ModelContext) {
+    func generateRemindersForRecurring(_ recurring: RecurringReminder, context: ModelContext) async {
         guard let rule = recurring.recurrenceRule,
               recurring.isActive else { return }
         
@@ -370,17 +372,23 @@ final class RecurringRemindersManager {
         
         // Generate reminders for the next occurrence
         if let nextDate = rule.nextOccurrence(after: now) {
-            let reminder = Reminder()
-            reminder.title = recurring.templateTitle
-            reminder.details = recurring.templateDetails
-            reminder.priorityRaw = recurring.templatePriority
-            reminder.dueDate = nextDate
-            
-            context.insert(reminder)
-            recurring.generatedReminders?.append(reminder)
-            recurring.lastGenerated = now
-            
-            try? context.save()
+            do {
+                let reminder = try await ReminderCreationService.shared.createReminder(
+                    request: .init(
+                        title: recurring.templateTitle,
+                        details: recurring.templateDetails,
+                        dueDate: nextDate,
+                        priority: recurring.priority,
+                        useNaturalLanguageParsing: false
+                    ),
+                    in: context
+                )
+                recurring.generatedReminders?.append(reminder)
+                recurring.lastGenerated = now
+                try? context.save()
+            } catch {
+                logger.error("Failed to generate recurring reminder: \(error.localizedDescription)")
+            }
         }
     }
 }

@@ -671,18 +671,23 @@ final class HealthKitManager {
     private func createHealthGoalReminder(goal: HealthGoal, context: ModelContext) async {
         let reminderTitle = "Health Goal Reminder"
         let reminderDetails = "You're at \(Int(goal.progress * 100))% of your \(goal.metricType.displayName) goal. Keep going!"
-        
-        let reminder = Reminder(
-            title: reminderTitle,
-            details: reminderDetails,
-            dueDate: Date().addingTimeInterval(3600), // 1 hour from now
-            priority: .medium
-        )
-        
-        goal.reminders?.append(reminder)
-        context.insert(reminder)
-        
-        logger.info("Created health goal reminder for: \(goal.metricType.displayName)")
+
+        do {
+            let reminder = try await ReminderCreationService.shared.createReminder(
+                request: .init(
+                    title: reminderTitle,
+                    details: reminderDetails,
+                    dueDate: Date().addingTimeInterval(3600),
+                    priority: .medium,
+                    useNaturalLanguageParsing: false
+                ),
+                in: context
+            )
+            goal.reminders?.append(reminder)
+            logger.info("Created health goal reminder for: \(goal.metricType.displayName)")
+        } catch {
+            logger.error("Failed to create health goal reminder: \(error.localizedDescription)")
+        }
     }
     
     // MARK: - Background Delivery

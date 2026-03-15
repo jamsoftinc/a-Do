@@ -269,12 +269,13 @@ struct SketchDetailView: View {
 // MARK: - Sketch Image View
 
 struct SketchImageView: View {
+    @Environment(\.displayScale) private var displayScale
     let drawing: PKDrawing
 
     var body: some View {
-        GeometryReader { geometry in
-            if let image = UIImage(data: drawing.dataRepresentation()) {
-                Image(uiImage: drawing.image(from: drawing.bounds, scale: UIScreen.main.scale))
+        Group {
+            if !drawing.bounds.isEmpty {
+                Image(uiImage: drawing.image(from: drawing.bounds, scale: displayScale))
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

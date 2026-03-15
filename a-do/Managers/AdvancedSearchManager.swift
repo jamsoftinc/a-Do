@@ -190,29 +190,38 @@ final class AdvancedSearchManager: ObservableObject {
     ) async -> [SearchResult] {
         var results: [SearchResult] = []
         let lowercaseQuery = query.lowercased()
-        
-        // Search reminders
-        if scope == .all || scope == .reminders || scope == .active || scope == .overdue {
-            let reminderResults = await searchReminders(query: lowercaseQuery, scope: scope, context: context)
-            results.append(contentsOf: reminderResults)
+        async let reminderSnapshots: [SearchableReminderSnapshot] = shouldSearchReminders(in: scope)
+            ? MemorySafeDataLoader.loadSearchableReminders(context: context)
+            : []
+        async let habitSnapshots: [SearchableHabitSnapshot] = shouldSearchHabits(in: scope)
+            ? MemorySafeDataLoader.loadSearchableHabits(context: context)
+            : []
+        async let tagSnapshots: [SearchableTagSnapshot] = shouldSearchTags(in: scope)
+            ? MemorySafeDataLoader.loadSearchableTags(context: context)
+            : []
+        async let listSnapshots: [SearchableListSnapshot] = shouldSearchLists(in: scope)
+            ? MemorySafeDataLoader.loadSearchableLists(context: context)
+            : []
+
+        let reminders = await reminderSnapshots
+        let habits = await habitSnapshots
+        let tags = await tagSnapshots
+        let lists = await listSnapshots
+
+        if !reminders.isEmpty {
+            results.append(contentsOf: searchReminders(query: lowercaseQuery, scope: scope, reminders: reminders))
         }
-        
-        // Search habits
-        if scope == .all || scope == .habits {
-            let habitResults = await searchHabits(query: lowercaseQuery, context: context)
-            results.append(contentsOf: habitResults)
+
+        if !habits.isEmpty {
+            results.append(contentsOf: searchHabits(query: lowercaseQuery, habits: habits))
         }
-        
-        // Search tags
-        if scope == .all || scope == .tags {
-            let tagResults = await searchTags(query: lowercaseQuery, context: context)
-            results.append(contentsOf: tagResults)
+
+        if !tags.isEmpty {
+            results.append(contentsOf: searchTags(query: lowercaseQuery, tags: tags))
         }
-        
-        // Search lists
-        if scope == .all || scope == .lists {
-            let listResults = await searchLists(query: lowercaseQuery, context: context)
-            results.append(contentsOf: listResults)
+
+        if !lists.isEmpty {
+            results.append(contentsOf: searchLists(query: lowercaseQuery, lists: lists))
         }
         
         // Apply filters
@@ -221,100 +230,70 @@ final class AdvancedSearchManager: ObservableObject {
         return results
     }
     
-    private func searchReminders(query: String, scope: SearchScope, context: ModelContext) async -> [SearchResult] {
-        var predicate: Predicate<Reminder>
-        
-        switch scope {
-        case .active:
-            predicate = #Predicate<Reminder> { reminder in
-                !reminder.isCompleted && (
-                    reminder.title.contains(query) ||
-                    (reminder.details?.contains(query) ?? false)
-                )
+    private func searchReminders(
+        query: String,
+        scope: SearchScope,
+        reminders: [SearchableReminderSnapshot]
+    ) -> [SearchResult] {
+        reminders.compactMap { reminder in
+            guard matchesReminderScope(reminder, scope: scope) else { return nil }
+            guard reminder.title.localizedCaseInsensitiveContains(query)
+                || reminder.details.localizedCaseInsensitiveContains(query) else {
+                return nil
             }
-        case .overdue:
-            let now = Date()
-            predicate = #Predicate<Reminder> { reminder in
-                !reminder.isCompleted &&
-                reminder.dueDate != nil &&
-                reminder.dueDate! < now && (
-                    reminder.title.contains(query) ||
-                    (reminder.details?.contains(query) ?? false)
-                )
-            }
-        case .completed:
-            predicate = #Predicate<Reminder> { reminder in
-                reminder.isCompleted && (
-                    reminder.title.contains(query) ||
-                    (reminder.details?.contains(query) ?? false)
-                )
-            }
-        default:
-            predicate = #Predicate<Reminder> { reminder in
-                reminder.title.contains(query) ||
-                (reminder.details?.contains(query) ?? false)
-            }
-        }
-        
-        let descriptor = FetchDescriptor<Reminder>(predicate: predicate)
-        let reminders = (try? context.fetch(descriptor)) ?? []
-        
-        return reminders.map { reminder in
+
             let relevanceScore = calculateRelevanceScore(
                 query: query,
                 title: reminder.title,
-                content: reminder.details ?? ""
+                content: reminder.details
             )
-            
+
             let snippet = createSnippet(
                 query: query,
-                content: reminder.details ?? reminder.title,
+                content: reminder.details.isEmpty ? reminder.title : reminder.details,
                 maxLength: 150
             )
-            
+
             let result = SearchResult(
                 queryId: UUID(),
                 itemType: SearchResultType.reminder,
-                itemId: reminder.uuid.uuidString,
+                itemId: reminder.id,
                 title: reminder.title,
                 snippet: snippet,
                 relevanceScore: relevanceScore
             )
-            
+
             result.matchType = determineMatchType(query: query, text: reminder.title)
-            result.matchedFields = try? JSONEncoder().encode(getMatchedFields(query: query, reminder: reminder))
-            
+            result.matchedFields = try? JSONEncoder().encode(
+                getMatchedFields(query: query, title: reminder.title, details: reminder.details)
+            )
             return result
         }
     }
     
-    private func searchHabits(query: String, context: ModelContext) async -> [SearchResult] {
-        let descriptor = FetchDescriptor<Habit>(
-            predicate: #Predicate<Habit> { habit in
-                habit.title.contains(query) ||
-                habit.habitDescription.contains(query)
+    private func searchHabits(query: String, habits: [SearchableHabitSnapshot]) -> [SearchResult] {
+        habits.compactMap { habit in
+            guard habit.title.localizedCaseInsensitiveContains(query)
+                || habit.details.localizedCaseInsensitiveContains(query) else {
+                return nil
             }
-        )
-        
-        let habits = (try? context.fetch(descriptor)) ?? []
-        
-        return habits.map { habit in
+
             let relevanceScore = calculateRelevanceScore(
                 query: query,
                 title: habit.title,
-                content: habit.habitDescription
+                content: habit.details
             )
             
             let snippet = createSnippet(
                 query: query,
-                content: habit.habitDescription.isEmpty ? habit.title : habit.habitDescription,
+                content: habit.details.isEmpty ? habit.title : habit.details,
                 maxLength: 150
             )
             
             let result = SearchResult(
                 queryId: UUID(),
                 itemType: SearchResultType.habit,
-                itemId: habit.id.uuidString,
+                itemId: habit.id,
                 title: habit.title,
                 snippet: snippet,
                 relevanceScore: relevanceScore
@@ -326,16 +305,9 @@ final class AdvancedSearchManager: ObservableObject {
         }
     }
     
-    private func searchTags(query: String, context: ModelContext) async -> [SearchResult] {
-        let descriptor = FetchDescriptor<Tag>(
-            predicate: #Predicate<Tag> { tag in
-                tag.name.contains(query)
-            }
-        )
-        
-        let tags = (try? context.fetch(descriptor)) ?? []
-        
-        return tags.map { tag in
+    private func searchTags(query: String, tags: [SearchableTagSnapshot]) -> [SearchResult] {
+        tags.compactMap { tag in
+            guard tag.name.localizedCaseInsensitiveContains(query) else { return nil }
             let relevanceScore = calculateRelevanceScore(
                 query: query,
                 title: tag.name,
@@ -345,9 +317,9 @@ final class AdvancedSearchManager: ObservableObject {
             let result = SearchResult(
                 queryId: UUID(),
                 itemType: SearchResultType.tag,
-                itemId: UUID().uuidString, // Tags don't have persistent IDs in the current model
+                itemId: tag.id,
                 title: tag.name,
-                snippet: "Tag with \(tag.reminders?.count ?? 0) reminders",
+                snippet: "Tag with \(tag.reminderCount) reminders",
                 relevanceScore: relevanceScore
             )
             
@@ -357,16 +329,9 @@ final class AdvancedSearchManager: ObservableObject {
         }
     }
     
-    private func searchLists(query: String, context: ModelContext) async -> [SearchResult] {
-        let descriptor = FetchDescriptor<ReminderList>(
-            predicate: #Predicate<ReminderList> { list in
-                list.name.contains(query)
-            }
-        )
-        
-        let lists = (try? context.fetch(descriptor)) ?? []
-        
-        return lists.map { list in
+    private func searchLists(query: String, lists: [SearchableListSnapshot]) -> [SearchResult] {
+        lists.compactMap { list in
+            guard list.name.localizedCaseInsensitiveContains(query) else { return nil }
             let relevanceScore = calculateRelevanceScore(
                 query: query,
                 title: list.name,
@@ -376,9 +341,9 @@ final class AdvancedSearchManager: ObservableObject {
             let result = SearchResult(
                 queryId: UUID(),
                 itemType: SearchResultType.list,
-                itemId: UUID().uuidString, // Lists don't have persistent IDs in the current model
+                itemId: list.id,
                 title: list.name,
-                snippet: "List with \(list.reminders?.count ?? 0) reminders",
+                snippet: "List with \(list.reminderCount) reminders",
                 relevanceScore: relevanceScore
             )
             
@@ -426,14 +391,14 @@ final class AdvancedSearchManager: ObservableObject {
         var results: [SearchResult] = []
         
         // Get semantic similarity for reminders
-        if scope == .all || scope == .reminders {
-            let reminderDescriptor = FetchDescriptor<Reminder>()
-            let reminders = (try? context.fetch(reminderDescriptor)) ?? []
+        if shouldSearchReminders(in: scope) {
+            let reminders = await MemorySafeDataLoader.loadSearchableReminders(context: context)
             
             for reminder in reminders {
+                guard matchesReminderScope(reminder, scope: scope) else { continue }
                 let similarity = calculateSemanticSimilarity(
                     query: query,
-                    text: reminder.title + " " + (reminder.details ?? ""),
+                    text: reminder.title + " " + reminder.details,
                     embedding: embedding
                 )
                 
@@ -441,9 +406,9 @@ final class AdvancedSearchManager: ObservableObject {
                     let result = SearchResult(
                         queryId: UUID(),
                         itemType: SearchResultType.reminder,
-                        itemId: reminder.uuid.uuidString,
+                        itemId: reminder.id,
                         title: reminder.title,
-                        snippet: createSnippet(query: query, content: reminder.details ?? "", maxLength: 150),
+                        snippet: createSnippet(query: query, content: reminder.details, maxLength: 150),
                         relevanceScore: similarity
                     )
                     result.matchType = SearchMatchType.semantic
@@ -487,19 +452,27 @@ final class AdvancedSearchManager: ObservableObject {
         
         do {
             let regex = try NSRegularExpression(pattern: query, options: [.caseInsensitive])
+            async let reminderSnapshots: [SearchableReminderSnapshot] = shouldSearchReminders(in: scope)
+                ? MemorySafeDataLoader.loadSearchableReminders(context: context)
+                : []
+            async let habitSnapshots: [SearchableHabitSnapshot] = shouldSearchHabits(in: scope)
+                ? MemorySafeDataLoader.loadSearchableHabits(context: context)
+                : []
+            let reminders = await reminderSnapshots
+            let habits = await habitSnapshots
             
             // Search in reminders
-            if scope == .reminders || scope == .all {
-                let reminders = try context.fetch(FetchDescriptor<Reminder>())
+            if shouldSearchReminders(in: scope) {
                 for reminder in reminders {
+                    guard matchesReminderScope(reminder, scope: scope) else { continue }
                     if matchesRegex(regex, in: reminder.title) ||
-                       matchesRegex(regex, in: reminder.details ?? "") {
+                       matchesRegex(regex, in: reminder.details) {
                         results.append(SearchResult(
                             queryId: UUID(),
                             itemType: .reminder,
-                            itemId: reminder.uuid.uuidString,
+                            itemId: reminder.id,
                             title: reminder.title,
-                            snippet: reminder.details ?? "",
+                            snippet: reminder.details,
                             relevanceScore: 0.8
                         ))
                     }
@@ -507,17 +480,16 @@ final class AdvancedSearchManager: ObservableObject {
             }
             
             // Search in habits
-            if scope == .habits || scope == .all {
-                let habits = try context.fetch(FetchDescriptor<Habit>())
+            if shouldSearchHabits(in: scope) {
                 for habit in habits {
                     if matchesRegex(regex, in: habit.title) ||
-                       matchesRegex(regex, in: habit.habitDescription) {
+                       matchesRegex(regex, in: habit.details) {
                         results.append(SearchResult(
                             queryId: UUID(),
                             itemType: .habit,
-                            itemId: habit.id.uuidString,
+                            itemId: habit.id,
                             title: habit.title,
-                            snippet: habit.habitDescription,
+                            snippet: habit.details,
                             relevanceScore: 0.8
                         ))
                     }
@@ -598,26 +570,23 @@ final class AdvancedSearchManager: ObservableObject {
     
     private func getContentSuggestions(partialQuery: String, context: ModelContext) async -> [String] {
         var suggestions: [String] = []
-        
-        // Get suggestions from reminder titles
-        let reminderDescriptor = FetchDescriptor<Reminder>(
-            predicate: #Predicate<Reminder> { reminder in
-                reminder.title.contains(partialQuery)
-            }
+        async let reminderSnapshots = MemorySafeDataLoader.loadSearchableReminders(context: context, limit: 200)
+        async let tagSnapshots = MemorySafeDataLoader.loadSearchableTags(context: context, limit: 100)
+        let reminders = await reminderSnapshots
+        let tags = await tagSnapshots
+
+        suggestions.append(
+            contentsOf: reminders
+                .filter { $0.title.localizedCaseInsensitiveContains(partialQuery) }
+                .prefix(3)
+                .map(\.title)
         )
-        
-        let reminders = (try? context.fetch(reminderDescriptor)) ?? []
-        suggestions.append(contentsOf: reminders.prefix(3).map { $0.title })
-        
-        // Get suggestions from tags
-        let tagDescriptor = FetchDescriptor<Tag>(
-            predicate: #Predicate<Tag> { tag in
-                tag.name.contains(partialQuery)
-            }
+        suggestions.append(
+            contentsOf: tags
+                .filter { $0.name.localizedCaseInsensitiveContains(partialQuery) }
+                .prefix(3)
+                .map(\.name)
         )
-        
-        let tags = (try? context.fetch(tagDescriptor)) ?? []
-        suggestions.append(contentsOf: tags.prefix(3).map { $0.name })
         
         return suggestions
     }
@@ -997,17 +966,50 @@ final class AdvancedSearchManager: ObservableObject {
     }
     
     private func getMatchedFields(query: String, reminder: Reminder) -> [String] {
+        getMatchedFields(query: query, title: reminder.title, details: reminder.details ?? "")
+    }
+
+    private func getMatchedFields(query: String, title: String, details: String) -> [String] {
         var fields: [String] = []
         
-        if reminder.title.localizedStandardContains(query) {
+        if title.localizedStandardContains(query) {
             fields.append("title")
         }
         
-        if reminder.details?.localizedStandardContains(query) == true {
+        if details.localizedStandardContains(query) {
             fields.append("details")
         }
         
         return fields
+    }
+
+    private func shouldSearchReminders(in scope: SearchScope) -> Bool {
+        scope == .all || scope == .reminders || scope == .active || scope == .overdue || scope == .completed
+    }
+
+    private func shouldSearchHabits(in scope: SearchScope) -> Bool {
+        scope == .all || scope == .habits
+    }
+
+    private func shouldSearchTags(in scope: SearchScope) -> Bool {
+        scope == .all || scope == .tags
+    }
+
+    private func shouldSearchLists(in scope: SearchScope) -> Bool {
+        scope == .all || scope == .lists
+    }
+
+    private func matchesReminderScope(_ reminder: SearchableReminderSnapshot, scope: SearchScope) -> Bool {
+        switch scope {
+        case .active:
+            return !reminder.isCompleted
+        case .overdue:
+            return reminder.isOverdue
+        case .completed:
+            return reminder.isCompleted
+        default:
+            return true
+        }
     }
     
     private func sortResults(_ results: [SearchResult], by sortOrder: SearchSortOrder) -> [SearchResult] {
@@ -1161,8 +1163,8 @@ final class AdvancedSearchManager: ObservableObject {
                 scope: scope,
                 context: context
             ) { reminder, habit in
-                reminder?.details?.localizedCaseInsensitiveContains(normalizedValue) == true ||
-                habit?.habitDescription.localizedCaseInsensitiveContains(normalizedValue) == true
+                reminder?.details.localizedCaseInsensitiveContains(normalizedValue) == true ||
+                habit?.details.localizedCaseInsensitiveContains(normalizedValue) == true
             }
             
         case "priority":
@@ -1527,35 +1529,41 @@ final class AdvancedSearchManager: ObservableObject {
         value: String,
         scope: SearchScope,
         context: ModelContext,
-        matcher: (Reminder?, Habit?) -> Bool
+        matcher: (SearchableReminderSnapshot?, SearchableHabitSnapshot?) -> Bool
     ) async -> [SearchResult] {
         var results: [SearchResult] = []
+        async let reminderSnapshots: [SearchableReminderSnapshot] = shouldSearchReminders(in: scope)
+            ? MemorySafeDataLoader.loadSearchableReminders(context: context)
+            : []
+        async let habitSnapshots: [SearchableHabitSnapshot] = shouldSearchHabits(in: scope)
+            ? MemorySafeDataLoader.loadSearchableHabits(context: context)
+            : []
+        let reminders = await reminderSnapshots
+        let habits = await habitSnapshots
         
-        if scope == .all || scope == .reminders || scope == .active || scope == .overdue || scope == .completed {
-            let reminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+        if shouldSearchReminders(in: scope) {
             for reminder in reminders where matcher(reminder, nil) {
                 let result = SearchResult(
                     queryId: UUID(),
                     itemType: .reminder,
-                    itemId: reminder.uuid.uuidString,
+                    itemId: reminder.id,
                     title: reminder.title,
-                    snippet: reminder.details ?? "",
-                    relevanceScore: calculateRelevanceScore(query: value, title: reminder.title, content: reminder.details ?? "")
+                    snippet: reminder.details,
+                    relevanceScore: calculateRelevanceScore(query: value, title: reminder.title, content: reminder.details)
                 )
                 results.append(result)
             }
         }
         
-        if scope == .all || scope == .habits {
-            let habits = (try? context.fetch(FetchDescriptor<Habit>())) ?? []
+        if shouldSearchHabits(in: scope) {
             for habit in habits where matcher(nil, habit) {
                 let result = SearchResult(
                     queryId: UUID(),
                     itemType: .habit,
-                    itemId: habit.id.uuidString,
+                    itemId: habit.id,
                     title: habit.title,
-                    snippet: habit.habitDescription,
-                    relevanceScore: calculateRelevanceScore(query: value, title: habit.title, content: habit.habitDescription)
+                    snippet: habit.details,
+                    relevanceScore: calculateRelevanceScore(query: value, title: habit.title, content: habit.details)
                 )
                 results.append(result)
             }
@@ -1580,16 +1588,16 @@ final class AdvancedSearchManager: ObservableObject {
         
         guard let targetPriority else { return [] }
         
-        let reminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+        let reminders = await MemorySafeDataLoader.loadSearchableReminders(context: context)
         return reminders
             .filter { $0.priority == targetPriority }
             .map { reminder in
                 SearchResult(
                     queryId: UUID(),
                     itemType: .reminder,
-                    itemId: reminder.uuid.uuidString,
+                    itemId: reminder.id,
                     title: reminder.title,
-                    snippet: reminder.details ?? "",
+                    snippet: reminder.details,
                     relevanceScore: 0.9
                 )
             }
@@ -1601,7 +1609,7 @@ final class AdvancedSearchManager: ObservableObject {
         }
         
         let normalized = value.lowercased()
-        let reminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+        let reminders = await MemorySafeDataLoader.loadSearchableReminders(context: context)
         
         let filtered = reminders.filter { reminder in
             switch normalized {
@@ -1620,9 +1628,9 @@ final class AdvancedSearchManager: ObservableObject {
             SearchResult(
                 queryId: UUID(),
                 itemType: .reminder,
-                itemId: reminder.uuid.uuidString,
+                itemId: reminder.id,
                 title: reminder.title,
-                snippet: reminder.details ?? "",
+                snippet: reminder.details,
                 relevanceScore: 0.9
             )
         }
@@ -1636,7 +1644,7 @@ final class AdvancedSearchManager: ObservableObject {
         let normalized = value.lowercased()
         let calendar = Calendar.current
         let now = Date()
-        let reminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+        let reminders = await MemorySafeDataLoader.loadSearchableReminders(context: context)
         
         let filtered = reminders.filter { reminder in
             guard let dueDate = reminder.dueDate else {
@@ -1667,9 +1675,9 @@ final class AdvancedSearchManager: ObservableObject {
             SearchResult(
                 queryId: UUID(),
                 itemType: .reminder,
-                itemId: reminder.uuid.uuidString,
+                itemId: reminder.id,
                 title: reminder.title,
-                snippet: reminder.details ?? "",
+                snippet: reminder.details,
                 relevanceScore: 0.85
             )
         }
@@ -1691,21 +1699,19 @@ final class AdvancedSearchManager: ObservableObject {
         let normalizedValue = value.lowercased()
         var results: [SearchResult] = []
         
-        if scope == .all || scope == .reminders || scope == .active || scope == .overdue || scope == .completed {
-            let reminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+        if shouldSearchReminders(in: scope) {
+            let reminders = await MemorySafeDataLoader.loadSearchableReminders(context: context)
             for reminder in reminders {
-                let matches = (reminder.tags ?? []).contains { tag in
-                    tag.name.localizedCaseInsensitiveContains(normalizedValue)
-                }
+                let matches = reminder.tags.contains { $0.localizedCaseInsensitiveContains(normalizedValue) }
                 
                 if matches {
                     results.append(
                         SearchResult(
                             queryId: UUID(),
                             itemType: .reminder,
-                            itemId: reminder.uuid.uuidString,
+                            itemId: reminder.id,
                             title: reminder.title,
-                            snippet: reminder.details ?? "",
+                            snippet: reminder.details,
                             relevanceScore: 0.85
                         )
                     )
@@ -1713,21 +1719,19 @@ final class AdvancedSearchManager: ObservableObject {
             }
         }
         
-        if scope == .all || scope == .habits {
-            let habits = (try? context.fetch(FetchDescriptor<Habit>())) ?? []
+        if shouldSearchHabits(in: scope) {
+            let habits = await MemorySafeDataLoader.loadSearchableHabits(context: context)
             for habit in habits {
-                let matches = (habit.tags ?? []).contains { tag in
-                    tag.name.localizedCaseInsensitiveContains(normalizedValue)
-                }
+                let matches = habit.tags.contains { $0.localizedCaseInsensitiveContains(normalizedValue) }
                 
                 if matches {
                     results.append(
                         SearchResult(
                             queryId: UUID(),
                             itemType: .habit,
-                            itemId: habit.id.uuidString,
+                            itemId: habit.id,
                             title: habit.title,
-                            snippet: habit.habitDescription,
+                            snippet: habit.details,
                             relevanceScore: 0.85
                         )
                     )
@@ -1744,19 +1748,19 @@ final class AdvancedSearchManager: ObservableObject {
         }
         
         let normalizedValue = value.lowercased()
-        let reminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
+        let reminders = await MemorySafeDataLoader.loadSearchableReminders(context: context)
         
         return reminders
             .filter { reminder in
-                reminder.list?.name.localizedCaseInsensitiveContains(normalizedValue) == true
+                reminder.listName?.localizedCaseInsensitiveContains(normalizedValue) == true
             }
             .map { reminder in
                 SearchResult(
                     queryId: UUID(),
                     itemType: .reminder,
-                    itemId: reminder.uuid.uuidString,
+                    itemId: reminder.id,
                     title: reminder.title,
-                    snippet: reminder.details ?? "",
+                    snippet: reminder.details,
                     relevanceScore: 0.85
                 )
             }

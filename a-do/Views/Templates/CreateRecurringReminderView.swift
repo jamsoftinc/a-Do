@@ -130,10 +130,12 @@ struct CreateRecurringReminderView: View {
             context: context
         )
         
-        // Generate initial reminder
-        recurringManager.generateRemindersForRecurring(recurring, context: context)
-        
-        dismiss()
+        Task {
+            await recurringManager.generateRemindersForRecurring(recurring, context: context)
+            await MainActor.run {
+                dismiss()
+            }
+        }
     }
 }
 

@@ -177,6 +177,7 @@ struct CreateListView: View {
             
             do {
                 try context.save()
+                await SearchSpotlightManager.shared.syncList(list)
                 
                 await MainActor.run {
                     isCreating = false

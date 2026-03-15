@@ -318,7 +318,7 @@ struct ScanDocumentIntent: AppIntent {
 
         // Parse document for action items
         let lines = documentText.components(separatedBy: .newlines)
-        var createdCount = 0
+        var requests: [ReminderCreationService.Request] = []
 
         for line in lines {
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -344,15 +344,24 @@ struct ScanDocumentIntent: AppIntent {
                 }
 
                 if !taskText.isEmpty {
-                    let reminder = Reminder(title: taskText)
-                    context.insert(reminder)
-                    createdCount += 1
+                    requests.append(
+                        ReminderCreationService.Request(
+                            title: taskText,
+                            details: nil,
+                            dueDate: nil,
+                            useNaturalLanguageParsing: false
+                        )
+                    )
                 }
             }
         }
 
+        guard !requests.isEmpty else {
+            return .result(dialog: "No action items found in document")
+        }
+
         do {
-            try context.save()
+            let createdCount = try await ReminderCreationService.shared.createReminders(requests: requests, in: context).count
             if createdCount > 0 {
                 return .result(dialog: "Created \(createdCount) reminders from document")
             } else {

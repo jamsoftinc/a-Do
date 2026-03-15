@@ -78,6 +78,7 @@ final class ReminderCreationService {
 
             logger.info("Created reminder: \(reminder.title, privacy: .public)")
             await AdvancedSearchManager.shared.upsertReminderIndex(for: reminder, context: context)
+            await SearchSpotlightManager.shared.syncReminder(reminder)
         }
 
         WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
@@ -100,6 +101,7 @@ final class ReminderCreationService {
         )
 
         await AdvancedSearchManager.shared.upsertReminderIndex(for: reminder, context: context)
+        await SearchSpotlightManager.shared.syncReminder(reminder)
         WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
         ReminderMutationMonitor.shared.notifyChange()
         NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: nil)

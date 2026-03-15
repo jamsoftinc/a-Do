@@ -64,23 +64,17 @@ struct CreateComplexReminderIntent: AppIntent {
         // Parse with NLP
         let parsed = await NaturalLanguageProcessor.shared.parseReminderText(reminderText)
         
-        // Get shared model container
-        let container = try ModelContainer(
-            for: Reminder.self,
-            configurations: ModelConfiguration(
-                groupContainer: .identifier("group.com.ado.app")
-            )
+        let context = try AppContainer.makeAppGroupContext()
+        let reminder = try await ReminderCreationService.shared.createReminder(
+            request: .init(
+                title: parsed.title ?? parsed.baseText,
+                details: nil,
+                dueDate: parsed.dueDate,
+                priority: parsed.priority,
+                useNaturalLanguageParsing: false
+            ),
+            in: context
         )
-        let context = ModelContext(container)
-        
-        // Create reminder
-        let reminder = Reminder()
-        reminder.title = parsed.title ?? parsed.baseText
-        reminder.dueDate = parsed.dueDate
-        reminder.priorityRaw = parsed.priority.rawValue
-
-        context.insert(reminder)
-        try context.save()
 
         let dueDateText = parsed.dueDate != nil ? " for \(formatDate(parsed.dueDate!))" : ""
         return .result(dialog: "Created reminder '\(reminder.title)'\(dueDateText)")
