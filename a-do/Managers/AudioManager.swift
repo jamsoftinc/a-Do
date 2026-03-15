@@ -34,6 +34,7 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
     
     // Audio file URL
     private var audioFileURL: URL?
+    private var isLiveTranscriptionTapInstalled = false
 
     // Audio player - must be retained during playback
     private var audioPlayer: AVAudioPlayer?
@@ -102,12 +103,11 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
             try audioSession.setActive(true)
             
             // Create audio file URL
-            let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            let audioFileName = "voice_reminder_\(Date().timeIntervalSince1970).m4a"
-            audioFileURL = documentsPath.appendingPathComponent(audioFileName)
+            audioFileURL = SecureVoiceFileStore.makeNewFileURL()
             
             guard let audioFileURL = audioFileURL else {
                 recordingError = "Failed to create audio file"
+                resumeCaptureCompletion(success: false)
                 return
             }
             
@@ -122,6 +122,7 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
             audioRecorder = try AVAudioRecorder(url: audioFileURL, settings: settings)
             audioRecorder?.delegate = self
             audioRecorder?.record()
+            _ = SecureVoiceFileStore.applyProtectedAttributesIfPossible(to: audioFileURL)
             
             isRecording = true
             recordingStartedAt = Date()
@@ -315,6 +316,9 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
         // Cancel any existing task
         recognitionTask?.cancel()
         recognitionTask = nil
+        if audioEngine != nil || isLiveTranscriptionTapInstalled {
+            stopLiveTranscription()
+        }
 
         // Configure audio session
         do {
@@ -348,6 +352,7 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
             self?.recognitionRequest?.append(buffer)
         }
+        isLiveTranscriptionTapInstalled = true
 
         audioEngine.prepare()
 
@@ -388,7 +393,12 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
     /// Stop real-time transcription
     func stopLiveTranscription() {
         audioEngine?.stop()
-        audioEngine?.inputNode.removeTap(onBus: 0)
+        if isLiveTranscriptionTapInstalled {
+            audioEngine?.inputNode.removeTap(onBus: 0)
+            isLiveTranscriptionTapInstalled = false
+        }
+        audioEngine?.reset()
+        audioEngine = nil
 
         recognitionRequest?.endAudio()
         recognitionRequest = nil

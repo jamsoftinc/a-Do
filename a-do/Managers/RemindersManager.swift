@@ -307,7 +307,13 @@ final class RemindersManager {
         
         Logger(subsystem: "a-do", category: "Sync").info("Starting automatic sync")
 
-        let context = ModelContext(AppContainer.shared.getContainer())
+        guard let container = AppContainer.shared.getContainer() else {
+            Logger(subsystem: "a-do", category: "Sync").error("Automatic sync skipped because no SwiftData container is available")
+            isSyncing = false
+            return
+        }
+
+        let context = ModelContext(container)
         await AppleRemindersSyncManager.shared.performLifecycleSyncIfNeeded(context: context, reason: "autoSync")
         lastSyncDate = Date()
         Logger(subsystem: "a-do", category: "Sync").info("Automatic sync completed successfully")

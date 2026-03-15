@@ -62,7 +62,12 @@ struct CreateHabitView: View {
                                     .font(.headline)
                                     .foregroundColor(AppTheme.Colors.textPrimary)
                                 
-                                TextField("Enter habit title", text: $title)
+                                TextField(
+                                    "",
+                                    text: $title,
+                                    prompt: Text("Enter habit title")
+                                        .foregroundStyle(AppTheme.Colors.textTertiary)
+                                )
                                     .textFieldStyle(CustomTextFieldStyle())
                             }
                             
@@ -72,7 +77,13 @@ struct CreateHabitView: View {
                                     .font(.headline)
                                     .foregroundColor(AppTheme.Colors.textPrimary)
                                 
-                                TextField("Enter description", text: $description, axis: .vertical)
+                                TextField(
+                                    "",
+                                    text: $description,
+                                    prompt: Text("Enter description")
+                                        .foregroundStyle(AppTheme.Colors.textTertiary),
+                                    axis: .vertical
+                                )
                                     .textFieldStyle(CustomTextFieldStyle())
                                     .lineLimit(3...6)
                             }
@@ -169,7 +180,12 @@ struct CreateHabitView: View {
                                     
                                     Spacer()
                                     
-                                    TextField("Unit", text: $unit)
+                                    TextField(
+                                        "",
+                                        text: $unit,
+                                        prompt: Text("Unit")
+                                            .foregroundStyle(AppTheme.Colors.textTertiary)
+                                    )
                                         .textFieldStyle(CustomTextFieldStyle())
                                         .frame(width: 80)
                                 }
@@ -200,7 +216,7 @@ struct CreateHabitView: View {
                     Button("Cancel") {
                         dismiss()
                     }
-                    .foregroundColor(AppTheme.Colors.textSecondary)
+                    .foregroundStyle(AppTheme.Colors.primary)
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -208,11 +224,15 @@ struct CreateHabitView: View {
                         saveHabit()
                     }
                     .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .foregroundStyle(canSave ? AppTheme.Colors.primary : AppTheme.Colors.textSecondary)
+                    .disabled(!canSave)
                 }
             }
         }
+    }
+
+    private var canSave: Bool {
+        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
     private func saveHabit() {
@@ -385,13 +405,14 @@ struct HabitPreviewCard: View {
 struct CustomTextFieldStyle: TextFieldStyle {
     func _body(configuration: TextField<Self._Label>) -> some View {
         configuration
+            .foregroundStyle(AppTheme.Colors.textPrimary)
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(AppTheme.Colors.background)
+            .background(AppTheme.Colors.surfaceLight)
             .cornerRadius(10)
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(AppTheme.Colors.primary.opacity(0.3), lineWidth: 1)
+                    .stroke(AppTheme.Colors.primary.opacity(0.24), lineWidth: 1)
             )
     }
 }

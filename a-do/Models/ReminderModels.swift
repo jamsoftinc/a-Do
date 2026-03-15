@@ -395,7 +395,7 @@ final class VoiceReminder {
     @Relationship(deleteRule: .nullify) var reminder: Reminder?
     
     init(audioFileName: String, transcribedText: String, recordingDuration: TimeInterval) {
-        self.audioFileName = SecurityUtils.sanitizeFileName(audioFileName)
+        self.audioFileName = SecureVoiceFileStore.sanitizedFileName(audioFileName)
         self.transcribedText = transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
         self.recordingDuration = max(0, recordingDuration)
         self.createdAt = Date()
@@ -403,8 +403,21 @@ final class VoiceReminder {
     
     // Computed property to get the full audio file URL
     var audioFileURL: URL? {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        return documentsPath.appendingPathComponent(audioFileName)
+        let fileManager = FileManager.default
+        let secureURL = SecureVoiceFileStore.fileURL(fileName: audioFileName)
+
+        if let secureURL, fileManager.fileExists(atPath: secureURL.path) {
+            return secureURL
+        }
+
+        if let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first {
+            let legacyURL = documentsPath.appendingPathComponent(audioFileName)
+            if fileManager.fileExists(atPath: legacyURL.path) {
+                return legacyURL
+            }
+        }
+
+        return secureURL
     }
     
     var hasAudioFile: Bool {

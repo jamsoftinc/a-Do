@@ -18,6 +18,7 @@ final class WidgetSnapshotManager {
     private var pendingKinds: Set<WidgetSnapshotKind> = []
     private var pendingContainer: ModelContainer?
     private var refreshTask: Task<Void, Never>?
+    private let refresher = WidgetSnapshotRefresher()
 
     private init() {}
 
@@ -48,8 +49,7 @@ final class WidgetSnapshotManager {
             let focusUpdatedAtKey = self.focusUpdatedAtKey
             let timeTrackingUpdatedAtKey = self.timeTrackingUpdatedAtKey
 
-            Task.detached(priority: .utility) {
-                Self.performRefresh(
+            await self.refresher.performRefresh(
                     container: container,
                     kinds: kindsToRefresh,
                     suiteName: suiteName,
@@ -62,7 +62,6 @@ final class WidgetSnapshotManager {
                     focusUpdatedAtKey: focusUpdatedAtKey,
                     timeTrackingUpdatedAtKey: timeTrackingUpdatedAtKey
                 )
-            }
         }
     }
 
@@ -75,7 +74,39 @@ final class WidgetSnapshotManager {
         refreshSnapshots(context: context, kinds: staleKinds)
     }
 
-    nonisolated private static func performRefresh(
+    private var defaultKinds: Set<WidgetSnapshotKind> {
+        [.reminders, .habits, .focus, .timeTracking]
+    }
+
+    private func snapshotKindsNeedingRefresh(maxAge: TimeInterval) -> Set<WidgetSnapshotKind> {
+        guard let defaults = UserDefaults(suiteName: suiteName) else { return defaultKinds }
+        let now = Date()
+        var kinds: Set<WidgetSnapshotKind> = []
+
+        let trackedKinds: [(WidgetSnapshotKind, String, String)] = [
+            (.reminders, remindersKey, remindersUpdatedAtKey),
+            (.habits, habitsKey, habitsUpdatedAtKey),
+            (.focus, focusKey, focusUpdatedAtKey),
+            (.timeTracking, timeTrackingKey, timeTrackingUpdatedAtKey)
+        ]
+
+        for (kind, valueKey, updatedAtKey) in trackedKinds {
+            let hasSnapshot = defaults.data(forKey: valueKey) != nil
+            let lastUpdated = defaults.object(forKey: updatedAtKey) as? Date
+            let isStale = lastUpdated.map { now.timeIntervalSince($0) >= maxAge } ?? true
+            if !hasSnapshot || isStale {
+                kinds.insert(kind)
+            }
+        }
+
+        return kinds
+    }
+}
+
+private actor WidgetSnapshotRefresher {
+    private let logger = Logger(subsystem: "a-do", category: "WidgetSnapshots")
+
+    func performRefresh(
         container: ModelContainer,
         kinds: Set<WidgetSnapshotKind>,
         suiteName: String,
@@ -88,7 +119,6 @@ final class WidgetSnapshotManager {
         focusUpdatedAtKey: String,
         timeTrackingUpdatedAtKey: String
     ) {
-        let logger = Logger(subsystem: "a-do", category: "WidgetSnapshots")
         guard let defaults = UserDefaults(suiteName: suiteName) else { return }
         let context = ModelContext(container)
         let now = Date()
@@ -111,13 +141,13 @@ final class WidgetSnapshotManager {
 
             if kinds.contains(.focus) {
                 let focus = fetchFocusSnapshot(context: context)
-                defaults.set(try encoder.encode(focus), forKey: focusKey)
+                defaults.set(try encodeFocusSnapshot(focus), forKey: focusKey)
                 defaults.set(now, forKey: focusUpdatedAtKey)
             }
 
             if kinds.contains(.timeTracking) {
                 let timeTracking = fetchTimeTrackingSnapshot(context: context)
-                defaults.set(try encoder.encode(timeTracking), forKey: timeTrackingKey)
+                defaults.set(try encodeTimeTrackingSnapshot(timeTracking), forKey: timeTrackingKey)
                 defaults.set(now, forKey: timeTrackingUpdatedAtKey)
             }
 
@@ -143,7 +173,7 @@ final class WidgetSnapshotManager {
         }
     }
 
-    nonisolated private static func fetchReminderSnapshots(context: ModelContext) -> [WidgetReminderSnapshot] {
+    private func fetchReminderSnapshots(context: ModelContext) -> [WidgetReminderSnapshot] {
         var descriptor = FetchDescriptor<Reminder>(
             predicate: #Predicate { !$0.isCompleted },
             sortBy: [SortDescriptor(\.dueDate), SortDescriptor(\.createdAt, order: .reverse)]
@@ -165,7 +195,7 @@ final class WidgetSnapshotManager {
         }
     }
 
-    nonisolated private static func fetchHabitSnapshots(context: ModelContext) -> [WidgetHabitSnapshot] {
+    private func fetchHabitSnapshots(context: ModelContext) -> [WidgetHabitSnapshot] {
         var descriptor = FetchDescriptor<Habit>(
             predicate: #Predicate { $0.isActive },
             sortBy: [SortDescriptor(\.updatedAt, order: .reverse)]
@@ -185,7 +215,7 @@ final class WidgetSnapshotManager {
         }
     }
 
-    nonisolated private static func fetchFocusSnapshot(context: ModelContext) -> WidgetFocusSnapshot {
+    private func fetchFocusSnapshot(context: ModelContext) -> WidgetFocusSnapshot {
         var activeSessionDescriptor = FetchDescriptor<FocusSession>(
             predicate: #Predicate { $0.isActive },
             sortBy: [SortDescriptor(\.startTime, order: .reverse)]
@@ -224,7 +254,7 @@ final class WidgetSnapshotManager {
         )
     }
 
-    nonisolated private static func fetchTimeTrackingSnapshot(context: ModelContext) -> WidgetTimeTrackingSnapshot {
+    private func fetchTimeTrackingSnapshot(context: ModelContext) -> WidgetTimeTrackingSnapshot {
         var activeEntryDescriptor = FetchDescriptor<TimeEntry>(
             predicate: #Predicate { $0.isActive },
             sortBy: [SortDescriptor(\.startTime, order: .reverse)]
@@ -260,80 +290,37 @@ final class WidgetSnapshotManager {
         )
     }
 
-    private var defaultKinds: Set<WidgetSnapshotKind> {
-        [.reminders, .habits, .focus, .timeTracking]
+    private func encodeFocusSnapshot(_ snapshot: WidgetFocusSnapshot) throws -> Data {
+        try JSONSerialization.data(
+            withJSONObject: [
+                "isActive": snapshot.isActive,
+                "sessionName": snapshot.sessionName,
+                "remainingTime": snapshot.remainingTime,
+                "totalTime": snapshot.totalTime,
+                "todaysSessions": snapshot.todaysSessions,
+                "todaysFocusTime": snapshot.todaysFocusTime
+            ],
+            options: []
+        )
     }
 
-    private func snapshotKindsNeedingRefresh(maxAge: TimeInterval) -> Set<WidgetSnapshotKind> {
-        guard let defaults = UserDefaults(suiteName: suiteName) else { return defaultKinds }
-        let now = Date()
-        var kinds: Set<WidgetSnapshotKind> = []
-
-        let trackedKinds: [(WidgetSnapshotKind, String, String)] = [
-            (.reminders, remindersKey, remindersUpdatedAtKey),
-            (.habits, habitsKey, habitsUpdatedAtKey),
-            (.focus, focusKey, focusUpdatedAtKey),
-            (.timeTracking, timeTrackingKey, timeTrackingUpdatedAtKey)
-        ]
-
-        for (kind, valueKey, updatedAtKey) in trackedKinds {
-            let hasSnapshot = defaults.data(forKey: valueKey) != nil
-            let lastUpdated = defaults.object(forKey: updatedAtKey) as? Date
-            let isStale = lastUpdated.map { now.timeIntervalSince($0) >= maxAge } ?? true
-            if !hasSnapshot || isStale {
-                kinds.insert(kind)
-            }
+    private func encodeTimeTrackingSnapshot(_ snapshot: WidgetTimeTrackingSnapshot) throws -> Data {
+        let categories = snapshot.topCategories.map { category in
+            [
+                "category": category.category,
+                "duration": category.duration
+            ]
         }
 
-        return kinds
+        return try JSONSerialization.data(
+            withJSONObject: [
+                "isTracking": snapshot.isTracking,
+                "currentCategory": snapshot.currentCategory,
+                "elapsedTime": snapshot.elapsedTime,
+                "todaysTotal": snapshot.todaysTotal,
+                "topCategories": categories
+            ],
+            options: []
+        )
     }
-}
-
-struct WidgetReminderSnapshot: Codable {
-    var id: String
-    var title: String
-    var dueDate: Date?
-    var priorityRaw: Int
-    var isCompleted: Bool
-    var hasLocation: Bool
-    var hasVoice: Bool
-    var tags: [String]
-}
-
-struct WidgetHabitSnapshot: Codable {
-    var id: String
-    var title: String
-    var icon: String
-    var color: String
-    var currentStreak: Int
-    var isCompletedToday: Bool
-}
-
-struct WidgetFocusSnapshot: Codable {
-    var isActive: Bool
-    var sessionName: String
-    var remainingTime: TimeInterval
-    var totalTime: TimeInterval
-    var todaysSessions: Int
-    var todaysFocusTime: TimeInterval
-}
-
-struct WidgetTimeCategorySnapshot: Codable {
-    var category: String
-    var duration: TimeInterval
-}
-
-struct WidgetTimeTrackingSnapshot: Codable {
-    var isTracking: Bool
-    var currentCategory: String
-    var elapsedTime: TimeInterval
-    var todaysTotal: TimeInterval
-    var topCategories: [WidgetTimeCategorySnapshot]
-}
-
-enum WidgetSnapshotKind: CaseIterable, Hashable, Sendable {
-    case reminders
-    case habits
-    case focus
-    case timeTracking
 }

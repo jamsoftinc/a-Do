@@ -194,9 +194,20 @@ struct StartFocusSessionSiriIntent: AppIntent {
         context.insert(session)
         try context.save()
 
-        // Start Live Activity
-        Task { @MainActor in
-            await LiveActivityManager.shared.startFocusSessionActivity(session: session)
+        let sessionID = session.id
+        let sessionDisplayName = session.name
+        let remainingTime = session.remainingTime
+        let totalTime = session.plannedDuration
+        let isActive = session.isActive
+
+        await MainActor.run {
+            LiveActivityManager.shared.startFocusSessionActivity(
+                sessionID: sessionID,
+                name: sessionDisplayName,
+                remainingTime: remainingTime,
+                totalTime: totalTime,
+                isActive: isActive
+            )
         }
         
         return .result(dialog: "Started \(duration) minute focus session")

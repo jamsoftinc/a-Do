@@ -152,7 +152,6 @@ final class NaturalLanguageProcessor {
             let numbers = text[match].components(separatedBy: CharacterSet.decimalDigits.inverted)
                 .compactMap { Int($0) }
             if let amount = numbers.first {
-                let unitRange = lowercaseText.range(of: "week|month", options: .regularExpression)
                 if lowercaseText.contains("week") {
                     results.dueDate = calendar.date(byAdding: .weekOfYear, value: amount, to: Date())
                 } else if lowercaseText.contains("month") {

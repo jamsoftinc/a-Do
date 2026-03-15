@@ -109,7 +109,10 @@ final class BackgroundMaintenanceManager {
     private func runRefreshMaintenance(reason: String) async -> Bool {
         guard !Task.isCancelled else { return false }
 
-        let container = AppContainer.shared.getContainer()
+        guard let container = AppContainer.shared.getContainer() else {
+            logger.error("Background refresh skipped because no SwiftData container is available")
+            return false
+        }
         let context = ModelContext(container)
         let userId = SecurityUtils.getCurrentUserID()
 
@@ -124,7 +127,10 @@ final class BackgroundMaintenanceManager {
     private func runProcessingMaintenance(reason: String) async -> Bool {
         guard !Task.isCancelled else { return false }
 
-        let container = AppContainer.shared.getContainer()
+        guard let container = AppContainer.shared.getContainer() else {
+            logger.error("Background processing skipped because no SwiftData container is available")
+            return false
+        }
         let context = ModelContext(container)
 
         await RecurringRemindersManager.shared.processRecurringRemindersIfNeeded(context: context, reason: reason, force: true)

@@ -456,7 +456,7 @@ enum WorkoutType: String, CaseIterable, Codable {
         case .yoga: return .yoga
         case .strength: return .traditionalStrengthTraining
         case .hiit: return .highIntensityIntervalTraining
-        case .dance: return .dance
+        case .dance: return .socialDance
         case .pilates: return .pilates
         case .boxing: return .boxing
         case .tennis: return .tennis

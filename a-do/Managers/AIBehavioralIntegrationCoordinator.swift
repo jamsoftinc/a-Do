@@ -54,7 +54,10 @@ final class AIBehavioralIntegrationCoordinator {
 
         guard isIntegrationActive else { return }
         
-        let context = getCurrentModelContext()
+        guard let context = getCurrentModelContext() else {
+            logger.error("AI behavioral learning skipped because no SwiftData container is available")
+            return
+        }
         await runLearningCycle(context: context)
     }
     
@@ -244,8 +247,9 @@ final class AIBehavioralIntegrationCoordinator {
     
     // MARK: - Utility Methods
     
-    private func getCurrentModelContext() -> ModelContext {
-        ModelContext(AppContainer.shared.getContainer())
+    private func getCurrentModelContext() -> ModelContext? {
+        guard let container = AppContainer.shared.getContainer() else { return nil }
+        return ModelContext(container)
     }
     
     private func getOrCreateAIConfiguration(context: ModelContext) async -> AIConfiguration {

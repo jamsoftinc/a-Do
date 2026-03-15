@@ -201,7 +201,7 @@ struct WorkspaceCard: View {
                             .font(AppTheme.Typography.headline)
                             .foregroundColor(AppTheme.Colors.textPrimary)
                         
-                        Text(workspace.workspaceDescription ?? "No description")
+                        Text(workspace.workspaceDescription.isEmpty ? "No description" : workspace.workspaceDescription)
                             .font(AppTheme.Typography.body)
                             .foregroundColor(AppTheme.Colors.textSecondary)
                             .lineLimit(2)

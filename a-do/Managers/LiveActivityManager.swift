@@ -30,13 +30,29 @@ final class LiveActivityManager {
     // MARK: - Focus Session Activity
     
     func startFocusSessionActivity(session: FocusSession) {
+        startFocusSessionActivity(
+            sessionID: session.id,
+            name: session.name,
+            remainingTime: session.remainingTime,
+            totalTime: session.plannedDuration,
+            isActive: session.isActive
+        )
+    }
+
+    func startFocusSessionActivity(
+        sessionID: UUID,
+        name: String,
+        remainingTime: TimeInterval,
+        totalTime: TimeInterval,
+        isActive: Bool
+    ) {
         guard isProEnabled else {
             logger.warning("Live Activities is a Pro feature")
             return
         }
 
 #if canImport(ActivityKit) && !targetEnvironment(macCatalyst)
-        logger.info("Starting Live Activity for focus session: \(session.name)")
+        logger.info("Starting Live Activity for focus session: \(name)")
 
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
             logger.warning("Live Activities are not enabled")
@@ -45,13 +61,13 @@ final class LiveActivityManager {
 
         let activityContent = ActivityContent(
             state: FocusActivityAttributes.ContentState(
-                sessionName: session.name,
-                remainingTime: session.remainingTime,
-                totalTime: session.plannedDuration,
-                isActive: session.isActive,
+                sessionName: name,
+                remainingTime: remainingTime,
+                totalTime: totalTime,
+                isActive: isActive,
                 isOnBreak: false
             ),
-            staleDate: Date().addingTimeInterval(session.remainingTime)
+            staleDate: Date().addingTimeInterval(remainingTime)
         )
         
         let activityAttributes = FocusActivityAttributes()
@@ -66,7 +82,7 @@ final class LiveActivityManager {
             logger.info("Live Activity started: \(activity.id)")
             
             // Store activity ID for updates
-            storeActivityID(activity.id, for: session.id)
+            storeActivityID(activity.id, for: sessionID)
             
         } catch {
             logger.error("Failed to start Live Activity: \(error.localizedDescription)")

@@ -42,7 +42,9 @@ struct ReminderFormView: View {
                     // Advanced Features Card
                     advancedFeaturesCard
                 }
-                .padding(.horizontal, 16)
+                .frame(maxWidth: horizontalSizeClass == .regular ? 760 : .infinity)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, horizontalSizeClass == .regular ? 24 : 16)
                 .padding(.vertical, 20)
             }
             .scrollIndicators(.hidden)
@@ -98,7 +100,12 @@ struct ReminderFormView: View {
                     Text("Title")
                         .font(AppTheme.Typography.headline)
                         .primaryText()
-                    TextField("What needs to be done?", text: $viewModel.title)
+                    TextField(
+                        "",
+                        text: $viewModel.title,
+                        prompt: Text("What needs to be done?")
+                            .foregroundStyle(AppTheme.Colors.textTertiary)
+                    )
                         .textFieldStyle(.plain)
                         .padding(12)
                         .background(AppTheme.Colors.surfaceLight, in: RoundedRectangle(cornerRadius: AppTheme.CornerRadius.small))
@@ -145,7 +152,13 @@ struct ReminderFormView: View {
                     Text("Notes")
                         .font(AppTheme.Typography.subheadline)
                         .primaryText()
-                    TextField("Add details...", text: $viewModel.details, axis: .vertical)
+                    TextField(
+                        "",
+                        text: $viewModel.details,
+                        prompt: Text("Add details...")
+                            .foregroundStyle(AppTheme.Colors.textTertiary),
+                        axis: .vertical
+                    )
                         .textFieldStyle(.plain)
                         .padding(12)
                         .background(AppTheme.Colors.surfaceLight, in: RoundedRectangle(cornerRadius: AppTheme.CornerRadius.small))
@@ -180,8 +193,8 @@ struct ReminderFormView: View {
                                 let isSelected = viewModel.selectedTags.contains(where: { $0.persistentModelID == tag.persistentModelID })
                                 Text(tag.name)
                                     .padding(.horizontal, 10).padding(.vertical, 6)
-                                    .background((Color(hex: tag.colorHex) ?? .white).opacity(isSelected ? 0.9 : 0.3), in: Capsule())
-                                    .foregroundStyle(.white)
+                                    .background((Color(hex: tag.colorHex) ?? AppTheme.Colors.primary).opacity(isSelected ? 0.95 : 0.18), in: Capsule())
+                                    .foregroundStyle(isSelected ? Color.white : AppTheme.Colors.textPrimary)
                                     .onTapGesture {
                                         if isSelected {
                                             viewModel.selectedTags.removeAll { $0.persistentModelID == tag.persistentModelID }
@@ -195,7 +208,7 @@ struct ReminderFormView: View {
                     
                     NavigationLink("Manage Tags", destination: TagsView())
                         .font(.caption)
-                        .foregroundColor(.white)
+                        .foregroundStyle(AppTheme.Colors.primary)
                 }
                 
                 // Notifications
@@ -235,7 +248,7 @@ struct ReminderFormView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
                                 Image(systemName: "waveform")
-                                    .foregroundColor(.white)
+                                    .foregroundStyle(AppTheme.Colors.primary)
                                 Text("Voice Recording")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
@@ -264,7 +277,7 @@ struct ReminderFormView: View {
                                     }
                                 } label: {
                                     Image(systemName: "play.circle.fill")
-                                        .foregroundColor(.white)
+                                        .foregroundStyle(AppTheme.Colors.primary)
                                         .imageScale(.small)
                                 }
                             }
@@ -297,12 +310,17 @@ struct ReminderFormView: View {
                                 } label: {
                                     HStack {
                                         Image(systemName: "mic.circle.fill")
-                                            .foregroundColor(.white)
+                                            .foregroundStyle(Color.white)
                                         Text("Start Recording")
-                                            .foregroundColor(.white)
+                                            .foregroundStyle(Color.white)
                                     }
+                                    .font(.caption.weight(.semibold))
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 10)
+                                    .background(AppTheme.Gradients.primary, in: Capsule())
                                 }
                                 .disabled(viewModel.isRecordingVoice)
+                                .opacity(viewModel.isRecordingVoice ? 0.6 : 1.0)
                             }
                             
                             if AudioManager.shared.isTranscribing {
@@ -418,7 +436,7 @@ struct ReminderFormView: View {
                         TagPeopleView(reminderTitle: viewModel.title)
                     }
                     .font(.caption)
-                    .foregroundColor(.white)
+                    .foregroundStyle(AppTheme.Colors.primary)
                 }
                 
                 // Apple Note
@@ -443,7 +461,7 @@ struct ReminderFormView: View {
                         Button("Attach Apple Note") {
                             viewModel.showNotePicker = true
                         }
-                        .foregroundColor(.white)
+                        .foregroundStyle(AppTheme.Colors.primary)
                         .font(.caption)
                     }
                 }
@@ -454,7 +472,12 @@ struct ReminderFormView: View {
                         .font(AppTheme.Typography.subheadline)
                         .primaryText()
                     
-                    TextField("Label", text: $viewModel.locationLabel)
+                    TextField(
+                        "",
+                        text: $viewModel.locationLabel,
+                        prompt: Text("Label")
+                            .foregroundStyle(AppTheme.Colors.textTertiary)
+                    )
                         .textFieldStyle(.plain)
                         .padding(AppTheme.Spacing.sm)
                         .background(AppTheme.Colors.surfaceLight, in: RoundedRectangle(cornerRadius: AppTheme.CornerRadius.small))
@@ -503,9 +526,13 @@ struct ReminderFormView: View {
                             Text(viewModel.isDetectingLocation ? "Detecting..." : "Use Current Location")
                         }
                         .font(.caption)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(AppTheme.Colors.surfaceLight, in: Capsule())
                     }
                     .disabled(viewModel.isDetectingLocation)
-                    .foregroundColor(.white)
+                    .foregroundStyle(AppTheme.Colors.primary)
+                    .opacity(viewModel.isDetectingLocation ? 0.7 : 1.0)
                     
                     if let error = viewModel.locationDetectionError {
                         Text(error)
@@ -566,6 +593,7 @@ struct ReminderFormView: View {
                         performCancel()
                     }
                 }
+                .foregroundStyle(AppTheme.Colors.primary)
             }
             
             // Delete button - only show when editing existing reminder
@@ -603,10 +631,15 @@ struct ReminderFormView: View {
                         }
                     }
                 }
-                .disabled(viewModel.title.trimmingCharacters(in: .whitespaces).isEmpty ||
-                         (!viewModel.locationLabel.isEmpty && !viewModel.hasValidCoordinates))
+                .foregroundStyle(canSaveReminder ? AppTheme.Colors.primary : AppTheme.Colors.textSecondary)
+                .disabled(!canSaveReminder)
             }
         }
+    }
+
+    private var canSaveReminder: Bool {
+        !viewModel.title.trimmingCharacters(in: .whitespaces).isEmpty &&
+        (viewModel.locationLabel.isEmpty || viewModel.hasValidCoordinates)
     }
     
     // MARK: - Cancel Function
@@ -711,8 +744,8 @@ private struct LeadTimesPicker: View {
                 Text(label)
                     .font(AppTheme.Typography.caption1)
                     .padding(.horizontal, AppTheme.Spacing.md).padding(.vertical, AppTheme.Spacing.sm)
-                    .background((isSelected ? AppTheme.Colors.primary : AppTheme.Colors.primary.opacity(0.3)), in: Capsule())
-                    .foregroundStyle(.white)
+                    .background((isSelected ? AppTheme.Colors.primary : AppTheme.Colors.surfaceLight), in: Capsule())
+                    .foregroundStyle(isSelected ? Color.white : AppTheme.Colors.textPrimary)
                     .onTapGesture {
                         if isSelected { leadTimes.removeAll { $0 == value } } else { leadTimes.append(value) }
                     }

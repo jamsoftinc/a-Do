@@ -130,7 +130,7 @@ final class CalendarManager {
         }
         
         // Add reminder context if available
-        if let reminder = reminder {
+        if reminder != nil {
             if !notes.isEmpty { notes += "\n\n" }
             notes += "Created from Remember reminder"
             // Temporarily disabled - tags relationship commented out
@@ -145,7 +145,7 @@ final class CalendarManager {
         }
         
         // Add attendees from the provided list
-        var allAttendees = attendees
+        let allAttendees = attendees
         
         // Add attendees from tagged contacts if reminder is provided
         // Temporarily disabled - taggedContacts relationship commented out

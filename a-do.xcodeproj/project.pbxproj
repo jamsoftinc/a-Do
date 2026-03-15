@@ -348,7 +348,7 @@
 				CODE_SIGN_ENTITLEMENTS = "a-do WidgetExtension.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "a-do_Widget/Info.plist";
@@ -381,7 +381,7 @@
 				CODE_SIGN_ENTITLEMENTS = "a-do WidgetExtension.entitlements";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "a-do_Widget/Info.plist";
@@ -534,7 +534,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 1;
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				ENABLE_APP_SANDBOX = YES;
@@ -547,12 +547,10 @@
 				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
 				ENABLE_RESOURCE_ACCESS_CONTACTS = YES;
 				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
-				GEMINI_API_KEY = "AIzaSyBJSCzTW3w0IiqAnrfrjJRp-IZaxbLSWf4";
 				GEMINI_MODEL_ID = "gemini-3.0-flash";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "JAMSoft.a-do.refresh JAMSoft.a-do.processing";
 				INFOPLIST_KEY_CFBundleDisplayName = "a-do";
-				INFOPLIST_KEY_GEMINI_API_KEY = "$(GEMINI_API_KEY)";
 				INFOPLIST_KEY_GEMINI_MODEL_ID = "$(GEMINI_MODEL_ID)";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "This app accesses your calendar to show today's and upcoming events and to create events from reminders.";
@@ -574,7 +572,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 4.4;
+				MARKETING_VERSION = 4.5;
 				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-do";
 				"PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]" = "JAMSoft.a-do.mac";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -602,7 +600,7 @@
 				CODE_SIGN_ENTITLEMENTS = "a-do/a-do.entitlements";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 1;
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				DEVELOPMENT_TEAM = 4ZNP9N3A76;
 				ENABLE_APP_SANDBOX = YES;
@@ -613,12 +611,10 @@
 				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
 				ENABLE_RESOURCE_ACCESS_CONTACTS = YES;
 				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
-				GEMINI_API_KEY = "AIzaSyBJSCzTW3w0IiqAnrfrjJRp-IZaxbLSWf4";
 				GEMINI_MODEL_ID = "gemini-3.0-flash";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "JAMSoft.a-do.refresh JAMSoft.a-do.processing";
 				INFOPLIST_KEY_CFBundleDisplayName = "a-do";
-				INFOPLIST_KEY_GEMINI_API_KEY = "$(GEMINI_API_KEY)";
 				INFOPLIST_KEY_GEMINI_MODEL_ID = "$(GEMINI_MODEL_ID)";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "This app accesses your calendar to show today's and upcoming events and to create events from reminders.";
@@ -640,7 +636,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 4.4;
+				MARKETING_VERSION = 4.5;
 				PRODUCT_BUNDLE_IDENTIFIER = "JAMSoft.a-do";
 				"PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]" = "JAMSoft.a-do.mac";
 				PRODUCT_NAME = "$(TARGET_NAME)";

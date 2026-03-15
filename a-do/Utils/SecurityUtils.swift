@@ -10,9 +10,11 @@ import CryptoKit
 import UIKit
 import Security
 import os
+import UniformTypeIdentifiers
 
 /// Security utilities for input validation, sanitization, and secure operations
 struct SecurityUtils {
+    private static let voiceReminderDirectoryName = "VoiceReminders"
     
     // MARK: - Input Validation
     
@@ -161,8 +163,39 @@ struct SecurityUtils {
             .replacingOccurrences(of: ">", with: "")
             .replacingOccurrences(of: "|", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
         return sanitized.isEmpty ? "untitled" : sanitized
+    }
+
+    /// Returns a protected Application Support location for voice reminder audio.
+    static func voiceReminderFileURL(fileName: String) -> URL? {
+        do {
+            let directory = try protectedAppSupportDirectory(named: voiceReminderDirectoryName)
+            return directory.appendingPathComponent(sanitizeFileName(fileName), conformingTo: .audio)
+        } catch {
+            Logger(subsystem: "a-do", category: "Security").error("Failed to resolve voice reminder directory: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    /// Creates a new protected file URL for a voice reminder recording.
+    static func makeNewVoiceReminderFileURL() -> URL? {
+        let fileName = "voice_reminder_\(UUID().uuidString).m4a"
+        return voiceReminderFileURL(fileName: fileName)
+    }
+
+    @discardableResult
+    static func applyProtectedFileAttributesIfPossible(to url: URL) -> Bool {
+        do {
+            try FileManager.default.setAttributes(
+                [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+                ofItemAtPath: url.path
+            )
+            return true
+        } catch {
+            Logger(subsystem: "a-do", category: "Security").error("Failed to apply file protection: \(error.localizedDescription)")
+            return false
+        }
     }
 
     // MARK: - Keychain Secret Storage
@@ -197,6 +230,30 @@ struct SecurityUtils {
         }
         let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
         return addStatus == errSecSuccess
+    }
+
+    private static func protectedAppSupportDirectory(named directoryName: String) throws -> URL {
+        let fileManager = FileManager.default
+        guard let baseDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            throw CocoaError(.fileNoSuchFile)
+        }
+
+        let directoryURL = baseDirectory.appendingPathComponent(directoryName, isDirectory: true)
+        if !fileManager.fileExists(atPath: directoryURL.path) {
+            try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        }
+
+        var resourceValues = URLResourceValues()
+        resourceValues.isExcludedFromBackup = true
+        var mutableDirectoryURL = directoryURL
+        try mutableDirectoryURL.setResourceValues(resourceValues)
+
+        try fileManager.setAttributes(
+            [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+            ofItemAtPath: directoryURL.path
+        )
+
+        return directoryURL
     }
 
     /// Retrieves a secret from the iOS Keychain.

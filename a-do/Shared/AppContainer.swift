@@ -25,12 +25,20 @@ private enum AppGroupSchemaDefaults {
     }
 }
 
+@Model
+private final class RecoveryPlaceholder {
+    var createdAt: Date = Date()
+
+    init() {}
+}
+
 // MARK: - Minimal Safe AppContainer
 // This provides only the essential functions needed by other parts of the app
 // without complex initialization that could cause EXC_BAD_ACCESS crashes
 
 final class AppContainer {
     static let shared = AppContainer()
+    private let stateLock = NSLock()
     
     private init() {}
     
@@ -40,20 +48,24 @@ final class AppContainer {
     private(set) var isDegradedMode = false
     private(set) var recoveryMessage: String?
     
-    func getContainer() -> ModelContainer {
-        if let container = _container {
+    func getContainer() -> ModelContainer? {
+        if let container = lockedContainer() {
             return container
         }
 
+        let createdContainer: ModelContainer?
         if RuntimeEnvironment.isRunningTests {
-            return createTestContainer()
+            createdContainer = createTestContainer()
+        } else {
+            // Create container with progressive fallback strategy
+            createdContainer = createContainerWithFallback()
         }
-        
-        // Create container with progressive fallback strategy
-        return createContainerWithFallback()
+
+        guard let createdContainer else { return nil }
+        return cacheContainerIfNeeded(createdContainer)
     }
 
-    private func createTestContainer() -> ModelContainer {
+    private func createTestContainer() -> ModelContainer? {
         let schemaResult = SwiftDataUtils.buildValidSchema()
         let configuration = ModelConfiguration(
             schema: schemaResult.schema,
@@ -63,7 +75,6 @@ final class AppContainer {
 
         do {
             let container = try ModelContainer(for: schemaResult.schema, configurations: configuration)
-            _container = container
             clearRecoveryState()
             os_log("Created in-memory SwiftData test container", log: .default, type: .info)
             return container
@@ -73,7 +84,7 @@ final class AppContainer {
         }
     }
     
-    private func createContainerWithFallback() -> ModelContainer {
+    private func createContainerWithFallback() -> ModelContainer? {
         os_log("Creating SwiftData container with diagnostic approach", log: .default, type: .info)
         clearRecoveryState()
         
@@ -88,8 +99,6 @@ final class AppContainer {
         os_log("Container creation diagnostics: %{public}@", log: .default, type: .info, diagnostics.summary)
         
         if let container = container {
-            _container = container
-            
             // Log container configuration for debugging
             #if DEBUG
             let configs = container.configurations
@@ -145,7 +154,7 @@ final class AppContainer {
         }
     }
     
-    private func createEmergencyContainer() -> ModelContainer {
+    private func createEmergencyContainer() -> ModelContainer? {
         // Create the most basic possible container that should always work
         let emergencyModelSets: [[any PersistentModel.Type]] = [
             [],
@@ -160,7 +169,6 @@ final class AppContainer {
                 let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
                 let container = try ModelContainer(for: schema, configurations: config)
                 os_log("Created emergency container with %d model types", log: .default, type: .default, modelSet.count)
-                _container = container
                 setDegradedMode("The app is running in limited recovery mode with temporary in-memory storage.")
                 return container
             } catch {
@@ -172,12 +180,24 @@ final class AppContainer {
             let schema = Schema([AppSettings.self])
             let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
             let container = try ModelContainer(for: schema, configurations: config)
-            _container = container
             setDegradedMode("The app recovered with minimal temporary storage. Restart the app to restore full data access.")
             os_log("Created last-resort AppSettings-only emergency container", log: .default, type: .fault)
             return container
         } catch {
-            preconditionFailure("SwiftData is completely non-functional after all emergency fallbacks: \(error.localizedDescription)")
+            os_log("AppSettings-only emergency container failed: %{public}@", log: .default, type: .fault, error.localizedDescription)
+        }
+
+        do {
+            let schema = Schema([RecoveryPlaceholder.self])
+            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            let container = try ModelContainer(for: schema, configurations: config)
+            setDegradedMode("The app recovered in placeholder-only mode. Core data features are temporarily unavailable until restart.")
+            os_log("Created placeholder-only recovery container", log: .default, type: .fault)
+            return container
+        } catch {
+            os_log("Placeholder-only recovery container failed: %{public}@", log: .default, type: .fault, error.localizedDescription)
+            setDegradedMode("Storage initialization failed. Restart the app to retry recovery.")
+            return nil
         }
     }
 
@@ -200,7 +220,7 @@ final class AppContainer {
     // MARK: - Progressive Model Loading
     // This allows adding more models after the initial container is created
     func expandSchema(with additionalModels: [any PersistentModel.Type]) -> Bool {
-        guard _container != nil else {
+        guard lockedContainer() != nil else {
             os_log("No existing container to expand", log: .default, type: .error)
             return false
         }
@@ -226,7 +246,9 @@ final class AppContainer {
     
     // MARK: - Safe Container Reset
     func resetContainer() {
-        _container = nil
+        withStateLock {
+            _container = nil
+        }
         clearRecoveryState()
         os_log("Container reset - will recreate on next access", log: .default, type: .info)
     }
@@ -325,12 +347,36 @@ final class AppContainer {
     }
 
     private func setDegradedMode(_ message: String) {
-        isDegradedMode = true
-        recoveryMessage = message
+        withStateLock {
+            isDegradedMode = true
+            recoveryMessage = message
+        }
     }
 
     private func clearRecoveryState() {
-        isDegradedMode = false
-        recoveryMessage = nil
+        withStateLock {
+            isDegradedMode = false
+            recoveryMessage = nil
+        }
+    }
+
+    private func lockedContainer() -> ModelContainer? {
+        withStateLock { _container }
+    }
+
+    private func cacheContainerIfNeeded(_ container: ModelContainer) -> ModelContainer {
+        withStateLock {
+            if let existing = _container {
+                return existing
+            }
+            _container = container
+            return container
+        }
+    }
+
+    private func withStateLock<T>(_ body: () -> T) -> T {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return body()
     }
 }

@@ -258,9 +258,11 @@ final class HealthKitManager {
         context: ModelContext
     ) async {
         guard let quantityType = HKQuantityType.quantityType(forIdentifier: type) else { return }
-        
+        let container = context.container
+        let logger = self.logger
+        let unit = Self.healthUnit(for: type)
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
-        
+
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             let query = HKStatisticsCollectionQuery(
                 quantityType: quantityType,
@@ -269,28 +271,29 @@ final class HealthKitManager {
                 anchorDate: startDate,
                 intervalComponents: DateComponents(day: 1)
             )
-            
-            query.initialResultsHandler = { query, results, error in
+
+            query.initialResultsHandler = { _, results, error in
                 defer { continuation.resume(returning: ()) }
-                
+
                 guard let results = results else {
                     if let error = error {
-                        self.logger.error("Failed to fetch \(type.rawValue): \(error.localizedDescription)")
+                        logger.error("Failed to fetch \(type.rawValue): \(error.localizedDescription)")
                     }
                     return
                 }
-                
+
+                let callbackContext = ModelContext(container)
                 results.enumerateStatistics(from: startDate, to: endDate) { statistics, _ in
                     guard let sum = statistics.sumQuantity() else { return }
-                    
-                    let value = sum.doubleValue(for: self.getUnit(for: type))
+
+                    let value = sum.doubleValue(for: unit)
                     let date = statistics.startDate
-                    
+
                     // Check if we already have this data
                     let calendar = Calendar.current
                     let startOfDay = calendar.startOfDay(for: date)
                     let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? date
-                    
+
                     let existingDescriptor = FetchDescriptor<HealthMetric>(
                         predicate: #Predicate<HealthMetric> { metric in
                             metric.userId == userId &&
@@ -299,8 +302,8 @@ final class HealthKitManager {
                             metric.date < endOfDay
                         }
                     )
-                    
-                    if let existing = try? context.fetch(existingDescriptor).first {
+
+                    if let existing = try? callbackContext.fetch(existingDescriptor).first {
                         existing.value = value
                         existing.syncedAt = Date()
                     } else {
@@ -312,17 +315,17 @@ final class HealthKitManager {
                         )
                         metric.userId = userId
                         metric.source = "HealthKit"
-                        context.insert(metric)
+                        callbackContext.insert(metric)
                     }
                 }
-                
+
                 do {
-                    try context.save()
+                    try callbackContext.save()
                 } catch {
-                    self.logger.error("Failed to save \(type.rawValue) data: \(error.localizedDescription)")
+                    logger.error("Failed to save \(type.rawValue) data: \(error.localizedDescription)")
                 }
             }
-            
+
             healthStore.execute(query)
         }
     }
@@ -336,27 +339,29 @@ final class HealthKitManager {
             logger.error("Failed to calculate start date for workout sync")
             return
         }
-        
+        let container = context.container
+        let logger = self.logger
         let predicate = HKQuery.predicateForWorkouts(with: .greaterThanOrEqualTo, duration: 60) // At least 1 minute
         let datePredicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
         let compoundPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [predicate, datePredicate])
-        
+
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             let query = HKSampleQuery(
                 sampleType: HKObjectType.workoutType(),
                 predicate: compoundPredicate,
                 limit: HKObjectQueryNoLimit,
                 sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)]
-            ) { query, samples, error in
+            ) { _, samples, error in
                 defer { continuation.resume(returning: ()) }
-                
+
                 guard let workouts = samples as? [HKWorkout] else {
                     if let error = error {
-                        self.logger.error("Failed to fetch workouts: \(error.localizedDescription)")
+                        logger.error("Failed to fetch workouts: \(error.localizedDescription)")
                     }
                     return
                 }
-                
+
+                let callbackContext = ModelContext(container)
                 for workout in workouts {
                     // Check if we already have this workout
                     let workoutUUID = workout.uuid.uuidString
@@ -365,42 +370,42 @@ final class HealthKitManager {
                             w.userId == userId && w.healthKitUUID == workoutUUID
                         }
                     )
-                    
-                    if (try? context.fetch(existingDescriptor).first) != nil {
+
+                    if (try? callbackContext.fetch(existingDescriptor).first) != nil {
                         continue // Already synced
                     }
-                    
-                    let workoutType = self.mapWorkoutType(workout.workoutActivityType)
+
+                    let workoutType = Self.mapWorkoutTypeStatic(workout.workoutActivityType)
                     let workoutIntegration = WorkoutIntegration(
                         workoutType: workoutType,
                         name: workoutType.displayName,
                         startDate: workout.startDate
                     )
-                    
+
                     workoutIntegration.userId = userId
                     workoutIntegration.healthKitUUID = workout.uuid.uuidString
-                    
+
                     let endDate = workout.endDate
-                    let calories = workout.totalEnergyBurned?.doubleValue(for: .kilocalorie()) ?? 0
+                    let calories = Self.activeEnergyKilocalories(for: workout)
                     let distance = workout.totalDistance?.doubleValue(for: .meter()) ?? 0
-                    
+
                     workoutIntegration.complete(
                         endDate: endDate,
                         calories: calories,
                         distance: distance
                     )
-                    
-                    context.insert(workoutIntegration)
+
+                    callbackContext.insert(workoutIntegration)
                 }
-                
+
                 do {
-                    try context.save()
-                    self.logger.info("Synced \(workouts.count) workouts")
+                    try callbackContext.save()
+                    logger.info("Synced \(workouts.count) workouts")
                 } catch {
-                    self.logger.error("Failed to save workout data: \(error.localizedDescription)")
+                    logger.error("Failed to save workout data: \(error.localizedDescription)")
                 }
             }
-            
+
             healthStore.execute(query)
         }
     }
@@ -414,41 +419,43 @@ final class HealthKitManager {
             logger.error("Failed to calculate start date for sleep sync")
             return
         }
-        
+        let container = context.container
+        let logger = self.logger
         guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return }
-        
+
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
-        
+
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             let query = HKSampleQuery(
                 sampleType: sleepType,
                 predicate: predicate,
                 limit: HKObjectQueryNoLimit,
                 sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)]
-            ) { query, samples, error in
+            ) { _, samples, error in
                 defer { continuation.resume(returning: ()) }
-                
+
                 guard let sleepSamples = samples as? [HKCategorySample] else {
                     if let error = error {
-                        self.logger.error("Failed to fetch sleep data: \(error.localizedDescription)")
+                        logger.error("Failed to fetch sleep data: \(error.localizedDescription)")
                     }
                     return
                 }
-                
+
+                let callbackContext = ModelContext(container)
                 // Group sleep samples by date
                 var sleepByDate: [Date: [HKCategorySample]] = [:]
-                
+
                 for sample in sleepSamples {
                     let date = calendar.startOfDay(for: sample.startDate)
                     sleepByDate[date, default: []].append(sample)
                 }
-                
+
                 for (date, samples) in sleepByDate {
                     // Check if we already have sleep data for this date
                     let calendar = Calendar.current
                     let startOfDay = calendar.startOfDay(for: date)
                     let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? date
-                    
+
                     let existingDescriptor = FetchDescriptor<SleepIntegration>(
                         predicate: #Predicate<SleepIntegration> { sleep in
                             sleep.userId == userId &&
@@ -456,30 +463,30 @@ final class HealthKitManager {
                             sleep.bedtime < endOfDay
                         }
                     )
-                    
-                    if (try? context.fetch(existingDescriptor).first) != nil {
+
+                    if (try? callbackContext.fetch(existingDescriptor).first) != nil {
                         continue // Already synced
                     }
-                    
+
                     // Calculate sleep metrics from samples
                     let bedtime = samples.map { $0.startDate }.min() ?? date
                     let wakeTime = samples.map { $0.endDate }.max() ?? date
-                    
+
                     let sleepIntegration = SleepIntegration(bedtime: bedtime, wakeTime: wakeTime)
                     sleepIntegration.userId = userId
                     sleepIntegration.source = "HealthKit"
-                    
-                    context.insert(sleepIntegration)
+
+                    callbackContext.insert(sleepIntegration)
                 }
-                
+
                 do {
-                    try context.save()
-                    self.logger.info("Synced sleep data for \(sleepByDate.count) days")
+                    try callbackContext.save()
+                    logger.info("Synced sleep data for \(sleepByDate.count) days")
                 } catch {
-                    self.logger.error("Failed to save sleep data: \(error.localizedDescription)")
+                    logger.error("Failed to save sleep data: \(error.localizedDescription)")
                 }
             }
-            
+
             healthStore.execute(query)
         }
     }
@@ -493,27 +500,29 @@ final class HealthKitManager {
             logger.error("Failed to calculate start date for mindfulness sync")
             return
         }
-        
+        let container = context.container
+        let logger = self.logger
         guard let mindfulType = HKObjectType.categoryType(forIdentifier: .mindfulSession) else { return }
-        
+
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
-        
+
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             let query = HKSampleQuery(
                 sampleType: mindfulType,
                 predicate: predicate,
                 limit: HKObjectQueryNoLimit,
                 sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)]
-            ) { query, samples, error in
+            ) { _, samples, error in
                 defer { continuation.resume(returning: ()) }
-                
+
                 guard let mindfulSamples = samples as? [HKCategorySample] else {
                     if let error = error {
-                        self.logger.error("Failed to fetch mindfulness data: \(error.localizedDescription)")
+                        logger.error("Failed to fetch mindfulness data: \(error.localizedDescription)")
                     }
                     return
                 }
-                
+
+                let callbackContext = ModelContext(container)
                 for sample in mindfulSamples {
                     // Check if we already have this session
                     let sampleUUID = sample.uuid.uuidString
@@ -522,31 +531,31 @@ final class HealthKitManager {
                             session.userId == userId && session.healthKitUUID == sampleUUID
                         }
                     )
-                    
-                    if (try? context.fetch(existingDescriptor).first) != nil {
+
+                    if (try? callbackContext.fetch(existingDescriptor).first) != nil {
                         continue // Already synced
                     }
-                    
+
                     let mindfulnessIntegration = MindfulnessIntegration(
                         sessionType: .meditation,
                         startDate: sample.startDate
                     )
-                    
+
                     mindfulnessIntegration.userId = userId
                     mindfulnessIntegration.healthKitUUID = sample.uuid.uuidString
                     mindfulnessIntegration.complete(endDate: sample.endDate, moodAfter: .good)
-                    
-                    context.insert(mindfulnessIntegration)
+
+                    callbackContext.insert(mindfulnessIntegration)
                 }
-                
+
                 do {
-                    try context.save()
-                    self.logger.info("Synced \(mindfulSamples.count) mindfulness sessions")
+                    try callbackContext.save()
+                    logger.info("Synced \(mindfulSamples.count) mindfulness sessions")
                 } catch {
-                    self.logger.error("Failed to save mindfulness data: \(error.localizedDescription)")
+                    logger.error("Failed to save mindfulness data: \(error.localizedDescription)")
                 }
             }
-            
+
             healthStore.execute(query)
         }
     }
@@ -715,6 +724,10 @@ final class HealthKitManager {
     // MARK: - Helper Methods
     
     private func getUnit(for identifier: HKQuantityTypeIdentifier) -> HKUnit {
+        Self.healthUnit(for: identifier)
+    }
+
+    nonisolated private static func healthUnit(for identifier: HKQuantityTypeIdentifier) -> HKUnit {
         switch identifier {
         case .stepCount:
             return .count()
@@ -738,6 +751,10 @@ final class HealthKitManager {
     }
     
     private func mapWorkoutType(_ hkWorkoutType: HKWorkoutActivityType) -> WorkoutType {
+        Self.mapWorkoutTypeStatic(hkWorkoutType)
+    }
+
+    nonisolated private static func mapWorkoutTypeStatic(_ hkWorkoutType: HKWorkoutActivityType) -> WorkoutType {
         switch hkWorkoutType {
         case .running: return .running
         case .walking: return .walking
@@ -746,13 +763,37 @@ final class HealthKitManager {
         case .yoga: return .yoga
         case .traditionalStrengthTraining: return .strength
         case .highIntensityIntervalTraining: return .hiit
-        case .dance: return .dance
+        case .socialDance, .cardioDance, .dance: return .dance
         case .pilates: return .pilates
         case .boxing: return .boxing
         case .tennis: return .tennis
         case .basketball: return .basketball
         case .soccer: return .soccer
         default: return .other
+        }
+    }
+
+    nonisolated private static func activeEnergyKilocalories(for workout: HKWorkout) -> Double {
+        guard let energyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) else {
+            return 0
+        }
+
+        return workout
+            .statistics(for: energyType)?
+            .sumQuantity()?
+            .doubleValue(for: .kilocalorie()) ?? 0
+    }
+
+    nonisolated private static func distanceType(for workoutType: WorkoutType) -> HKQuantityType? {
+        switch workoutType {
+        case .cycling:
+            return HKQuantityType.quantityType(forIdentifier: .distanceCycling)
+        case .swimming:
+            return HKQuantityType.quantityType(forIdentifier: .distanceSwimming)
+        case .running, .walking, .tennis, .basketball, .soccer, .other:
+            return HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)
+        case .yoga, .strength, .hiit, .dance, .pilates, .boxing:
+            return nil
         }
     }
     
@@ -768,20 +809,61 @@ final class HealthKitManager {
         guard hasPermission else { return false }
         
         let hkWorkoutType = workoutType.healthKitWorkoutType
-        let duration = endDate.timeIntervalSince(startDate)
-        
-        let workout = HKWorkout(
-            activityType: hkWorkoutType,
-            start: startDate,
-            end: endDate,
-            duration: duration,
-            totalEnergyBurned: HKQuantity(unit: .kilocalorie(), doubleValue: calories),
-            totalDistance: HKQuantity(unit: .meter(), doubleValue: distance),
-            metadata: nil
-        )
-        
+
+        let configuration = HKWorkoutConfiguration()
+        configuration.activityType = hkWorkoutType
+        configuration.locationType = .unknown
+
         do {
-            try await healthStore.save(workout)
+            let builder = HKWorkoutBuilder(
+                healthStore: healthStore,
+                configuration: configuration,
+                device: .local()
+            )
+
+            try await builder.beginCollection(at: startDate)
+
+            var samples: [HKSample] = []
+            if calories > 0,
+               let energyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) {
+                samples.append(
+                    HKQuantitySample(
+                        type: energyType,
+                        quantity: HKQuantity(unit: .kilocalorie(), doubleValue: calories),
+                        start: startDate,
+                        end: endDate
+                    )
+                )
+            }
+
+            if distance > 0,
+               let distanceType = Self.distanceType(for: workoutType) {
+                samples.append(
+                    HKQuantitySample(
+                        type: distanceType,
+                        quantity: HKQuantity(unit: .meter(), doubleValue: distance),
+                        start: startDate,
+                        end: endDate
+                    )
+                )
+            }
+
+            if !samples.isEmpty {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    builder.add(samples) { success, error in
+                        if let error {
+                            continuation.resume(throwing: error)
+                        } else if success {
+                            continuation.resume()
+                        } else {
+                            continuation.resume(throwing: CocoaError(.coderInvalidValue))
+                        }
+                    }
+                }
+            }
+
+            try await builder.endCollection(at: endDate)
+            _ = try await builder.finishWorkout()
             logger.info("Saved workout to HealthKit: \(workoutType.displayName)")
             return true
         } catch {

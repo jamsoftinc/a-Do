@@ -6,6 +6,7 @@ import AVFoundation
 struct CompletedRemindersView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     @State private var searchText = ""
     @State private var showingDeleteConfirmation = false
@@ -52,6 +53,8 @@ struct CompletedRemindersView: View {
                         }
                         .padding(.horizontal, 40)
                     }
+                    .frame(maxWidth: horizontalSizeClass == .regular ? 680 : .infinity)
+                    .padding(.horizontal, horizontalSizeClass == .regular ? 32 : 20)
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 12) {
@@ -68,6 +71,8 @@ struct CompletedRemindersView: View {
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 20)
+                        .frame(maxWidth: horizontalSizeClass == .regular ? 760 : .infinity)
+                        .frame(maxWidth: .infinity)
                     }
                     .scrollIndicators(.hidden)
                 }

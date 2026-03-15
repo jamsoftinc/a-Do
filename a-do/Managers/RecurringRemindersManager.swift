@@ -223,7 +223,15 @@ final class RecurringRemindersManager {
         }
 
         // Get context - if not provided, we need to get it from AppContainer
-        let ctx = context ?? ModelContext(AppContainer.shared.getContainer())
+        let ctx: ModelContext
+        if let context {
+            ctx = context
+        } else if let container = AppContainer.shared.getContainer() {
+            ctx = ModelContext(container)
+        } else {
+            logger.error("Recurring reminder processing skipped because no SwiftData container is available")
+            return
+        }
 
         // Fetch all active recurring reminders
         let descriptor = FetchDescriptor<RecurringReminder>(

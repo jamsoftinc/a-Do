@@ -90,7 +90,6 @@ final class UserProfile {
     }
     
     private func levelUp(to newLevel: Int) {
-        let oldLevel = level
         level = newLevel
         
         // Award level up rewards
@@ -999,4 +998,3 @@ final class UserReward {
         userProfile?.addExperience(experience)
     }
 }
-

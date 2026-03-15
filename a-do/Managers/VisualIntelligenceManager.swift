@@ -486,7 +486,7 @@ final class VisualIntelligenceManager {
 
         logger.info("Analyzing document type...")
 
-        guard let cgImage = image.cgImage else {
+        guard image.cgImage != nil else {
             return .document
         }
 
