@@ -53,34 +53,57 @@ struct HomeView: View {
         }
     }
 
+    private var pendingCount: Int {
+        allReminders.count
+    }
+
+    private var headerDateLabel: String {
+        Date.now.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
+    }
+
+    private var heroSubtitle: String {
+        if pendingCount == 0 {
+            return "You are clear for now. Capture anything new before it slips away."
+        }
+
+        if todayReminders.isEmpty {
+            return "\(pendingCount) open reminder\(pendingCount == 1 ? "" : "s") waiting, with \(inboxReminders.count) sitting in your inbox."
+        }
+
+        return "\(todayReminders.count) due today and \(inboxReminders.count) more waiting in your inbox."
+    }
+
+    private var featureColumns: [GridItem] {
+        Array(
+            repeating: GridItem(.flexible(), spacing: 14),
+            count: horizontalSizeClass == .regular ? 3 : 2
+        )
+    }
+
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Summary Cards (Apple Reminders style 2x2 grid)
-                    summaryGrid
+            ZStack {
+                homeBackground
 
-                    // Quick Add
-                    quickAddSection
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 22) {
+                        heroSection
+                        quickAddSection
+                        overviewSection
+                        toolsSection
+                        intelligenceSection
 
-                    // Tools
-                    toolsSection
-
-                    // Intelligence
-                    intelligenceSection
-
-                    // Pro Upgrade
-                    if !EntitlementManager.shared.isProUser {
-                        proUpgradeSection
+                        if !EntitlementManager.shared.isProUser {
+                            proUpgradeSection
+                        }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 36)
                 }
-                .padding(.horizontal)
-                .padding(.top, 8)
-                .padding(.bottom, 20)
             }
-            .background(AppTheme.Colors.background)
-            .navigationTitle(greetingTitle)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Menu {
@@ -112,12 +135,12 @@ struct HomeView: View {
                             }
                         }
                     } label: {
-                        Image(systemName: "ellipsis.circle")
+                        HomeToolbarButtonLabel(systemName: "ellipsis")
                     }
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: 16) {
+                    HStack(spacing: 0) {
                         Button {
                             if EntitlementManager.shared.hasAccess(to: .voiceReminders) {
                                 if AudioManager.shared.isRecording {
@@ -129,19 +152,32 @@ struct HomeView: View {
                                 showingPaywall = true
                             }
                         } label: {
-                            Image(systemName: AudioManager.shared.isRecording ? "stop.circle.fill" : "mic")
-                                .foregroundStyle(AudioManager.shared.isRecording ? Color.red : Color.accentColor)
+                            HomeToolbarButtonLabel(
+                                systemName: AudioManager.shared.isRecording ? "stop.fill" : "mic.fill",
+                                tint: AudioManager.shared.isRecording ? .red : AppTheme.Colors.primary
+                            )
                         }
+
+                        Rectangle()
+                            .fill(AppTheme.Colors.primary.opacity(0.18))
+                            .frame(width: 1, height: 18)
+                            .padding(.horizontal, 4)
 
                         Button {
                             let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                             impactFeedback.impactOccurred()
                             showingReminderForm = true
                         } label: {
-                            Image(systemName: "plus")
+                            HomeToolbarButtonLabel(systemName: "plus", tint: AppTheme.Colors.primary)
                         }
                         .accessibilityLabel("Add Reminder")
                     }
+                    .padding(4)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay(
+                        Capsule()
+                            .strokeBorder(AppTheme.Colors.primary.opacity(0.12), lineWidth: 1)
+                    )
                 }
             }
             .onAppear {
@@ -231,7 +267,7 @@ struct HomeView: View {
                     HStack(spacing: 12) {
                         Text("Created \(viewModel.lastQuickCaptureCreatedCount) reminder\(viewModel.lastQuickCaptureCreatedCount == 1 ? "" : "s")")
                             .font(.subheadline.weight(.medium))
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(AppTheme.Colors.textPrimary)
 
                         Spacer()
 
@@ -243,6 +279,10 @@ struct HomeView: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                     .background(.ultraThinMaterial, in: Capsule())
+                    .overlay(
+                        Capsule()
+                            .strokeBorder(AppTheme.Colors.primary.opacity(0.12), lineWidth: 1)
+                    )
                     .padding(.horizontal)
                     .padding(.bottom, 8)
                 }
@@ -250,30 +290,192 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Summary Grid
+    private var homeBackground: some View {
+        ZStack {
+            AppTheme.Gradients.background
+                .ignoresSafeArea()
+
+            Circle()
+                .fill(AppTheme.Colors.primary.opacity(0.16))
+                .frame(width: 320, height: 320)
+                .blur(radius: 36)
+                .offset(x: 140, y: -220)
+
+            Circle()
+                .fill(AppTheme.Colors.secondary.opacity(0.14))
+                .frame(width: 220, height: 220)
+                .blur(radius: 48)
+                .offset(x: -170, y: 280)
+
+            RoundedRectangle(cornerRadius: 120, style: .continuous)
+                .fill(.white.opacity(0.08))
+                .frame(width: 420, height: 220)
+                .rotationEffect(.degrees(18))
+                .offset(x: 110, y: 430)
+                .blur(radius: 20)
+        }
+    }
+
+    // MARK: - Hero Section
+
+    private var heroSection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(greetingTitle)
+                        .font(.system(size: 30, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+
+                    Text(heroSubtitle)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.white.opacity(0.82))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 12)
+
+                VStack(alignment: .trailing, spacing: 12) {
+                    Text(headerDateLabel)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.78))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(.white.opacity(0.14), in: Capsule())
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(pendingCount == 0 ? "CLEAR" : "\(pendingCount)")
+                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+
+                        Text(pendingCount == 1 ? "open task" : "open tasks")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.72))
+                    }
+                }
+            }
+
+            HStack(spacing: 10) {
+                HeroMetricPill(title: "Today", value: "\(todayReminders.count)", systemImage: "calendar")
+                HeroMetricPill(title: "Inbox", value: "\(inboxReminders.count)", systemImage: "tray")
+                HeroMetricPill(title: "Lists", value: "\(allReminders.count)", systemImage: "square.stack.3d.up")
+            }
+
+            HStack(spacing: 12) {
+                Button {
+                    showingReminderForm = true
+                } label: {
+                    HeroActionButton(
+                        title: "New Reminder",
+                        subtitle: "Open the full composer",
+                        systemImage: "plus.circle.fill",
+                        isPrimary: true
+                    )
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    if EntitlementManager.shared.hasAccess(to: .voiceReminders) {
+                        if AudioManager.shared.isRecording {
+                            stopQuickVoiceMemo()
+                        } else {
+                            Task { await startQuickVoiceMemo() }
+                        }
+                    } else {
+                        showingPaywall = true
+                    }
+                } label: {
+                    HeroActionButton(
+                        title: AudioManager.shared.isRecording ? "Stop Listening" : "Voice Capture",
+                        subtitle: AudioManager.shared.isRecording ? "Tap to finish recording" : "Turn speech into reminders",
+                        systemImage: AudioManager.shared.isRecording ? "waveform.circle.fill" : "mic.circle.fill",
+                        isPrimary: false
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 30, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            AppTheme.Colors.primary,
+                            AppTheme.Colors.primaryLight,
+                            AppTheme.Colors.secondary.opacity(0.85)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 30, style: .continuous)
+                        .strokeBorder(.white.opacity(0.18), lineWidth: 1)
+                )
+        )
+        .shadow(color: AppTheme.Colors.primary.opacity(0.18), radius: 24, x: 0, y: 16)
+    }
+
+    // MARK: - Overview Section
+
+    private var overviewSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HomeSectionHeader(
+                eyebrow: "At A Glance",
+                title: "Today’s landscape",
+                subtitle: "Your most important buckets, surfaced before you have to think about them."
+            )
+
+            summaryGrid
+        }
+    }
 
     private var summaryGrid: some View {
         LazyVGrid(columns: [
-            GridItem(.flexible(), spacing: 12),
-            GridItem(.flexible(), spacing: 12)
-        ], spacing: 12) {
+            GridItem(.flexible(), spacing: 14),
+            GridItem(.flexible(), spacing: 14)
+        ], spacing: 14) {
             NavigationLink(destination: TodayView()) {
-                HomeSummaryCard(title: "Today", icon: "calendar", iconColor: .blue, count: todayReminders.count)
+                HomeSummaryCard(
+                    title: "Today",
+                    subtitle: "Tasks due in the next 24 hours",
+                    icon: "calendar",
+                    iconColor: .blue,
+                    metric: "\(todayReminders.count)"
+                )
             }
             .buttonStyle(.plain)
 
             NavigationLink(destination: InboxView()) {
-                HomeSummaryCard(title: "Inbox", icon: "tray", iconColor: .gray, count: inboxReminders.count)
+                HomeSummaryCard(
+                    title: "Inbox",
+                    subtitle: "Unscheduled reminders waiting for direction",
+                    icon: "tray",
+                    iconColor: .gray,
+                    metric: "\(inboxReminders.count)"
+                )
             }
             .buttonStyle(.plain)
 
             NavigationLink(destination: ListsView()) {
-                HomeSummaryCard(title: "All Lists", icon: "folder", iconColor: .purple, count: allReminders.count)
+                HomeSummaryCard(
+                    title: "All Lists",
+                    subtitle: "Everything active across your system",
+                    icon: "folder",
+                    iconColor: .purple,
+                    metric: "\(allReminders.count)"
+                )
             }
             .buttonStyle(.plain)
 
             NavigationLink(destination: CompletedRemindersView()) {
-                HomeSummaryCard(title: "Completed", icon: "checkmark", iconColor: .green)
+                HomeSummaryCard(
+                    title: "Completed",
+                    subtitle: "Review what shipped and clean up the archive",
+                    icon: "checkmark.circle.fill",
+                    iconColor: .green,
+                    metric: "Review"
+                )
             }
             .buttonStyle(.plain)
         }
@@ -282,88 +484,156 @@ struct HomeView: View {
     // MARK: - Tools Section
 
     private var toolsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Tools")
-                .font(.title3.weight(.semibold))
-                .padding(.leading, 4)
+        VStack(alignment: .leading, spacing: 14) {
+            HomeSectionHeader(
+                eyebrow: "Workflows",
+                title: "Tools",
+                subtitle: "Jump into the modes that help you plan, focus, and move faster."
+            )
 
-            VStack(spacing: 0) {
+            LazyVGrid(columns: featureColumns, spacing: 14) {
                 NavigationLink(destination: FocusDashboardView()) {
-                    homeRow(icon: "scope", title: "Focus Mode", color: .purple)
+                    homeFeatureTile(
+                        icon: "scope",
+                        title: "Focus Mode",
+                        subtitle: "Deep work sessions",
+                        color: .purple
+                    )
                 }
-                sectionDivider
+                .buttonStyle(.plain)
+
                 NavigationLink(destination: TimeTrackingView()) {
-                    homeRow(icon: "timer", title: "Time Tracking", color: .orange)
+                    homeFeatureTile(
+                        icon: "timer",
+                        title: "Time Tracking",
+                        subtitle: "See where time goes",
+                        color: .orange
+                    )
                 }
-                sectionDivider
+                .buttonStyle(.plain)
+
                 NavigationLink(destination: TemplatesView()) {
-                    homeRow(icon: "doc.on.doc", title: "Templates", color: .cyan)
+                    homeFeatureTile(
+                        icon: "doc.on.doc",
+                        title: "Templates",
+                        subtitle: "Reuse strong routines",
+                        color: .cyan
+                    )
                 }
-                sectionDivider
+                .buttonStyle(.plain)
+
                 NavigationLink(destination: SmartSearchView()) {
-                    homeRow(icon: "magnifyingglass", title: "Smart Search", color: .blue)
+                    homeFeatureTile(
+                        icon: "magnifyingglass",
+                        title: "Smart Search",
+                        subtitle: "Find anything naturally",
+                        color: .blue
+                    )
                 }
-                sectionDivider
+                .buttonStyle(.plain)
+
                 NavigationLink(destination: ShadowInboxView()) {
-                    homeRow(icon: "tray.full", title: "Shadow Inbox", color: .indigo)
+                    homeFeatureTile(
+                        icon: "tray.full",
+                        title: "Shadow Inbox",
+                        subtitle: "Catch loose ideas fast",
+                        color: .indigo
+                    )
                 }
-                sectionDivider
+                .buttonStyle(.plain)
+
                 Button { showingCollaboration = true } label: {
-                    homeRow(icon: "person.2", title: "Collaboration", color: .green)
+                    homeFeatureTile(
+                        icon: "person.2",
+                        title: "Collaboration",
+                        subtitle: "Plan together",
+                        color: .green
+                    )
                 }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
-            .background(AppTheme.Colors.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 
     // MARK: - Intelligence Section
 
     private var intelligenceSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Intelligence")
-                .font(.title3.weight(.semibold))
-                .padding(.leading, 4)
+        VStack(alignment: .leading, spacing: 14) {
+            HomeSectionHeader(
+                eyebrow: "AI Layer",
+                title: "Intelligence",
+                subtitle: "Use the app as a thinking partner, not just a place to store tasks."
+            )
 
-            VStack(spacing: 0) {
+            LazyVGrid(columns: featureColumns, spacing: 14) {
                 Button {
                     if EntitlementManager.shared.hasAccess(to: .advancedNLP) {
                         showingAISuggestions = true
-                    } else { showingPaywall = true }
+                    } else {
+                        showingPaywall = true
+                    }
                 } label: {
-                    homeRow(icon: "sparkles", title: "AI Suggestions", color: .blue,
-                            locked: !EntitlementManager.shared.hasAccess(to: .advancedNLP))
+                    homeFeatureTile(
+                        icon: "sparkles",
+                        title: "AI Suggestions",
+                        subtitle: "Surface the next smart move",
+                        color: .blue,
+                        locked: !EntitlementManager.shared.hasAccess(to: .advancedNLP)
+                    )
                 }
-                sectionDivider
+                .buttonStyle(.plain)
+
                 Button {
                     if EntitlementManager.shared.hasAccess(to: .advancedNLP) {
                         showingAIInsights = true
-                    } else { showingPaywall = true }
+                    } else {
+                        showingPaywall = true
+                    }
                 } label: {
-                    homeRow(icon: "chart.line.uptrend.xyaxis", title: "AI Insights", color: .indigo,
-                            locked: !EntitlementManager.shared.hasAccess(to: .advancedNLP))
+                    homeFeatureTile(
+                        icon: "chart.line.uptrend.xyaxis",
+                        title: "AI Insights",
+                        subtitle: "See patterns in your system",
+                        color: .indigo,
+                        locked: !EntitlementManager.shared.hasAccess(to: .advancedNLP)
+                    )
                 }
-                sectionDivider
+                .buttonStyle(.plain)
+
                 Button {
                     if EntitlementManager.shared.hasAccess(to: .dailyPlanning) {
                         showingDailyPlanning = true
-                    } else { showingPaywall = true }
+                    } else {
+                        showingPaywall = true
+                    }
                 } label: {
-                    homeRow(icon: "sun.max", title: "Daily Planning", color: .orange,
-                            locked: !EntitlementManager.shared.hasAccess(to: .dailyPlanning))
+                    homeFeatureTile(
+                        icon: "sun.max",
+                        title: "Daily Planning",
+                        subtitle: "Shape the day before it shapes you",
+                        color: .orange,
+                        locked: !EntitlementManager.shared.hasAccess(to: .dailyPlanning)
+                    )
                 }
-                sectionDivider
+                .buttonStyle(.plain)
+
                 Button {
                     if EntitlementManager.shared.isProUser {
                         showingMorningBriefing = true
-                    } else { showingPaywall = true }
+                    } else {
+                        showingPaywall = true
+                    }
                 } label: {
-                    homeRow(icon: "sunrise", title: "Morning Briefing", color: .yellow,
-                            locked: !EntitlementManager.shared.isProUser)
+                    homeFeatureTile(
+                        icon: "sunrise",
+                        title: "Morning Briefing",
+                        subtitle: "Start with a tailored overview",
+                        color: .yellow,
+                        locked: !EntitlementManager.shared.isProUser
+                    )
                 }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
-            .background(AppTheme.Colors.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 
@@ -371,25 +641,42 @@ struct HomeView: View {
 
     private var proUpgradeSection: some View {
         Button { showingPaywall = true } label: {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .center, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("PRO")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(AppTheme.Colors.secondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(AppTheme.Colors.secondary.opacity(0.12), in: Capsule())
+
                     Text("Upgrade to Pro")
-                        .font(.headline)
-                        .foregroundStyle(Color(.label))
-                    Text("Unlock AI features & unlimited habits")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(AppTheme.Colors.textPrimary)
+
+                    Text("Unlock AI features, voice workflows, and unlimited habits.")
+                        .font(.subheadline)
+                        .foregroundStyle(AppTheme.Colors.textSecondary)
                 }
+
                 Spacer()
+
                 Text("Upgrade")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.subheadline.weight(.bold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                    .background(Color.accentColor, in: Capsule())
+                    .background(
+                        LinearGradient(
+                            colors: [AppTheme.Colors.secondary, AppTheme.Colors.primary],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ),
+                        in: Capsule()
+                    )
             }
-            .padding(16)
-            .background(AppTheme.Colors.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .padding(20)
+            .background(HomePanelBackground(accent: AppTheme.Colors.secondary))
         }
         .buttonStyle(.plain)
     }
@@ -397,16 +684,40 @@ struct HomeView: View {
     // MARK: - Quick Add Section
 
     private var quickAddSection: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 12) {
-                Image(systemName: "plus.circle.fill")
-                    .font(.title3)
-                    .foregroundStyle(Color.accentColor)
+        VStack(alignment: .leading, spacing: 16) {
+            HomeSectionHeader(
+                eyebrow: "Capture",
+                title: "Quick add",
+                subtitle: "Type naturally, dictate out loud, or set a date before the thought disappears."
+            )
 
-                TextField("New Reminder", text: $viewModel.quickTitle)
-                    .font(.body)
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [AppTheme.Colors.primary.opacity(0.2), .white.opacity(0.9)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 48, height: 48)
+
+                    if viewModel.isPreparingQuickCapture {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Image(systemName: "plus")
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(AppTheme.Colors.primary)
+                    }
+                }
+
+                TextField("What needs to happen?", text: $viewModel.quickTitle, axis: .vertical)
+                    .font(.body.weight(.medium))
                     .focused($isQuickAddFocused)
                     .submitLabel(.done)
+                    .lineLimit(1...3)
                     .onSubmit {
                         if !viewModel.quickTitle.isEmpty {
                             viewModel.addQuickReminder(context: context)
@@ -418,108 +729,188 @@ struct HomeView: View {
                         viewModel.addQuickReminder(context: context)
                         isQuickAddFocused = false
                     } label: {
-                        if viewModel.isPreparingQuickCapture {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Image(systemName: "arrow.up.circle.fill")
-                                .font(.title2)
-                                .foregroundStyle(Color.accentColor)
-                        }
+                        Image(systemName: "arrow.up")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 42, height: 42)
+                            .background(AppTheme.Gradients.primary, in: Circle())
                     }
                     .buttonStyle(.plain)
                     .disabled(viewModel.isPreparingQuickCapture)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 18)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(AppTheme.Colors.surface.opacity(0.84))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .strokeBorder(.white.opacity(0.6), lineWidth: 1)
+                    )
+            )
 
             if isQuickAddFocused || !viewModel.quickTitle.isEmpty {
-                Divider().padding(.leading, 48)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Add timing")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(AppTheme.Colors.textSecondary)
 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach([
-                            ("Today", "today", viewModel.quickDueDate.map { Calendar.current.isDateInToday($0) } ?? false),
-                            ("Tomorrow", "tomorrow", viewModel.quickDueDate.map { Calendar.current.isDateInTomorrow($0) } ?? false),
-                            ("Pick Date", "pick", viewModel.quickDueDate.map { date in
-                                !Calendar.current.isDateInToday(date) && !Calendar.current.isDateInTomorrow(date)
-                            } ?? false)
-                        ], id: \.0) { title, action, isSelected in
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach([
+                                ("Today", "today", "sun.max.fill", viewModel.quickDueDate.map { Calendar.current.isDateInToday($0) } ?? false),
+                                ("Tomorrow", "tomorrow", "sun.haze.fill", viewModel.quickDueDate.map { Calendar.current.isDateInTomorrow($0) } ?? false),
+                                ("Pick Date", "pick", "calendar.badge.clock", viewModel.quickDueDate.map { date in
+                                    !Calendar.current.isDateInToday(date) && !Calendar.current.isDateInTomorrow(date)
+                                } ?? false)
+                            ], id: \.0) { title, action, icon, isSelected in
+                                Button {
+                                    switch action {
+                                    case "today": viewModel.setQuickDueDateToToday()
+                                    case "tomorrow": viewModel.setQuickDueDateToTomorrow()
+                                    case "pick": viewModel.showingQuickDatePicker = true
+                                    default: break
+                                    }
+                                } label: {
+                                    Label(title, systemImage: icon)
+                                        .font(.caption.weight(.semibold))
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 9)
+                                        .background(
+                                            isSelected ? AppTheme.Gradients.primary : LinearGradient(
+                                                colors: [AppTheme.Colors.surface, AppTheme.Colors.surfaceLight.opacity(0.75)],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ),
+                                            in: Capsule()
+                                        )
+                                        .foregroundStyle(isSelected ? .white : AppTheme.Colors.textSecondary)
+                                        .overlay(
+                                            Capsule()
+                                                .strokeBorder(
+                                                    isSelected ? .clear : AppTheme.Colors.primary.opacity(0.14),
+                                                    lineWidth: 1
+                                                )
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
+
                             Button {
-                                switch action {
-                                case "today": viewModel.setQuickDueDateToToday()
-                                case "tomorrow": viewModel.setQuickDueDateToTomorrow()
-                                case "pick": viewModel.showingQuickDatePicker = true
-                                default: break
+                                if EntitlementManager.shared.hasAccess(to: .voiceReminders) {
+                                    if AudioManager.shared.isRecording {
+                                        stopQuickVoiceMemo()
+                                    } else {
+                                        Task { await startQuickVoiceMemo() }
+                                    }
+                                } else {
+                                    showingPaywall = true
                                 }
                             } label: {
-                                Text(title)
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(isSelected ? Color.accentColor : Color(.tertiarySystemFill))
-                                    .foregroundStyle(isSelected ? .white : .secondary)
-                                    .clipShape(Capsule())
+                                Label(
+                                    AudioManager.shared.isRecording ? "Stop" : "Dictate",
+                                    systemImage: AudioManager.shared.isRecording ? "waveform.circle.fill" : "mic.fill"
+                                )
+                                .font(.caption.weight(.semibold))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 9)
+                                .background(
+                                    (AudioManager.shared.isRecording ? Color.red : AppTheme.Colors.secondary).opacity(0.14),
+                                    in: Capsule()
+                                )
+                                .foregroundStyle(AudioManager.shared.isRecording ? Color.red : AppTheme.Colors.secondary)
                             }
                             .buttonStyle(.plain)
-                        }
 
-                        if viewModel.quickDueDate != nil {
-                            Button {
-                                viewModel.clearQuickDueDate()
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundStyle(.secondary)
+                            if viewModel.quickDueDate != nil {
+                                Button {
+                                    viewModel.clearQuickDueDate()
+                                } label: {
+                                    Label("Clear", systemImage: "xmark.circle.fill")
+                                        .font(.caption.weight(.semibold))
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 9)
+                                        .background(AppTheme.Colors.textSecondary.opacity(0.12), in: Capsule())
+                                        .foregroundStyle(AppTheme.Colors.textSecondary)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
-                    .padding(.horizontal, 16)
                 }
-                .padding(.bottom, 8)
-            }
-        }
-        .background(AppTheme.Colors.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
-    // MARK: - Row Components
-
-    private func homeRow(icon: String, title: String, color: Color, locked: Bool = false) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.callout)
-                .foregroundStyle(.white)
-                .frame(width: 28, height: 28)
-                .background(color, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-
-            Text(title)
-                .font(.body)
-                .foregroundStyle(Color(.label))
-
-            Spacer()
-
-            if locked {
-                Image(systemName: "lock.fill")
-                    .font(.caption2)
-                    .foregroundStyle(Color(.tertiaryLabel))
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
 
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Color(.tertiaryLabel))
+            if AudioManager.shared.isRecording || !AudioManager.shared.liveTranscription.isEmpty {
+                HStack(spacing: 10) {
+                    Image(systemName: AudioManager.shared.isRecording ? "waveform.circle.fill" : "mic.badge.checkmark")
+                        .foregroundStyle(AudioManager.shared.isRecording ? Color.red : AppTheme.Colors.success)
+
+                    Text(AudioManager.shared.liveTranscription.isEmpty ? "Listening…" : AudioManager.shared.liveTranscription)
+                        .font(.footnote)
+                        .foregroundStyle(AppTheme.Colors.textSecondary)
+                        .lineLimit(2)
+
+                    Spacer()
+                }
+                .padding(.horizontal, 2)
+                .transition(.opacity)
+            }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 11)
-        .contentShape(Rectangle())
+        .padding(22)
+        .background(HomePanelBackground(accent: AppTheme.Colors.primary))
+        .animation(.spring(response: 0.36, dampingFraction: 0.88), value: isQuickAddFocused)
+        .animation(.spring(response: 0.36, dampingFraction: 0.88), value: viewModel.quickTitle.isEmpty)
     }
 
-    private var sectionDivider: some View {
-        Divider().padding(.leading, 56)
+    private func homeFeatureTile(
+        icon: String,
+        title: String,
+        subtitle: String,
+        color: Color,
+        locked: Bool = false
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(color.opacity(0.16))
+                        .frame(width: 42, height: 42)
+
+                    Image(systemName: icon)
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(color)
+                }
+
+                Spacer()
+
+                Image(systemName: locked ? "lock.fill" : "arrow.up.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(locked ? AppTheme.Colors.secondary : AppTheme.Colors.textTertiary)
+            }
+
+            Spacer(minLength: 0)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(AppTheme.Colors.textPrimary)
+                    .multilineTextAlignment(.leading)
+
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(AppTheme.Colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, minHeight: 132, alignment: .leading)
+        .background(HomePanelBackground(accent: color))
     }
 
     // MARK: - Helper Methods
+
     private func updateFilteredReminders() {
         let now = Date()
         let calendar = Calendar.current
@@ -541,9 +932,9 @@ struct HomeView: View {
             }
         }
 
-        self.inboxReminders = newInboxReminders
-        self.todayReminders = newTodayReminders
-        self.lastUpdateDate = now
+        inboxReminders = newInboxReminders
+        todayReminders = newTodayReminders
+        lastUpdateDate = now
     }
 
     private func loadRemindersAsync() {
@@ -568,13 +959,14 @@ struct HomeView: View {
                     loadedReminders.append(reminder)
                 }
             }
-            self.allReminders = loadedReminders
-            self.updateFilteredReminders()
-            self.isLoadingReminders = false
+            allReminders = loadedReminders
+            updateFilteredReminders()
+            isLoadingReminders = false
         }
     }
 
     // MARK: - Voice Memo Methods
+
     private func startQuickVoiceMemo() async {
         await AudioManager.shared.startRecording()
         let _ = await AudioManager.shared.awaitCaptureCompletion()
@@ -625,40 +1017,186 @@ struct HomeView: View {
     }
 }
 
-// MARK: - Home Summary Card (Apple Reminders style)
-struct HomeSummaryCard: View {
-    let title: String
-    let icon: String
-    let iconColor: Color
-    var count: Int? = nil
+private struct HomeToolbarButtonLabel: View {
+    let systemName: String
+    var tint: Color = AppTheme.Colors.primary
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top) {
-                Image(systemName: icon)
-                    .font(.headline)
+        Image(systemName: systemName)
+            .font(.headline.weight(.semibold))
+            .foregroundStyle(tint)
+            .frame(width: 40, height: 40)
+            .background(.white.opacity(0.18), in: Circle())
+    }
+}
+
+private struct HomeSectionHeader: View {
+    let eyebrow: String
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(eyebrow.uppercased())
+                .font(.caption.weight(.bold))
+                .foregroundStyle(AppTheme.Colors.textTertiary)
+                .tracking(0.8)
+
+            Text(title)
+                .font(.title3.weight(.bold))
+                .foregroundStyle(AppTheme.Colors.textPrimary)
+
+            Text(subtitle)
+                .font(.footnote)
+                .foregroundStyle(AppTheme.Colors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+private struct HeroMetricPill: View {
+    let title: String
+    let value: String
+    let systemImage: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.white)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.76))
+
+                Text(value)
+                    .font(.headline.weight(.bold))
                     .foregroundStyle(.white)
-                    .frame(width: 30, height: 30)
-                    .background(iconColor, in: Circle())
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(.white.opacity(0.12), lineWidth: 1)
+        )
+    }
+}
+
+private struct HeroActionButton: View {
+    let title: String
+    let subtitle: String
+    let systemImage: String
+    let isPrimary: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.title2.weight(.semibold))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline.weight(.bold))
+
+                Text(subtitle)
+                    .font(.caption)
+                    .opacity(0.72)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .foregroundStyle(isPrimary ? AppTheme.Colors.textPrimary : Color.white)
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            isPrimary ? AnyShapeStyle(Color.white.opacity(0.96)) : AnyShapeStyle(Color.white.opacity(0.12)),
+            in: RoundedRectangle(cornerRadius: 22, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .strokeBorder(isPrimary ? .white.opacity(0.35) : .white.opacity(0.14), lineWidth: 1)
+        )
+    }
+}
+
+private struct HomePanelBackground: View {
+    let accent: Color
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 28, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: [
+                        AppTheme.Colors.surface.opacity(0.98),
+                        AppTheme.Colors.surfaceLight.opacity(0.82),
+                        accent.opacity(0.08)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .strokeBorder(.white.opacity(0.58), lineWidth: 1)
+            )
+            .shadow(color: accent.opacity(0.10), radius: 18, x: 0, y: 12)
+    }
+}
+
+struct HomeSummaryCard: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    let iconColor: Color
+    let metric: String
+
+    private var metricFont: Font {
+        metric.count > 4
+            ? .title3.weight(.bold)
+            : .system(size: 34, weight: .bold, design: .rounded)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top) {
+                ZStack {
+                    Circle()
+                        .fill(iconColor.opacity(0.14))
+                        .frame(width: 42, height: 42)
+
+                    Image(systemName: icon)
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(iconColor)
+                }
 
                 Spacer()
 
-                if let count {
-                    Text("\(count)")
-                        .font(.title.bold())
-                        .foregroundStyle(Color(.label))
-                }
+                Text(metric)
+                    .font(metricFont)
+                    .foregroundStyle(AppTheme.Colors.textPrimary)
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
             }
 
             Spacer()
 
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color(.secondaryLabel))
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(AppTheme.Colors.textPrimary)
+
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(AppTheme.Colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 85)
-        .background(AppTheme.Colors.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .padding(18)
+        .frame(maxWidth: .infinity, minHeight: 156, alignment: .leading)
+        .background(HomePanelBackground(accent: iconColor))
     }
 }

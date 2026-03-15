@@ -40,11 +40,15 @@ final class AppCoreTests: XCTestCase {
     }
 
     func testHashtagExtractionPerformance() {
-        measure {
-            _ = ReminderCreationService.shared.extractHashtagNames(
-                from: Array(repeating: "Review roadmap #work #planning #q2", count: 200).joined(separator: " ")
-            )
+        let input = Array(repeating: "Review roadmap #work #planning #q2", count: 200).joined(separator: " ")
+        let start = CFAbsoluteTimeGetCurrent()
+
+        for _ in 0..<20 {
+            _ = ReminderCreationService.shared.extractHashtagNames(from: input)
         }
+
+        let elapsed = CFAbsoluteTimeGetCurrent() - start
+        XCTAssertLessThan(elapsed, 1.0)
     }
 
     func testTimeEntryPreservesDurationAcrossPauseAndResume() {

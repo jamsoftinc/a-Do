@@ -88,8 +88,10 @@ struct ADoApp: App {
         UIToolbar.appearance().compactAppearance = toolbarAppearance
 
         let tabBarAppearance = UITabBarAppearance()
-        tabBarAppearance.configureWithOpaqueBackground()
-        tabBarAppearance.backgroundColor = AppTheme.UIColors.surface
+        tabBarAppearance.configureWithTransparentBackground()
+        tabBarAppearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterial)
+        tabBarAppearance.backgroundColor = AppTheme.UIColors.surface.withAlphaComponent(0.82)
+        tabBarAppearance.shadowColor = AppTheme.UIColors.primary.withAlphaComponent(0.08)
         configureTabBarLayout(tabBarAppearance.stackedLayoutAppearance)
         configureTabBarLayout(tabBarAppearance.inlineLayoutAppearance)
         configureTabBarLayout(tabBarAppearance.compactInlineLayoutAppearance)
@@ -99,7 +101,15 @@ struct ADoApp: App {
 
     private func configureTabBarLayout(_ layoutAppearance: UITabBarItemAppearance) {
         layoutAppearance.normal.iconColor = AppTheme.UIColors.textSecondary
-        layoutAppearance.normal.titleTextAttributes = [.foregroundColor: AppTheme.UIColors.textSecondary]
+        layoutAppearance.normal.titleTextAttributes = [
+            .foregroundColor: AppTheme.UIColors.textSecondary,
+            .font: UIFont.systemFont(ofSize: 11, weight: .medium)
+        ]
+        layoutAppearance.selected.iconColor = AppTheme.UIColors.primary
+        layoutAppearance.selected.titleTextAttributes = [
+            .foregroundColor: AppTheme.UIColors.primary,
+            .font: UIFont.systemFont(ofSize: 11, weight: .semibold)
+        ]
     }
 
     private func migrateAccentColorIfNeeded() {
