@@ -3,13 +3,15 @@ import CoreLocation
 import os
 import Observation
 import Contacts
+#if canImport(MapKit)
+import MapKit
+#endif
 
 @Observable
 final class LocationManager: NSObject, CLLocationManagerDelegate {
     static let shared = LocationManager()
 
     private let manager = CLLocationManager()
-    private let geocoder = CLGeocoder()
     private var geocodingTask: Task<Void, Never>?
     private var authorizationContinuation: CheckedContinuation<CLAuthorizationStatus, Never>?
     private var locationContinuation: CheckedContinuation<CLLocation?, Never>?
@@ -111,25 +113,46 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         return await requestSingleLocation(timeoutNanoseconds: 15_000_000_000)
     }
     
-    private func reverseGeocode(location: CLLocation) async {
-        do {
-            let placemarks = try await geocoder.reverseGeocodeLocation(location)
-            if let placemark = placemarks.first {
-                let address = [
-                    placemark.thoroughfare,
-                    placemark.subThoroughfare,
-                    placemark.locality,
-                    placemark.administrativeArea
-                ].compactMap { $0 }.joined(separator: ", ")
-                
-                if !address.isEmpty {
-                    currentAddress = address
+    private func reverseGeocode(location: CLLocation) {
+        geocodingTask?.cancel()
+        geocodingTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            do {
+                if let address = try await Self.resolveAddress(for: location), !Task.isCancelled {
+                    self.currentAddress = address
                     Logger(subsystem: "a-do", category: "Location").info("Address resolved: \(address)")
                 }
+            } catch {
+                guard !Task.isCancelled else { return }
+                Logger(subsystem: "a-do", category: "Location").error("Reverse geocoding failed: \(String(describing: error))")
             }
-        } catch {
-            Logger(subsystem: "a-do", category: "Location").error("Reverse geocoding failed: \(error)")
         }
+    }
+
+    nonisolated private static func resolveAddress(for location: CLLocation) async throws -> String? {
+        #if canImport(MapKit)
+        guard let request = MKReverseGeocodingRequest(location: location) else { return nil }
+        let mapItems = try await request.mapItems
+        guard let mapItem = mapItems.first else { return nil }
+
+        if let formatted = mapItem.addressRepresentations?.fullAddress(includingRegion: false, singleLine: true),
+           !formatted.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return formatted
+        }
+
+        let fallbackParts = [
+            mapItem.name,
+            mapItem.addressRepresentations?.cityWithContext,
+            mapItem.addressRepresentations?.regionName
+        ]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        return fallbackParts.isEmpty ? nil : fallbackParts.joined(separator: ", ")
+        #else
+        return nil
+        #endif
     }
 
     func startMonitoring(label: String, latitude: Double, longitude: Double, radius: Double, notifyOnEntry: Bool, notifyOnExit: Bool) {
@@ -202,7 +225,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
             }
             
             // Reverse geocode to get address
-            await self.reverseGeocode(location: location)
+            self.reverseGeocode(location: location)
         }
     }
     

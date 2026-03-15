@@ -112,9 +112,11 @@ struct TimeTrackingView: View {
                 
                 // Timer Display
                 VStack(spacing: 8) {
-                    Text(formatElapsedTime())
-                        .font(.system(size: 48, weight: .light, design: .monospaced))
-                        .primaryText()
+                    TimelineView(.periodic(from: .now, by: timeManager.isTracking ? 1 : 60)) { _ in
+                        Text(formatElapsedTime())
+                            .font(.system(size: 48, weight: .light, design: .monospaced))
+                            .primaryText()
+                    }
                     
                     HStack(spacing: 16) {
                         if timeManager.isTracking {

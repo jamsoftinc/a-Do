@@ -639,22 +639,13 @@ final class AIManager {
     }
     
     private func updatePendingSuggestions(context: ModelContext) async {
-        let pendingStatusRaw = AISuggestionStatus.pending.rawValue
-        let descriptor = FetchDescriptor<AISuggestion>(
-            predicate: #Predicate { $0.statusRaw == pendingStatusRaw },
-            sortBy: [SortDescriptor(\.priorityRaw, order: .reverse), SortDescriptor(\.confidence, order: .reverse)]
-        )
-        
-        pendingSuggestions = (try? context.fetch(descriptor)) ?? []
+        let suggestionIDs = await MemorySafeDataLoader.loadPendingAISuggestions(context: context)
+        pendingSuggestions = suggestionIDs.compactMap { context.model(for: $0) as? AISuggestion }
     }
     
     private func updateRecentInsights(context: ModelContext) async {
-        let descriptor = FetchDescriptor<AIInsight>(
-            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
-        )
-        
-        let insights = (try? context.fetch(descriptor)) ?? []
-        recentInsights = Array(insights.prefix(10))
+        let insightIDs = await MemorySafeDataLoader.loadRecentAIInsights(context: context)
+        recentInsights = insightIDs.compactMap { context.model(for: $0) as? AIInsight }
     }
     
     // MARK: - Analysis Methods (Simplified implementations)

@@ -37,11 +37,14 @@ final class TimeEntry {
     // MARK: - Computed Properties
     
     var actualDuration: TimeInterval {
-        if let endTime = endTime {
-            return endTime.timeIntervalSince(startTime)
-        } else if isActive {
-            return Date().timeIntervalSince(startTime)
+        if isActive {
+            return duration + Date().timeIntervalSince(startTime)
         }
+
+        if let endTime = endTime, duration == 0 {
+            return endTime.timeIntervalSince(startTime)
+        }
+
         return duration
     }
     
@@ -66,20 +69,22 @@ final class TimeEntry {
     
     func stop() {
         guard isActive else { return }
+        duration += Date().timeIntervalSince(startTime)
         endTime = Date()
-        duration = actualDuration
         isActive = false
     }
     
     func pause() {
         guard isActive else { return }
         duration += Date().timeIntervalSince(startTime)
+        endTime = nil
         isActive = false
     }
     
     func resume() {
         guard !isActive else { return }
         startTime = Date()
+        endTime = nil
         isActive = true
     }
 }

@@ -277,9 +277,11 @@ struct ReminderFormView: View {
                                     Image(systemName: "record.circle")
                                         .foregroundColor(.red)
                                         .imageScale(.small)
-                                    Text("Recording... \(Int(AudioManager.shared.recordingDuration))s")
-                                        .font(.caption)
-                                        .foregroundColor(.red)
+                                    TimelineView(.periodic(from: .now, by: 1)) { _ in
+                                        Text("Recording... \(Int(AudioManager.shared.recordingDuration))s")
+                                            .font(.caption)
+                                            .foregroundColor(.red)
+                                    }
                                     Spacer()
                                     Button("Stop") {
                                         viewModel.stopVoiceRecording()
@@ -645,7 +647,8 @@ struct ReminderFormView: View {
         context.delete(existingReminder)
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
+            ReminderMutationMonitor.shared.notifyChange()
             Logger(subsystem: "a-do", category: "Reminders").info("Reminder deleted: '\(existingReminder.title)'")
         } catch {
             Logger(subsystem: "a-do", category: "Reminders").error("Failed to delete reminder: \(error.localizedDescription)")

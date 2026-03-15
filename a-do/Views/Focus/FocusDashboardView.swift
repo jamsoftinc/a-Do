@@ -116,7 +116,6 @@ struct FocusDashboardView: View {
 
                         Button("Complete") {
                             focusManager.endSession(context: context)
-                            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
                         }
                         .buttonStyle(.borderedProminent)
                     }

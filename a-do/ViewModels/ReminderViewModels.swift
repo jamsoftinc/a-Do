@@ -105,6 +105,7 @@ final class ReminderHomeViewModel {
                 }
             }
             WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
+            ReminderMutationMonitor.shared.notifyChange()
         } catch {
             Logger(subsystem: "a-do", category: "Reminders").error("Undo quick capture failed: \(String(describing: error))")
         }
@@ -134,6 +135,7 @@ final class ReminderHomeViewModel {
                 await AdvancedSearchManager.shared.upsertReminderIndex(for: reminder, context: context)
             }
             WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
+            ReminderMutationMonitor.shared.notifyChange()
             Logger(subsystem: "a-do", category: "Reminders").info("Reminder marked complete: '\(reminder.title)'")
         } catch {
             Logger(subsystem: "a-do", category: "Reminders").error("Failed to mark reminder complete: \(String(describing: error))")
@@ -150,6 +152,7 @@ final class ReminderHomeViewModel {
                 await AdvancedSearchManager.shared.upsertReminderIndex(for: reminder, context: context)
             }
             WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
+            ReminderMutationMonitor.shared.notifyChange()
             Logger(subsystem: "a-do", category: "Reminders").info("Reminder marked incomplete: '\(reminder.title)'")
         } catch {
             Logger(subsystem: "a-do", category: "Reminders").error("Failed to mark reminder incomplete: \(String(describing: error))")

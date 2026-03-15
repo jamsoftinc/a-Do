@@ -297,7 +297,7 @@ final class HabitViewModel {
 
     private func refreshWidgetSnapshotsIfPossible() {
         guard let modelContext else { return }
-        WidgetSnapshotManager.shared.refreshSnapshots(context: modelContext)
+        WidgetSnapshotManager.shared.refreshSnapshots(context: modelContext, kinds: [.habits])
     }
 }
 

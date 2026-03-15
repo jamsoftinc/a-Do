@@ -6,8 +6,6 @@ import os
 @MainActor
 final class WidgetSnapshotManager {
     static let shared = WidgetSnapshotManager()
-
-    private let logger = Logger(subsystem: "a-do", category: "WidgetSnapshots")
     private let suiteName = "group.com.ado.app"
     private let remindersKey = "widget_reminders_v1"
     private let habitsKey = "widget_habits_v1"
@@ -37,11 +35,39 @@ final class WidgetSnapshotManager {
             self.pendingKinds = []
             self.pendingContainer = nil
 
-            self.performRefresh(container: container, kinds: kindsToRefresh)
+            let suiteName = self.suiteName
+            let remindersKey = self.remindersKey
+            let habitsKey = self.habitsKey
+            let focusKey = self.focusKey
+            let timeTrackingKey = self.timeTrackingKey
+            let updatedAtKey = self.updatedAtKey
+
+            Task.detached(priority: .utility) {
+                Self.performRefresh(
+                    container: container,
+                    kinds: kindsToRefresh,
+                    suiteName: suiteName,
+                    remindersKey: remindersKey,
+                    habitsKey: habitsKey,
+                    focusKey: focusKey,
+                    timeTrackingKey: timeTrackingKey,
+                    updatedAtKey: updatedAtKey
+                )
+            }
         }
     }
 
-    private func performRefresh(container: ModelContainer, kinds: Set<WidgetSnapshotKind>) {
+    nonisolated private static func performRefresh(
+        container: ModelContainer,
+        kinds: Set<WidgetSnapshotKind>,
+        suiteName: String,
+        remindersKey: String,
+        habitsKey: String,
+        focusKey: String,
+        timeTrackingKey: String,
+        updatedAtKey: String
+    ) {
+        let logger = Logger(subsystem: "a-do", category: "WidgetSnapshots")
         guard let defaults = UserDefaults(suiteName: suiteName) else { return }
         let context = ModelContext(container)
 
@@ -93,14 +119,15 @@ final class WidgetSnapshotManager {
         }
     }
 
-    private func fetchReminderSnapshots(context: ModelContext) -> [WidgetReminderSnapshot] {
-        let descriptor = FetchDescriptor<Reminder>(
+    nonisolated private static func fetchReminderSnapshots(context: ModelContext) -> [WidgetReminderSnapshot] {
+        var descriptor = FetchDescriptor<Reminder>(
             predicate: #Predicate { !$0.isCompleted },
             sortBy: [SortDescriptor(\.dueDate), SortDescriptor(\.createdAt, order: .reverse)]
         )
+        descriptor.fetchLimit = 20
 
         let reminders = (try? context.fetch(descriptor)) ?? []
-        return reminders.prefix(20).map { reminder in
+        return reminders.map { reminder in
             WidgetReminderSnapshot(
                 id: reminder.uuid.uuidString,
                 title: reminder.title,
@@ -114,14 +141,15 @@ final class WidgetSnapshotManager {
         }
     }
 
-    private func fetchHabitSnapshots(context: ModelContext) -> [WidgetHabitSnapshot] {
-        let descriptor = FetchDescriptor<Habit>(
+    nonisolated private static func fetchHabitSnapshots(context: ModelContext) -> [WidgetHabitSnapshot] {
+        var descriptor = FetchDescriptor<Habit>(
             predicate: #Predicate { $0.isActive },
             sortBy: [SortDescriptor(\.updatedAt, order: .reverse)]
         )
+        descriptor.fetchLimit = 20
 
         let habits = (try? context.fetch(descriptor)) ?? []
-        return habits.prefix(20).map { habit in
+        return habits.map { habit in
             WidgetHabitSnapshot(
                 id: habit.id.uuidString,
                 title: habit.title,
@@ -133,13 +161,13 @@ final class WidgetSnapshotManager {
         }
     }
 
-    private func fetchFocusSnapshot(context: ModelContext) -> WidgetFocusSnapshot {
-        let allSessionsDescriptor = FetchDescriptor<FocusSession>(
+    nonisolated private static func fetchFocusSnapshot(context: ModelContext) -> WidgetFocusSnapshot {
+        var activeSessionDescriptor = FetchDescriptor<FocusSession>(
+            predicate: #Predicate { $0.isActive },
             sortBy: [SortDescriptor(\.startTime, order: .reverse)]
         )
-        let sessions = (try? context.fetch(allSessionsDescriptor)) ?? []
-
-        let activeSession = sessions.first(where: { $0.isActive })
+        activeSessionDescriptor.fetchLimit = 1
+        let activeSession = (try? context.fetch(activeSessionDescriptor))?.first
         let today = Calendar.current.startOfDay(for: Date())
         guard let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: today) else {
             return WidgetFocusSnapshot(
@@ -152,6 +180,13 @@ final class WidgetSnapshotManager {
             )
         }
 
+        let todaySessionsDescriptor = FetchDescriptor<FocusSession>(
+            predicate: #Predicate { session in
+                session.startTime >= today && session.startTime < tomorrow
+            },
+            sortBy: [SortDescriptor(\.startTime, order: .reverse)]
+        )
+        let sessions = (try? context.fetch(todaySessionsDescriptor)) ?? []
         let todaysSessions = sessions.filter { $0.startTime >= today && $0.startTime < tomorrow }
         let todaysFocusTime = todaysSessions.reduce(0.0) { $0 + $1.actualDuration }
 
@@ -165,16 +200,22 @@ final class WidgetSnapshotManager {
         )
     }
 
-    private func fetchTimeTrackingSnapshot(context: ModelContext) -> WidgetTimeTrackingSnapshot {
-        let descriptor = FetchDescriptor<TimeEntry>(
+    nonisolated private static func fetchTimeTrackingSnapshot(context: ModelContext) -> WidgetTimeTrackingSnapshot {
+        var activeEntryDescriptor = FetchDescriptor<TimeEntry>(
+            predicate: #Predicate { $0.isActive },
             sortBy: [SortDescriptor(\.startTime, order: .reverse)]
         )
-        let entries = (try? context.fetch(descriptor)) ?? []
-
-        let activeEntry = entries.first(where: { $0.isRunning })
+        activeEntryDescriptor.fetchLimit = 1
+        let activeEntry = (try? context.fetch(activeEntryDescriptor))?.first
         let today = Calendar.current.startOfDay(for: Date())
         let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: today) ?? Date()
-        let todaysEntries = entries.filter { $0.startTime >= today && $0.startTime < tomorrow }
+        let todayEntriesDescriptor = FetchDescriptor<TimeEntry>(
+            predicate: #Predicate { entry in
+                entry.startTime >= today && entry.startTime < tomorrow
+            },
+            sortBy: [SortDescriptor(\.startTime, order: .reverse)]
+        )
+        let todaysEntries = (try? context.fetch(todayEntriesDescriptor)) ?? []
         let todaysTotal = todaysEntries.reduce(0.0) { $0 + $1.actualDuration }
 
         var categoryTotals: [String: TimeInterval] = [:]

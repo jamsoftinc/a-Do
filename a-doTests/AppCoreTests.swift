@@ -46,4 +46,19 @@ final class AppCoreTests: XCTestCase {
             )
         }
     }
+
+    func testTimeEntryPreservesDurationAcrossPauseAndResume() {
+        let entry = TimeEntry(category: "Work")
+        entry.startTime = Date().addingTimeInterval(-120)
+        entry.pause()
+
+        XCTAssertGreaterThanOrEqual(entry.actualDuration, 119)
+
+        entry.resume()
+        entry.startTime = Date().addingTimeInterval(-30)
+        entry.stop()
+
+        XCTAssertGreaterThanOrEqual(entry.actualDuration, 149)
+        XCTAssertLessThan(entry.actualDuration, 155)
+    }
 }

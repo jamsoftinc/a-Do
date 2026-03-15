@@ -27,14 +27,14 @@ final class FocusModeManager {
     // Current session state
     var currentSession: FocusSession?
     var isSessionActive: Bool = false
-    var sessionTimeRemaining: TimeInterval = 0
     var isOnBreak: Bool = false
     var currentBreak: FocusBreak?
+    var sessionTimeRemaining: TimeInterval {
+        currentSession?.remainingTime ?? 0
+    }
     
-    // Timer management
-    // Timer is managed on MainActor - cleanup called before deallocation
-    private var sessionTimer: Timer?
-    private var breakTimer: Timer?
+    @ObservationIgnored private var sessionExpiryTask: Task<Void, Never>?
+    @ObservationIgnored private var breakExpiryTask: Task<Void, Never>?
 
     // Statistics
     var todaysFocusTime: TimeInterval = 0
@@ -47,8 +47,8 @@ final class FocusModeManager {
 
     /// Call this method to clean up resources before the manager is deallocated
     func cleanup() {
-        stopSessionTimer()
-        stopBreakTimer()
+        cancelSessionExpiration()
+        cancelBreakExpiration()
         currentSession = nil
         currentBreak = nil
         isSessionActive = false
@@ -74,12 +74,10 @@ final class FocusModeManager {
         
         currentSession = session
         isSessionActive = true
-        sessionTimeRemaining = session.plannedDuration
         
         context.insert(session)
         
-        // Start timer
-        startSessionTimer()
+        scheduleSessionExpiration(for: session)
         
         // Configure system focus mode
         configureSystemFocusMode(for: session)
@@ -92,7 +90,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.focus])
             logger.info("Started focus session: \(session.name)")
         } catch {
             logger.error("Failed to start session: \(error.localizedDescription)")
@@ -104,11 +102,12 @@ final class FocusModeManager {
         
         session.pause()
         isSessionActive = false
-        stopSessionTimer()
+        cancelSessionExpiration()
+        LiveActivityManager.shared.updateFocusSessionActivity(session: session)
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.focus])
             logger.info("Paused focus session")
         } catch {
             logger.error("Failed to pause session: \(error.localizedDescription)")
@@ -120,12 +119,12 @@ final class FocusModeManager {
         
         session.resume()
         isSessionActive = true
-        sessionTimeRemaining = session.remainingTime
-        startSessionTimer()
+        scheduleSessionExpiration(for: session)
+        LiveActivityManager.shared.updateFocusSessionActivity(session: session)
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.focus])
             logger.info("Resumed focus session")
         } catch {
             logger.error("Failed to resume session: \(error.localizedDescription)")
@@ -137,7 +136,8 @@ final class FocusModeManager {
         
         session.complete()
         isSessionActive = false
-        stopSessionTimer()
+        cancelSessionExpiration()
+        cancelBreakExpiration()
         
         // Calculate session effectiveness based on completion and interruptions
         let effectiveness = calculateSessionEffectiveness(session: session)
@@ -163,14 +163,13 @@ final class FocusModeManager {
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.focus])
             logger.info("Ended focus session: \(session.name)")
         } catch {
             logger.error("Failed to end session: \(error.localizedDescription)")
         }
         
         currentSession = nil
-        sessionTimeRemaining = 0
     }
     
     func recordInterruption(reason: InterruptionReason, context: ModelContext) {
@@ -180,7 +179,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.focus])
             logger.info("Recorded interruption: \(reason.displayName)")
         } catch {
             logger.error("Failed to record interruption: \(error.localizedDescription)")
@@ -213,13 +212,13 @@ final class FocusModeManager {
         currentBreak = focusBreak
         isOnBreak = true
         
-        // Pause session timer and start break timer
+        // Pause session timer and schedule break completion
         pauseSession(context: context)
-        startBreakTimer(duration: breakDuration)
+        scheduleBreakExpiration(for: breakDuration)
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.focus])
             logger.info("Started \(type.displayName) for \(Int(breakDuration/60)) minutes")
         } catch {
             logger.error("Failed to start break: \(error.localizedDescription)")
@@ -232,7 +231,7 @@ final class FocusModeManager {
         focusBreak.complete()
         currentBreak = nil
         isOnBreak = false
-        stopBreakTimer()
+        cancelBreakExpiration()
         
         // Resume session if it was active
         if let session = currentSession, !session.wasCompleted {
@@ -241,7 +240,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.focus])
             logger.info("Ended break")
         } catch {
             logger.error("Failed to end break: \(error.localizedDescription)")
@@ -254,7 +253,7 @@ final class FocusModeManager {
         focusBreak.skip()
         currentBreak = nil
         isOnBreak = false
-        stopBreakTimer()
+        cancelBreakExpiration()
         
         // Resume session
         if let session = currentSession, !session.wasCompleted {
@@ -263,64 +262,57 @@ final class FocusModeManager {
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.focus])
             logger.info("Skipped break")
         } catch {
             logger.error("Failed to skip break: \(error.localizedDescription)")
         }
     }
     
-    // MARK: - Timer Management
-    
-    private func startSessionTimer() {
-        stopSessionTimer()
+    // MARK: - Expiration Scheduling
 
-        sessionTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.updateSessionTimer()
-            }
-        }
-    }
+    private func scheduleSessionExpiration(for session: FocusSession) {
+        cancelSessionExpiration()
 
-    private func stopSessionTimer() {
-        sessionTimer?.invalidate()
-        sessionTimer = nil
-    }
-
-    private func startBreakTimer(duration: TimeInterval) {
-        stopBreakTimer()
-
-        var remainingTime = duration
-
-        breakTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
-            remainingTime -= 1
-
-            if remainingTime <= 0 {
-                timer.invalidate()
-                Task { @MainActor [weak self] in
-                    self?.stopBreakTimer()
-                    self?.breakTimerExpired()
-                }
-            }
-        }
-    }
-    
-    private func stopBreakTimer() {
-        breakTimer?.invalidate()
-        breakTimer = nil
-    }
-
-    private func updateSessionTimer() {
-        guard let session = currentSession, session.isActive else { return }
-        
-        sessionTimeRemaining = session.remainingTime
-        
-        // Update Live Activity for Pro users
-        LiveActivityManager.shared.updateFocusSessionActivity(session: session)
-        
-        if sessionTimeRemaining <= 0 {
+        let remainingTime = max(0, session.remainingTime)
+        guard remainingTime > 0 else {
             sessionTimerExpired()
+            return
         }
+
+        sessionExpiryTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(remainingTime * 1_000_000_000))
+            guard let self, !Task.isCancelled else { return }
+            guard self.currentSession?.id == session.id, session.isActive else { return }
+            self.sessionTimerExpired()
+        }
+    }
+
+    private func cancelSessionExpiration() {
+        sessionExpiryTask?.cancel()
+        sessionExpiryTask = nil
+    }
+
+    private func scheduleBreakExpiration(for duration: TimeInterval) {
+        cancelBreakExpiration()
+
+        let remainingTime = max(0, duration)
+        guard remainingTime > 0 else {
+            breakTimerExpired()
+            return
+        }
+
+        breakExpiryTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(remainingTime * 1_000_000_000))
+            guard let self, !Task.isCancelled else { return }
+            guard self.currentBreak != nil else { return }
+            self.breakTimerExpired()
+        }
+    }
+
+    private func cancelBreakExpiration() {
+        breakExpiryTask?.cancel()
+        breakExpiryTask = nil
     }
     
     private func sessionTimerExpired() {
@@ -408,7 +400,8 @@ final class FocusModeManager {
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.focus, .reminders])
+            ReminderMutationMonitor.shared.notifyChange()
             logger.info("Completed reminder in focus session: \(reminder.title)")
         } catch {
             logger.error("Failed to complete reminder: \(error.localizedDescription)")
@@ -428,7 +421,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.focus])
             logger.info("Created focus template: \(name)")
         } catch {
             logger.error("Failed to create template: \(error.localizedDescription)")
@@ -567,7 +560,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.focus])
             logger.info("Created focus goal: \(title)")
         } catch {
             logger.error("Failed to create goal: \(error.localizedDescription)")
@@ -603,7 +596,7 @@ final class FocusModeManager {
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.focus])
         } catch {
             logger.error("Failed to update goals: \(error.localizedDescription)")
         }

@@ -21,18 +21,14 @@ final class TimeTrackingManager: ObservableObject {
     // Current tracking state
     var currentEntry: TimeEntry?
     var isTracking: Bool = false
-    var elapsedTime: TimeInterval = 0
-
-    // Timer for updating elapsed time
-    // Timer is managed on MainActor - cleanup called before deallocation
-    private var timer: Timer?
+    var elapsedTime: TimeInterval {
+        currentEntry?.actualDuration ?? 0
+    }
 
     private init() {}
 
     /// Call this method before the manager is deallocated to clean up resources
     func cleanup() {
-        timer?.invalidate()
-        timer = nil
         currentEntry = nil
         isTracking = false
     }
@@ -50,13 +46,10 @@ final class TimeTrackingManager: ObservableObject {
         
         currentEntry = entry
         isTracking = true
-        elapsedTime = 0
-        
-        startTimer()
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.timeTracking])
             logger.info("Started time tracking for category: \(category)")
         } catch {
             logger.error("Failed to start time tracking: \(error.localizedDescription)")
@@ -68,18 +61,16 @@ final class TimeTrackingManager: ObservableObject {
         
         entry.stop()
         isTracking = false
-        stopTimer()
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.timeTracking])
             logger.info("Stopped time tracking. Duration: \(entry.formattedDuration)")
         } catch {
             logger.error("Failed to stop time tracking: \(error.localizedDescription)")
         }
         
         currentEntry = nil
-        elapsedTime = 0
     }
     
     func pauseTracking(context: ModelContext) {
@@ -87,11 +78,10 @@ final class TimeTrackingManager: ObservableObject {
         
         entry.pause()
         isTracking = false
-        stopTimer()
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.timeTracking])
             logger.info("Paused time tracking")
         } catch {
             logger.error("Failed to pause time tracking: \(error.localizedDescription)")
@@ -103,36 +93,14 @@ final class TimeTrackingManager: ObservableObject {
         
         entry.resume()
         isTracking = true
-        startTimer()
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.timeTracking])
             logger.info("Resumed time tracking")
         } catch {
             logger.error("Failed to resume time tracking: \(error.localizedDescription)")
         }
-    }
-    
-    // MARK: - Timer Management
-    
-    private func startTimer() {
-        stopTimer()
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.updateElapsedTime()
-            }
-        }
-    }
-
-    private func stopTimer() {
-        timer?.invalidate()
-        timer = nil
-    }
-    
-    private func updateElapsedTime() {
-        guard let entry = currentEntry, entry.isActive else { return }
-        elapsedTime = entry.actualDuration
     }
     
     // MARK: - Analytics
@@ -275,7 +243,7 @@ final class TimeTrackingManager: ObservableObject {
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.timeTracking])
             logger.info("Created time goal: \(title)")
         } catch {
             logger.error("Failed to create time goal: \(error.localizedDescription)")
@@ -296,7 +264,7 @@ final class TimeTrackingManager: ObservableObject {
         
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.timeTracking])
             logger.info("Created time category: \(name)")
         } catch {
             logger.error("Failed to create time category: \(error.localizedDescription)")

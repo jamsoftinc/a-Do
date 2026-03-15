@@ -219,7 +219,10 @@ struct MemorySafeDataLoader {
             do {
                 let reminders = try backgroundContext.fetch(descriptor)
                 return reminders.map { reminder in
-                    SearchableReminderSnapshot(
+                    let titleLength = reminder.title.count
+                    let detailLength = (reminder.details ?? "").count
+                    let subtaskCount = reminder.subtasks?.count ?? 0
+                    return SearchableReminderSnapshot(
                         id: reminder.uuid.uuidString,
                         title: reminder.title,
                         details: reminder.details ?? "",
@@ -229,9 +232,55 @@ struct MemorySafeDataLoader {
                         priority: reminder.priority,
                         dueDate: reminder.dueDate,
                         createdAt: reminder.createdAt,
-                        estimatedDurationMinutes: estimatedDurationMinutes(for: reminder)
+                        estimatedDurationMinutes: estimatedDurationMinutes(
+                            titleLength: titleLength,
+                            detailLength: detailLength,
+                            subtaskCount: subtaskCount
+                        )
                     )
                 }
+            } catch {
+                return []
+            }
+        }.value
+    }
+
+    static func loadPendingAISuggestions(
+        context: ModelContext,
+        limit: Int = 25
+    ) async -> [PersistentIdentifier] {
+        await Task.detached {
+            let backgroundContext = ModelContext(context.container)
+            let pendingStatusRaw = AISuggestionStatus.pending.rawValue
+            var descriptor = FetchDescriptor<AISuggestion>(
+                predicate: #Predicate { $0.statusRaw == pendingStatusRaw },
+                sortBy: [SortDescriptor(\.priorityRaw, order: .reverse), SortDescriptor(\.confidence, order: .reverse)]
+            )
+            descriptor.fetchLimit = limit
+
+            do {
+                let suggestions = try backgroundContext.fetch(descriptor)
+                return suggestions.map(\.persistentModelID)
+            } catch {
+                return []
+            }
+        }.value
+    }
+
+    static func loadRecentAIInsights(
+        context: ModelContext,
+        limit: Int = 10
+    ) async -> [PersistentIdentifier] {
+        await Task.detached {
+            let backgroundContext = ModelContext(context.container)
+            var descriptor = FetchDescriptor<AIInsight>(
+                sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+            )
+            descriptor.fetchLimit = limit
+
+            do {
+                let insights = try backgroundContext.fetch(descriptor)
+                return insights.map(\.persistentModelID)
             } catch {
                 return []
             }
@@ -264,10 +313,11 @@ struct MemorySafeDataLoader {
         }.value
     }
 
-    private static func estimatedDurationMinutes(for reminder: Reminder) -> Int {
-        let detailLength = (reminder.details ?? "").count
-        let titleLength = reminder.title.count
-        let subtaskCount = reminder.subtasks?.count ?? 0
+    nonisolated private static func estimatedDurationMinutes(
+        titleLength: Int,
+        detailLength: Int,
+        subtaskCount: Int
+    ) -> Int {
         let complexityEstimate = max(10, min(120, (titleLength / 2) + (detailLength / 8)))
         return max(complexityEstimate, subtaskCount > 0 ? subtaskCount * 15 : 0)
     }

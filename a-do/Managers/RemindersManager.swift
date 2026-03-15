@@ -163,6 +163,7 @@ final class RemindersManager {
                             try context.save()
                             AdvancedSearchManager.shared.markIndexDirty()
                             WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
+                            ReminderMutationMonitor.shared.notifyChange()
                             Logger(subsystem: "a-do", category: "Import").info("Successfully imported \(self.importedCount) reminders")
                         } catch {
                             self.lastImportError = "Failed to save imported reminders: \(error.localizedDescription)"

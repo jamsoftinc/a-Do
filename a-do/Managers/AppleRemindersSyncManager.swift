@@ -70,6 +70,10 @@ final class AppleRemindersSyncManager {
             }
             
             lastSyncDate = Date()
+            if importedCount > 0 {
+                WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
+                ReminderMutationMonitor.shared.notifyChange()
+            }
             Logger(subsystem: "a-do", category: "Sync").info("Full sync completed successfully")
             
         } catch {
@@ -102,7 +106,8 @@ final class AppleRemindersSyncManager {
     
     private func syncFromAppleReminders(context: ModelContext, isInitialSync: Bool = false) async -> Int {
         Logger(subsystem: "a-do", category: "Sync").info("Syncing from Apple Reminders")
-        
+        let syncBaseline = isInitialSync ? nil : lastSyncDate
+
         return await withCheckedContinuation { continuation in
             let predicate = self.store.predicateForReminders(in: nil)
             self.store.fetchReminders(matching: predicate) { reminders in
@@ -112,8 +117,9 @@ final class AppleRemindersSyncManager {
                         continuation.resume(returning: 0)
                         return
                     }
-                    
-                    let importedCount = await self.importNewReminders(reminders, into: context, isInitialSync: isInitialSync)
+
+                    let filteredReminders = self.filterRemindersForImport(reminders, baseline: syncBaseline, isInitialSync: isInitialSync)
+                    let importedCount = await self.importNewReminders(filteredReminders, into: context, isInitialSync: isInitialSync)
                     Logger(subsystem: "a-do", category: "Sync").info("Imported \(importedCount) new reminders from Apple Reminders")
                     continuation.resume(returning: importedCount)
                 }
@@ -123,6 +129,7 @@ final class AppleRemindersSyncManager {
     
     private func importNewReminders(_ ekReminders: [EKReminder], into context: ModelContext, isInitialSync: Bool = false) async -> Int {
         var importedCount = 0
+        var importedReminders: [Reminder] = []
         
         // Get existing reminders to avoid duplicates - check both title AND Apple Reminder ID
         var descriptor = FetchDescriptor<Reminder>()
@@ -165,23 +172,36 @@ final class AppleRemindersSyncManager {
             reminder.appleReminderID = ekReminder.calendarItemIdentifier
             
             context.insert(reminder)
+            importedReminders.append(reminder)
             importedCount += 1
         }
         
         // Save changes
         do {
             try context.save()
-            Task {
-                let reminders = (try? context.fetch(FetchDescriptor<Reminder>())) ?? []
-                for reminder in reminders where reminder.appleReminderID != nil {
-                    await AdvancedSearchManager.shared.upsertReminderIndex(for: reminder, context: context)
-                }
+            for reminder in importedReminders {
+                await AdvancedSearchManager.shared.upsertReminderIndex(for: reminder, context: context)
             }
         } catch {
             Logger(subsystem: "a-do", category: "Sync").error("Failed to save imported reminders: \(String(describing: error))")
         }
         
         return importedCount
+    }
+
+    private func filterRemindersForImport(_ reminders: [EKReminder], baseline: Date?, isInitialSync: Bool) -> [EKReminder] {
+        guard let baseline, !isInitialSync else { return reminders }
+
+        let cutoff = baseline.addingTimeInterval(-60)
+        return reminders.filter { reminder in
+            if let lastModifiedDate = reminder.lastModifiedDate, lastModifiedDate >= cutoff {
+                return true
+            }
+            if let completionDate = reminder.completionDate, completionDate >= cutoff {
+                return true
+            }
+            return false
+        }
     }
     
     // MARK: - Sync to Apple Reminders

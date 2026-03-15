@@ -40,6 +40,8 @@ struct HomeView: View {
     @State private var showingAIInsights = false
     @State private var showingDailyPlanning = false
     @State private var showingMorningBriefing = false
+    @State private var reminderMutationMonitor = ReminderMutationMonitor.shared
+    @State private var isViewVisible = false
 
     private var greetingTitle: String {
         let hour = Calendar.current.component(.hour, from: Date())
@@ -143,13 +145,15 @@ struct HomeView: View {
                 }
             }
             .onAppear {
+                isViewVisible = true
                 cloudKitManager.loadSyncSetting(context: context)
                 loadRemindersAsync()
             }
-            .task {
-                await loadRemindersInBackground()
+            .onDisappear {
+                isViewVisible = false
             }
-            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ReminderCreated"))) { _ in
+            .onChange(of: reminderMutationMonitor.revision) { _, _ in
+                guard isViewVisible else { return }
                 loadRemindersAsync()
             }
             .sheet(isPresented: $showingPaywall) {

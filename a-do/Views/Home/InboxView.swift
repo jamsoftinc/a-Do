@@ -10,6 +10,8 @@ struct InboxView: View {
     @State private var sortOption: SortOption = .createdDate
     @State private var showingReminderForm = false
     @State private var selectedReminder: Reminder?
+    @State private var reminderMutationMonitor = ReminderMutationMonitor.shared
+    @State private var isViewVisible = false
 
     enum SortOption: String, CaseIterable {
         case createdDate = "Created Date"
@@ -129,13 +131,20 @@ struct InboxView: View {
                 }
             }
         }
+        .onAppear {
+            isViewVisible = true
+        }
+        .onDisappear {
+            isViewVisible = false
+        }
         .task {
             await loadReminders()
         }
         .refreshable {
             await loadReminders()
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ReminderCreated"))) { _ in
+        .onChange(of: reminderMutationMonitor.revision) { _, _ in
+            guard isViewVisible else { return }
             Task {
                 await loadReminders()
             }
@@ -210,7 +219,8 @@ struct InboxView: View {
 
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
+            ReminderMutationMonitor.shared.notifyChange()
         } catch {
             // Handle error silently in production
         }
@@ -221,7 +231,8 @@ struct InboxView: View {
 
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
+            ReminderMutationMonitor.shared.notifyChange()
         } catch {
             // Handle error silently in production
         }
@@ -231,7 +242,8 @@ struct InboxView: View {
         reminder.priority = .high
         do {
             try context.save()
-            WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+            WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
+            ReminderMutationMonitor.shared.notifyChange()
         } catch {
             // Handle error silently in production
         }

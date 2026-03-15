@@ -76,12 +76,13 @@ final class ReminderCreationService {
                 )
             }
 
-            NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: reminder)
             logger.info("Created reminder: \(reminder.title, privacy: .public)")
             await AdvancedSearchManager.shared.upsertReminderIndex(for: reminder, context: context)
         }
 
         WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
+        ReminderMutationMonitor.shared.notifyChange()
+        NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: nil)
         return reminders
     }
 
@@ -98,9 +99,10 @@ final class ReminderCreationService {
             leadTimes: normalizedRequest.leadTimes
         )
 
-        NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: reminder)
         await AdvancedSearchManager.shared.upsertReminderIndex(for: reminder, context: context)
         WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
+        ReminderMutationMonitor.shared.notifyChange()
+        NotificationCenter.default.post(name: NSNotification.Name("ReminderCreated"), object: nil)
 
         logger.info("Updated reminder: \(reminder.title, privacy: .public)")
         return reminder

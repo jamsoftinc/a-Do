@@ -162,9 +162,6 @@ struct RootView: View {
                             refreshWidgetSnapshotsIfPossible()
                             scheduleLifecycleMaintenance(reason: "launch")
                         }
-                        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ReminderCreated"))) { _ in
-                            refreshWidgetSnapshotsIfPossible()
-                        }
                         .fullScreenCover(isPresented: $showMorningBriefing) {
                             MorningBriefingView()
                                 .modelContainer(container)

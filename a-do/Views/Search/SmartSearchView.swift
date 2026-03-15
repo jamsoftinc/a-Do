@@ -30,6 +30,8 @@ struct SmartSearchView: View {
     @State private var searchableHabits: [SearchableHabitSnapshot] = []
     @State private var isLoadingSearchData = false
     @State private var searchTask: Task<Void, Never>?
+    @State private var reminderMutationMonitor = ReminderMutationMonitor.shared
+    @State private var isViewVisible = false
     
     @Query private var recentSearches: [SearchQuery]
     @Query(sort: [SortDescriptor(\SavedSearch.lastUsed, order: .reverse), SortDescriptor(\SavedSearch.createdAt, order: .reverse)]) private var savedSearches: [SavedSearch]
@@ -84,6 +86,7 @@ struct SmartSearchView: View {
             PaywallView()
         }
         .onAppear {
+            isViewVisible = true
             Task {
                 await reloadSearchData()
                 if let savedSearchID, let savedSearch = savedSearches.first(where: { $0.id == savedSearchID }) {
@@ -93,6 +96,12 @@ struct SmartSearchView: View {
                 guard let initialQuery, searchText.isEmpty else { return }
                 searchText = initialQuery
                 scheduleSearch(immediate: true)
+            }
+        }
+        .onChange(of: reminderMutationMonitor.revision) { _, _ in
+            guard isViewVisible else { return }
+            Task {
+                await reloadSearchData()
             }
         }
         .onChange(of: searchText) { _, newValue in
@@ -124,12 +133,8 @@ struct SmartSearchView: View {
             searchText = trimmed
             scheduleSearch(immediate: true)
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ReminderCreated"))) { _ in
-            Task {
-                await reloadSearchData()
-            }
-        }
         .onDisappear {
+            isViewVisible = false
             searchTask?.cancel()
             if audioManager.isRecording {
                 audioManager.stopLiveTranscription()

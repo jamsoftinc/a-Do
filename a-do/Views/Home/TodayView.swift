@@ -9,6 +9,8 @@ struct TodayView: View {
     @State private var isLoading: Bool = false
     @State private var showingReminderForm = false
     @State private var showingDailyPlanning = false
+    @State private var reminderMutationMonitor = ReminderMutationMonitor.shared
+    @State private var isViewVisible = false
 
     var body: some View {
         NavigationStack {
@@ -76,9 +78,14 @@ struct TodayView: View {
                 }
             }
             .onAppear {
+                isViewVisible = true
                 loadTodayReminders()
             }
-            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ReminderCreated"))) { _ in
+            .onDisappear {
+                isViewVisible = false
+            }
+            .onChange(of: reminderMutationMonitor.revision) { _, _ in
+                guard isViewVisible else { return }
                 loadTodayReminders()
             }
         }
@@ -116,7 +123,8 @@ struct TodayView: View {
         NotificationManager.shared.cancelNotifications(for: reminder)
         context.delete(reminder)
         try? context.save()
-        WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+        WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
+        ReminderMutationMonitor.shared.notifyChange()
         loadTodayReminders()
     }
 
@@ -199,7 +207,8 @@ private struct TodayReminderRow: View {
         reminder.isCompleted = isCompleted
         reminder.completedAt = isCompleted ? Date() : nil
         try? context.save()
-        WidgetSnapshotManager.shared.refreshSnapshots(context: context)
+        WidgetSnapshotManager.shared.refreshSnapshots(context: context, kinds: [.reminders])
+        ReminderMutationMonitor.shared.notifyChange()
 
         if isCompleted {
             HapticManager.shared.play(.success)

@@ -20,13 +20,17 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
     // State
     var isRecording = false
     var isTranscribing = false
-    var recordingDuration: TimeInterval = 0
+    var recordingDuration: TimeInterval {
+        if let recordingStartedAt {
+            return lastRecordedDuration + Date().timeIntervalSince(recordingStartedAt)
+        }
+        return lastRecordedDuration
+    }
     var transcribedText = ""
     var recordingError: String?
     var transcriptionError: String?
-    
-    // Recording timer
-    private var recordingTimer: Timer?
+    private var recordingStartedAt: Date?
+    private var lastRecordedDuration: TimeInterval = 0
     
     // Audio file URL
     private var audioFileURL: URL?
@@ -89,7 +93,8 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
         // Reset state
         recordingError = nil
         transcribedText = ""
-        recordingDuration = 0
+        lastRecordedDuration = 0
+        recordingStartedAt = nil
         
         do {
             // Configure audio session
@@ -119,14 +124,7 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
             audioRecorder?.record()
             
             isRecording = true
-            
-            // Start timer
-            recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-                guard let self else { return }
-                Task { @MainActor in
-                    self.recordingDuration += 1.0
-                }
-            }
+            recordingStartedAt = Date()
             
             Logger(subsystem: "a-do", category: "Audio").info("Started voice recording")
             
@@ -138,12 +136,11 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
     }
     
     func stopRecording() {
+        lastRecordedDuration = recordingDuration
+        recordingStartedAt = nil
         audioRecorder?.stop()
         audioRecorder = nil
         isRecording = false
-        
-        recordingTimer?.invalidate()
-        recordingTimer = nil
         
         // Start transcription
         if let audioFileURL = audioFileURL {
@@ -161,9 +158,8 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
         audioRecorder?.stop()
         audioRecorder = nil
         isRecording = false
-        
-        recordingTimer?.invalidate()
-        recordingTimer = nil
+        recordingStartedAt = nil
+        lastRecordedDuration = 0
         
         // Delete audio file
         if let audioFileURL = audioFileURL {
@@ -173,7 +169,6 @@ final class AudioManager: NSObject, AVAudioRecorderDelegate, SFSpeechRecognizerD
         
         recordingError = nil
         transcribedText = ""
-        recordingDuration = 0
         transcriptionError = nil
         resumeCaptureCompletion(success: false)
         
