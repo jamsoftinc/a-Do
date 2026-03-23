@@ -88,10 +88,9 @@ struct ADoApp: App {
         UIToolbar.appearance().compactAppearance = toolbarAppearance
 
         let tabBarAppearance = UITabBarAppearance()
-        tabBarAppearance.configureWithTransparentBackground()
-        tabBarAppearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterial)
-        tabBarAppearance.backgroundColor = AppTheme.UIColors.surface.withAlphaComponent(0.82)
-        tabBarAppearance.shadowColor = AppTheme.UIColors.primary.withAlphaComponent(0.08)
+        tabBarAppearance.configureWithOpaqueBackground()
+        tabBarAppearance.backgroundColor = AppTheme.UIColors.surface
+        tabBarAppearance.shadowColor = UIColor.black.withAlphaComponent(0.06)
         configureTabBarLayout(tabBarAppearance.stackedLayoutAppearance)
         configureTabBarLayout(tabBarAppearance.inlineLayoutAppearance)
         configureTabBarLayout(tabBarAppearance.compactInlineLayoutAppearance)

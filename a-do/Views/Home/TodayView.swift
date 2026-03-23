@@ -157,7 +157,7 @@ private struct TodayReminderRow: View {
                 toggleCompletion()
             } label: {
                 Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isCompleted ? .green : Color(.tertiaryLabel))
+                    .foregroundStyle(isCompleted ? .green : AppTheme.Colors.textTertiary)
                     .font(.title3)
             }
             .buttonStyle(.plain)
@@ -166,12 +166,12 @@ private struct TodayReminderRow: View {
                 Text(reminder.title)
                     .font(.body)
                     .strikethrough(isCompleted)
-                    .foregroundStyle(isCompleted ? .secondary : .primary)
+                    .foregroundStyle(isCompleted ? AppTheme.Colors.textSecondary : AppTheme.Colors.textPrimary)
 
                 if let dueDate = reminder.dueDate {
                     Text(dueDate, style: .time)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.Colors.textSecondary)
                 }
             }
 

@@ -394,3 +394,5 @@ AppContainer.optimizeDatabase(context: modelContext)
 8. **Pro Features Gating:** Many AI features are Pro-only. Always check `EntitlementManager.shared.isProUser` before enabling. Use `ProFeatureGate` view component for UI gating.
 
 9. **WeatherKit Integration:** `MorningBriefingManager` uses WeatherKit which requires entitlement and may have rate limits. Handle gracefully if weather data unavailable.
+
+10. **Google Gemini (Pro-only):** Google Gemini and all Gemini-reliant features are for Pro subscribers only. Always gate behind `EntitlementManager.shared.isProUser` before invoking any Gemini API calls or enabling Gemini-powered functionality.

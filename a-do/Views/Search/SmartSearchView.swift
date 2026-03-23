@@ -190,7 +190,7 @@ struct SmartSearchView: View {
                 .padding(.vertical, 6)
                 .background((audioManager.isRecording ? Color.red : AppTheme.Colors.accent).opacity(0.1))
                 .foregroundColor(audioManager.isRecording ? .red : AppTheme.Colors.accent)
-                .cornerRadius(8)
+                .cornerRadius(AppTheme.CornerRadius.small)
                 
                 Button("Advanced") {
                     selectedSearchType = .advanced
@@ -201,7 +201,7 @@ struct SmartSearchView: View {
                 .padding(.vertical, 6)
                 .background(AppTheme.Colors.secondary.opacity(0.1))
                 .foregroundColor(AppTheme.Colors.secondary)
-                .cornerRadius(8)
+                .cornerRadius(AppTheme.CornerRadius.small)
 
                 if !normalizedSearchText.isEmpty {
                     Button(isCurrentSearchBookmarked ? "Saved View" : "Save View") {
@@ -212,7 +212,7 @@ struct SmartSearchView: View {
                     .padding(.vertical, 6)
                     .background((isCurrentSearchBookmarked ? AppTheme.Colors.accent : AppTheme.Colors.textSecondary).opacity(0.12))
                     .foregroundColor(isCurrentSearchBookmarked ? AppTheme.Colors.accent : AppTheme.Colors.textSecondary)
-                    .cornerRadius(8)
+                    .cornerRadius(AppTheme.CornerRadius.small)
                 }
                 
                 Spacer()
@@ -372,7 +372,7 @@ struct SmartSearchView: View {
                     }
                 } else if !searchText.isEmpty {
                     Text("No results found")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.Colors.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding()
                 }
@@ -833,7 +833,7 @@ struct SearchTypeButton: View {
             .padding(.vertical, 8)
             .background(isSelected ? AppTheme.Colors.accent : AppTheme.Colors.surfaceLight)
             .foregroundColor(isSelected ? .white : AppTheme.Colors.textPrimary)
-            .cornerRadius(8)
+            .cornerRadius(AppTheme.CornerRadius.small)
         }
     }
 }

@@ -19,19 +19,33 @@ struct MainTabView: View {
 
     enum Tab {
         case home
-        case calendar
+        case capture
         case focus
-        case habits
-        case settings
+        case calendar
+        case insights
     }
 
     var body: some View {
         TabView(selection: $selectedTab) {
             HomeView()
                 .tabItem {
-                    Label("Home", systemImage: "house")
+                    Label("Home", systemImage: "sparkles")
                 }
                 .tag(Tab.home)
+
+            CaptureView()
+                .tabItem {
+                    Label("Capture", systemImage: "mic.fill")
+                }
+                .tag(Tab.capture)
+
+            NavigationStack {
+                FocusDashboardView()
+            }
+            .tabItem {
+                Label("Focus", systemImage: "timer")
+            }
+            .tag(Tab.focus)
 
             CalendarView()
                 .tabItem {
@@ -39,27 +53,11 @@ struct MainTabView: View {
                 }
                 .tag(Tab.calendar)
 
-            NavigationStack {
-                FocusDashboardView()
-            }
-            .tabItem {
-                Label("Focus", systemImage: "scope")
-            }
-            .tag(Tab.focus)
-
-            HabitsView()
+            InsightsHabitsView()
                 .tabItem {
-                    Label("Habits", systemImage: "chart.bar")
+                    Label("Insights", systemImage: "chart.line.uptrend.xyaxis")
                 }
-                .tag(Tab.habits)
-
-            NavigationStack {
-                SettingsPageView()
-            }
-            .tabItem {
-                Label("Settings", systemImage: "gearshape")
-            }
-            .tag(Tab.settings)
+                .tag(Tab.insights)
         }
         .tint(Color(hex: appAccentColor) ?? .accentColor)
         .onAppear {
@@ -160,7 +158,7 @@ struct MainTabView: View {
             selectedTab = .home
             triggerSendText(for: reminderId)
         case .habits:
-            selectedTab = .habits
+            selectedTab = .insights
         case .aiSuggestions:
             selectedTab = .home
             showingAISuggestions = true
@@ -168,7 +166,7 @@ struct MainTabView: View {
             selectedTab = .home
             showingAIInsights = true
         case .aiSettings:
-            selectedTab = .settings
+            selectedTab = .home
             showingAISettings = true
         }
 

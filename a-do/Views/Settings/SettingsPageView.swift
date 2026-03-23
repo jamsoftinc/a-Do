@@ -37,10 +37,10 @@ struct SettingsPageView: View {
                     } label: {
                         HStack {
                             Text("Name")
-                                .foregroundStyle(Color(.label))
+                                .foregroundStyle(AppTheme.Colors.textPrimary)
                             Spacer()
                             Text(profile.displayName)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(AppTheme.Colors.textSecondary)
                         }
                     }
                 }
@@ -59,7 +59,7 @@ struct SettingsPageView: View {
                         Label("AI Settings", systemImage: "brain.head.profile")
                         if !EntitlementManager.shared.isProUser {
                             Spacer()
-                            Image(systemName: "lock.fill").font(.caption).foregroundStyle(.secondary)
+                            Image(systemName: "lock.fill").font(.caption).foregroundStyle(AppTheme.Colors.textSecondary)
                         }
                     }
                 }
@@ -121,7 +121,7 @@ struct SettingsPageView: View {
             Section {
                 NavigationLink(destination: SubscriptionManagementView()) {
                     Label("Subscription", systemImage: "crown.fill")
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(AppTheme.Colors.primary)
                 }
             }
             
@@ -132,10 +132,10 @@ struct SettingsPageView: View {
                     VStack(spacing: 4) {
                         Text("a-do")
                             .font(.headline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppTheme.Colors.textSecondary)
                         Text("Version \(appVersion)")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppTheme.Colors.textSecondary)
                     }
                     Spacer()
                 }

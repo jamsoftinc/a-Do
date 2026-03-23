@@ -76,7 +76,7 @@ struct PaywallView: View {
             // Icon
             ZStack {
                 Circle()
-                    .fill(Color.accentColor)
+                    .fill(AppTheme.Colors.primary)
                     .frame(width: 80, height: 80)
 
                 Image(systemName: "sparkles")
@@ -91,7 +91,7 @@ struct PaywallView: View {
             Text("Get access to advanced pro level features.")
                 .font(.body)
                 .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.Colors.textSecondary)
         }
     }
     
@@ -102,7 +102,7 @@ struct PaywallView: View {
             Text("Pro Features")
                 .font(.title3)
                 .fontWeight(.semibold)
-                .foregroundStyle(Color(.label))
+                .foregroundStyle(AppTheme.Colors.textPrimary)
             
             LazyVStack(spacing: 12) {
                 ForEach(allProFeatures, id: \.rawValue) { feature in
@@ -125,18 +125,18 @@ struct PaywallView: View {
         HStack(spacing: 12) {
             Image(systemName: feature.icon)
                 .font(.title3)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(AppTheme.Colors.primary)
                 .frame(width: 30)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(feature.displayName)
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .foregroundStyle(Color(.label))
+                    .foregroundStyle(AppTheme.Colors.textPrimary)
                 
                 Text(feature.description)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.Colors.textSecondary)
                     .lineLimit(2)
             }
         }
@@ -155,11 +155,11 @@ struct PaywallView: View {
                     Text("Start Your Free Trial")
                         .font(.headline)
                         .fontWeight(.semibold)
-                        .foregroundStyle(Color(.label))
+                        .foregroundStyle(AppTheme.Colors.textPrimary)
                     
                     Text("Free trial handled directly by App Store on eligible plans")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.Colors.textSecondary)
                 }
                 
                 Spacer()
@@ -168,17 +168,17 @@ struct PaywallView: View {
             if hasStoreIntroOffer {
                 Text("Choose an eligible plan below. Apple applies your introductory trial automatically.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.Colors.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else if subscriptionManager.availableProducts.isEmpty {
                 Text("Loading App Store offers. Trial eligibility appears once products are available.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.Colors.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 Text("No introductory trial is currently available for this account.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.Colors.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
@@ -196,7 +196,7 @@ struct PaywallView: View {
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
-                .background(Color.green, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .background(Color.green, in: RoundedRectangle(cornerRadius: AppTheme.CornerRadius.medium, style: .continuous))
             }
             .buttonStyle(.plain)
             #endif
@@ -240,7 +240,7 @@ struct PaywallView: View {
                         HStack(spacing: 6) {
                             Text(product.displayName)
                                 .font(.headline)
-                                .foregroundStyle(Color(.label))
+                                .foregroundStyle(AppTheme.Colors.textPrimary)
                             
                             if product.isPopular {
                                 Text("POPULAR")
@@ -257,7 +257,7 @@ struct PaywallView: View {
                         Text(product.price)
                             .font(.title2)
                             .fontWeight(.bold)
-                            .foregroundStyle(Color(.label))
+                            .foregroundStyle(AppTheme.Colors.textPrimary)
                         
                         if let savings = product.savingsPercentage {
                             Text("Save \(savings)% per year")
@@ -267,18 +267,18 @@ struct PaywallView: View {
                         
                         Text("per \(product.subscriptionType == .annual ? "year" : "month")")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppTheme.Colors.textSecondary)
                     }
                     
                     Spacer()
                     
                     if isSelected {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(AppTheme.Colors.primary)
                             .font(.title2)
                     } else {
                         Image(systemName: "circle")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppTheme.Colors.textSecondary)
                             .font(.title2)
                     }
                 }
@@ -289,7 +289,7 @@ struct PaywallView: View {
                     .fill(AppTheme.Colors.surface)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(isSelected ? Color.accentColor : .clear, lineWidth: 2)
+                            .stroke(isSelected ? AppTheme.Colors.primary : .clear, lineWidth: 2)
                     )
             )
         }
@@ -312,7 +312,7 @@ struct PaywallView: View {
                         HStack(spacing: 6) {
                             Text(product.id.contains("annual") ? "Annual" : "Monthly")
                                 .font(.headline)
-                                .foregroundStyle(Color(.label))
+                                .foregroundStyle(AppTheme.Colors.textPrimary)
                             
                             if isPopular {
                                 Text("POPULAR")
@@ -329,7 +329,7 @@ struct PaywallView: View {
                         Text(product.localizedPrice)
                             .font(.title2)
                             .fontWeight(.bold)
-                            .foregroundStyle(Color(.label))
+                            .foregroundStyle(AppTheme.Colors.textPrimary)
                         
                         if let savings = subscriptionType(for: product)?.savingsPercentage {
                             Text("Save \(savings)% per year")
@@ -338,7 +338,7 @@ struct PaywallView: View {
                         } else if product.id.contains("monthly") {
                             Text("per month")
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(AppTheme.Colors.textSecondary)
                         }
                     }
                     
@@ -346,9 +346,9 @@ struct PaywallView: View {
                     
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.title2)
-                        .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                        .foregroundStyle(isSelected ? AppTheme.Colors.primary : AppTheme.Colors.textSecondary)
                 }
-                
+
                 if isPopular {
                     Divider()
                         .background(AppTheme.Colors.surfaceLight)
@@ -367,10 +367,10 @@ struct PaywallView: View {
             .background {
                 if isSelected {
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.accentColor.opacity(0.1))
+                        .fill(AppTheme.Colors.primary.opacity(0.1))
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.accentColor, lineWidth: 2)
+                                .stroke(AppTheme.Colors.primary, lineWidth: 2)
                         )
                 } else {
                     RoundedRectangle(cornerRadius: 16)
@@ -389,7 +389,7 @@ struct PaywallView: View {
             Button(action: { dismissAction() }) {
                 Text("Continue with Base Version")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.Colors.textSecondary)
             }
             
             // Terms and restore
@@ -400,7 +400,7 @@ struct PaywallView: View {
                     }
                 }
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.Colors.textSecondary)
                 
                 Button("Privacy Policy") {
                     if let url = URL(string: "https://jamsoftinc.com/privacy-policy") {
@@ -408,7 +408,7 @@ struct PaywallView: View {
                     }
                 }
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.Colors.textSecondary)
                 
                 Button("Restore Purchases") {
                     Task {
@@ -416,7 +416,7 @@ struct PaywallView: View {
                     }
                 }
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.Colors.textSecondary)
             }
         }
     }

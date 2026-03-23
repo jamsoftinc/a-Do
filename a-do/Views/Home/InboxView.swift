@@ -276,7 +276,7 @@ struct InboxReminderRowView: View {
             if let details = reminder.details, !details.isEmpty {
                 Text(details)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.Colors.textSecondary)
                     .lineLimit(2)
             }
 
@@ -297,14 +297,14 @@ struct InboxReminderRowView: View {
                                 .background(Color.red.opacity(0.1), in: Capsule())
                         }
                     }
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.Colors.textSecondary)
                 }
 
                 Spacer()
 
                 Text(reminder.createdAt, style: .relative)
                     .font(.caption)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(AppTheme.Colors.textTertiary)
             }
         }
         .padding(.vertical, 2)

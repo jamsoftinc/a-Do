@@ -213,7 +213,7 @@ struct FocusDashboardView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
         .background(AppTheme.Colors.surfaceLight)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.CornerRadius.medium))
     }
 
     private var reminderQueueCard: some View {
@@ -229,7 +229,7 @@ struct FocusDashboardView: View {
                     if EntitlementManager.shared.isProUser {
                         Label(isOptimizingQueue ? "Optimizing" : "AI Optimized", systemImage: isOptimizingQueue ? "hourglass" : "sparkles")
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppTheme.Colors.textSecondary)
                     }
                 }
 

@@ -153,17 +153,17 @@ struct AppTheme {
 
     // MARK: - Corner Radius
     struct CornerRadius {
-        static let small: CGFloat = 8
-        static let medium: CGFloat = 10
-        static let large: CGFloat = 14
-        static let xl: CGFloat = 20
+        static let small: CGFloat = 12
+        static let medium: CGFloat = 16
+        static let large: CGFloat = 20
+        static let xl: CGFloat = 28
     }
 
-    // MARK: - Shadows (Minimal — Apple uses very subtle shadows)
+    // MARK: - Shadows (Neutral-tinted for clean card aesthetic)
     struct Shadows {
-        static let small = Shadow(color: Colors.primary.opacity(0.08), radius: 6, x: 0, y: 2)
-        static let medium = Shadow(color: Colors.primary.opacity(0.12), radius: 12, x: 0, y: 4)
-        static let large = Shadow(color: Colors.primary.opacity(0.14), radius: 18, x: 0, y: 8)
+        static let small = Shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+        static let medium = Shadow(color: Color.black.opacity(0.08), radius: 16, x: 0, y: 4)
+        static let large = Shadow(color: Color.black.opacity(0.10), radius: 24, x: 0, y: 8)
     }
 }
 
